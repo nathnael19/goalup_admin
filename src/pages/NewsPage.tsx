@@ -16,7 +16,9 @@ import { playerService } from "../services/playerService";
 import type { News, NewsCategory, CreateNewsDto, Team, Player } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { getFullImageUrl } from "../utils/url";
+import { getErrorMessage } from "../utils/error";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { UserRoles } from "../types";
 
 const CATEGORY_CONFIG: Record<
@@ -54,6 +56,7 @@ export const NewsPage: React.FC = () => {
   const { user } = useAuth();
   // Only NEWS_REPORTER can create/edit/delete articles; SUPER_ADMIN is view-only
   const canManageNews = user?.role === UserRoles.NEWS_REPORTER;
+  const { showToast } = useToast();
   const [news, setNews] = useState<News[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -89,7 +92,7 @@ export const NewsPage: React.FC = () => {
       );
       setNews(data);
     } catch (err) {
-      console.error("Failed to fetch news", err);
+      showToast(getErrorMessage(err, "Failed to load news"), "error");
     } finally {
       setLoading(false);
     }
@@ -100,7 +103,7 @@ export const NewsPage: React.FC = () => {
       const data = await teamService.getAll();
       setTeams(data);
     } catch (err) {
-      console.error("Failed to fetch teams", err);
+      showToast(getErrorMessage(err, "Failed to load teams"), "error");
     }
   };
 
@@ -109,7 +112,7 @@ export const NewsPage: React.FC = () => {
       const data = await playerService.getAll();
       setPlayers(data);
     } catch (err) {
-      console.error("Failed to fetch players", err);
+      showToast(getErrorMessage(err, "Failed to load players"), "error");
     }
   };
 
@@ -159,7 +162,7 @@ export const NewsPage: React.FC = () => {
       setShowModal(false);
       await fetchNews();
     } catch (err) {
-      console.error("Failed to save news", err);
+      showToast(getErrorMessage(err, "Failed to save article"), "error");
     }
   };
 
@@ -169,7 +172,7 @@ export const NewsPage: React.FC = () => {
       await newsService.delete(id);
       await fetchNews();
     } catch (err) {
-      console.error("Failed to delete news", err);
+      showToast(getErrorMessage(err, "Failed to delete article"), "error");
     }
   };
 
