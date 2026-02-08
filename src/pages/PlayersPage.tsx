@@ -31,9 +31,12 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { getFullImageUrl } from "../utils/url";
 import { getPositionBadge } from "../utils/playerUtils";
+import { getErrorMessage } from "../utils/error";
+import { useToast } from "../context/ToastContext";
 
 export const PlayersPage: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   // SUPER_ADMIN is view-only for players; TOURNAMENT_ADMIN and COACH can manage
   const canManagePlayers = user?.role === UserRoles.COACH;
   const queryClient = useQueryClient();
@@ -132,7 +135,10 @@ export const PlayersPage: React.FC = () => {
       setCurrentPlayer({});
     },
     onError: (err) => {
-      console.error("Failed to save player", err);
+      showToast(
+        getErrorMessage(err, "Failed to save player. Please try again."),
+        "error",
+      );
     },
   });
 
@@ -144,7 +150,10 @@ export const PlayersPage: React.FC = () => {
       setItemToDelete(null);
     },
     onError: (err) => {
-      console.error("Failed to delete player", err);
+      showToast(
+        getErrorMessage(err, "Failed to delete player. Please try again."),
+        "error",
+      );
     },
   });
 
