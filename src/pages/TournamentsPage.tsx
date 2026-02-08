@@ -23,6 +23,8 @@ import { getFullImageUrl } from "../utils/url";
 import { KnockoutBracket } from "../components/KnockoutBracket";
 import { SeasonStandings } from "../components/match/SeasonStandings";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { getErrorMessage } from "../utils/error";
 import {
   type Tournament,
   type CreateTournamentDto,
@@ -34,6 +36,7 @@ import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TournamentsPage: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   // Queries
@@ -565,7 +568,10 @@ export const TournamentsPage: React.FC = () => {
                         queryKey: ["matches", activeSeason.id],
                       });
                     } catch (err) {
-                      console.error("Failed to generate bracket", err);
+                      showToast(
+                        getErrorMessage(err, "Failed to generate bracket"),
+                        "error",
+                      );
                     }
                   }}
                   className="btn btn-primary h-12 gap-2"
