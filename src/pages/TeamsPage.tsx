@@ -28,11 +28,14 @@ import { useAuth } from "../context/AuthContext";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { getFullImageUrl } from "../utils/url";
+import { getErrorMessage } from "../utils/error";
+import { useToast } from "../context/ToastContext";
 
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: teams = [], isLoading: loadingTeams } = useTeams();
@@ -80,13 +83,10 @@ export const TeamsPage: React.FC = () => {
       setShowModal(false);
       setCurrentTeam({});
     },
-    onError: (err: {
-      response?: { data?: { detail?: string } };
-      message: string;
-    }) => {
-      console.error("Failed to save team", err);
-      alert(
-        `Failed to save team: ${err.response?.data?.detail || err.message}`,
+    onError: (err) => {
+      showToast(
+        getErrorMessage(err, "Failed to save team. Please try again."),
+        "error",
       );
     },
   });
@@ -99,7 +99,10 @@ export const TeamsPage: React.FC = () => {
       setItemToDelete(null);
     },
     onError: (err) => {
-      console.error("Failed to delete team", err);
+      showToast(
+        getErrorMessage(err, "Failed to delete team. Please try again."),
+        "error",
+      );
     },
   });
 
