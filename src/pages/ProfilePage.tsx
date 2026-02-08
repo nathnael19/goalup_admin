@@ -12,6 +12,7 @@ import { authService } from "../services/authService";
 import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
 import { apiClient } from "../services/api";
+import { getErrorMessage } from "../utils/error";
 
 export const ProfilePage: React.FC = () => {
   const { user, setUser } = useAuth();
@@ -59,9 +60,8 @@ export const ProfilePage: React.FC = () => {
         type: "success",
       });
     } catch (err) {
-      console.error("Upload failed", err);
       setToast({
-        message: "Failed to upload image. Please try again.",
+        message: getErrorMessage(err, "Failed to upload image. Please try again."),
         type: "error",
       });
     } finally {
@@ -116,10 +116,9 @@ export const ProfilePage: React.FC = () => {
         current_password: "",
         confirm_password: "",
       }));
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
       setToast({
-        message: err.response?.data?.detail || "Failed to update profile",
+        message: getErrorMessage(err, "Failed to update profile"),
         type: "error",
       });
     } finally {
