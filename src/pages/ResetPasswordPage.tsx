@@ -7,6 +7,7 @@ import {
   FiArrowRight,
 } from "react-icons/fi";
 import { apiClient } from "../services/api";
+import { getErrorMessage } from "../utils/error";
 
 export const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,8 +49,10 @@ export const ResetPasswordPage: React.FC = () => {
       });
       setSuccess(true);
       localStorage.removeItem("access_token");
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? "Failed to reset password. The link may be expired.");
+    } catch (err) {
+      setError(
+        getErrorMessage(err, "Failed to reset password. The link may be expired."),
+      );
     } finally {
       setLoading(false);
     }
