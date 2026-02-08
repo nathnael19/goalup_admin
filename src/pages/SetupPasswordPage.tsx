@@ -7,6 +7,7 @@ import {
   FiArrowRight,
 } from "react-icons/fi";
 import { apiClient } from "../services/api";
+import { getErrorMessage } from "../utils/error";
 
 export const SetupPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,9 +49,9 @@ export const SetupPasswordPage: React.FC = () => {
       });
       setSuccess(true);
       localStorage.removeItem("access_token");
-    } catch (err: any) {
+    } catch (err) {
       setError(
-        err.response?.data?.detail ?? "Failed to set password. The link may be expired.",
+        getErrorMessage(err, "Failed to set password. The link may be expired."),
       );
     } finally {
       setLoading(false);
