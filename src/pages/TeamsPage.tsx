@@ -61,7 +61,7 @@ export const TeamsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this team?")) {
       try {
         await teamService.delete(id.toString());
@@ -77,8 +77,7 @@ export const TeamsPage: React.FC = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesFilter =
-      filterTournament === "all" ||
-      team.tournament_id.toString() === filterTournament;
+      filterTournament === "all" || team.tournament_id === filterTournament;
     return matchesSearch && matchesFilter;
   });
 
@@ -98,7 +97,6 @@ export const TeamsPage: React.FC = () => {
             setIsEditing(false);
             setCurrentTeam({
               name: "",
-              year: new Date().getFullYear(),
               batch: "",
               tournament_id: tournaments[0]?.id,
             });
@@ -172,7 +170,7 @@ export const TeamsPage: React.FC = () => {
                     Active League
                   </th>
                   <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-center">
-                    Batch / Year
+                    Batch
                   </th>
                   <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-right">
                     Actions
@@ -211,9 +209,6 @@ export const TeamsPage: React.FC = () => {
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-300">
                           {team.batch}
-                        </span>
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                          {team.year}
                         </span>
                       </div>
                     </td>
@@ -290,7 +285,7 @@ export const TeamsPage: React.FC = () => {
                     onChange={(e) =>
                       setCurrentTeam({
                         ...currentTeam,
-                        tournament_id: parseInt(e.target.value),
+                        tournament_id: e.target.value,
                       })
                     }
                   >
@@ -319,21 +314,6 @@ export const TeamsPage: React.FC = () => {
                         })
                       }
                       placeholder="e.g. A-24"
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Founder Year</label>
-                    <input
-                      required
-                      type="number"
-                      className="input h-12"
-                      value={currentTeam.year || ""}
-                      onChange={(e) =>
-                        setCurrentTeam({
-                          ...currentTeam,
-                          year: parseInt(e.target.value),
-                        })
-                      }
                     />
                   </div>
                 </div>

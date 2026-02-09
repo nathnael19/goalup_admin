@@ -31,10 +31,10 @@ export const StandingsPage: React.FC = () => {
     }
   };
 
-  const handleRecalculate = async (tournamentId: number) => {
+  const handleRecalculate = async (tournamentId: string) => {
     try {
-      setRecalculating(tournamentId.toString());
-      await standingService.recalculate(tournamentId.toString());
+      setRecalculating(tournamentId);
+      await standingService.recalculate(tournamentId);
       await fetchData();
     } catch (err) {
       console.error("Failed to recalculate standings", err);
@@ -45,8 +45,7 @@ export const StandingsPage: React.FC = () => {
 
   const filteredGroups = groupedStandings.filter(
     (group) =>
-      filterTournament === "all" ||
-      group.tournament.id.toString() === filterTournament,
+      filterTournament === "all" || group.tournament.id === filterTournament,
   );
 
   return (
@@ -70,7 +69,7 @@ export const StandingsPage: React.FC = () => {
             >
               <option value="all">Global (All Leagues)</option>
               {tournaments.map((t) => (
-                <option key={t.id} value={t.id.toString()}>
+                <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
@@ -126,14 +125,12 @@ export const StandingsPage: React.FC = () => {
                     )}
                     <button
                       onClick={() => handleRecalculate(group.tournament.id)}
-                      disabled={
-                        recalculating === group.tournament.id.toString()
-                      }
+                      disabled={recalculating === group.tournament.id}
                       className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
                     >
                       <FiRefreshCw
                         className={
-                          recalculating === group.tournament.id.toString()
+                          recalculating === group.tournament.id
                             ? "animate-spin"
                             : ""
                         }
@@ -157,13 +154,13 @@ export const StandingsPage: React.FC = () => {
                           <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
                             MP
                           </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16 text-blue-400">
+                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
                             W
                           </th>
                           <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
                             D
                           </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16 text-red-400">
+                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
                             L
                           </th>
                           <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
@@ -247,7 +244,7 @@ export const StandingsPage: React.FC = () => {
 
           {filteredGroups.length === 0 && (
             <div className="flex flex-col items-center justify-center py-32 text-center group">
-              <div className="w-24 h-24 rounded-[2rem] bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 mb-8 group-hover:scale-110 transition-transform duration-500">
+              <div className="w-24 h-24 rounded-4xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 mb-8 group-hover:scale-110 transition-transform duration-500">
                 <FiTrendingUp size={48} />
               </div>
               <h3 className="text-2xl font-black text-white font-display uppercase tracking-tight mb-2">

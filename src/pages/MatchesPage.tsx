@@ -40,11 +40,11 @@ export const MatchesPage: React.FC = () => {
     try {
       if (currentMatch.id) {
         const updateData: UpdateMatchScoreDto = {
-          team_a_score: currentMatch.team_a_score,
-          team_b_score: currentMatch.team_b_score,
+          score_a: currentMatch.score_a,
+          score_b: currentMatch.score_b,
           status: currentMatch.status,
         };
-        await matchService.update(currentMatch.id.toString(), updateData);
+        await matchService.update(currentMatch.id, updateData);
         setShowModal(false);
         fetchData();
       }
@@ -121,7 +121,7 @@ export const MatchesPage: React.FC = () => {
                       <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
                         <FiCalendar className="text-slate-500" size={14} />
                         <span>
-                          {new Date(match.match_time || "").toLocaleDateString(
+                          {new Date(match.start_time || "").toLocaleDateString(
                             undefined,
                             { month: "short", day: "numeric", year: "numeric" },
                           )}
@@ -130,7 +130,7 @@ export const MatchesPage: React.FC = () => {
                       <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
                         <FiClock className="text-slate-500" size={14} />
                         <span>
-                          {new Date(match.match_time || "").toLocaleTimeString(
+                          {new Date(match.start_time || "").toLocaleTimeString(
                             [],
                             { hour: "2-digit", minute: "2-digit" },
                           )}
@@ -147,7 +147,7 @@ export const MatchesPage: React.FC = () => {
                 <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
                   {/* Home Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-4xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
                       {teams
                         .find((t) => t.id === match.team_a_id)
                         ?.name.charAt(0)}
@@ -166,7 +166,7 @@ export const MatchesPage: React.FC = () => {
                   <div className="flex flex-col items-center gap-6">
                     <div className="flex items-center gap-6 md:gap-10">
                       <span className="text-5xl md:text-7xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.team_a_score}
+                        {match.score_a}
                       </span>
                       <div className="flex flex-col items-center gap-1">
                         <div className="w-10 h-1 bg-slate-800 rounded-full" />
@@ -176,7 +176,7 @@ export const MatchesPage: React.FC = () => {
                         <div className="w-10 h-1 bg-slate-800 rounded-full" />
                       </div>
                       <span className="text-5xl md:text-7xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.team_b_score}
+                        {match.score_b}
                       </span>
                     </div>
                     <div className="lg:hidden">
@@ -186,7 +186,7 @@ export const MatchesPage: React.FC = () => {
 
                   {/* Away Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-[2rem] bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-4xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
                       {teams
                         .find((t) => t.id === match.team_b_id)
                         ?.name.charAt(0)}
@@ -232,7 +232,7 @@ export const MatchesPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-[3rem] w-full max-w-md shadow-2xl animate-in fade-in slide-in-from-top-10 duration-500">
+          <div className="relative bg-slate-900 border border-slate-800 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in slide-in-from-top-10 duration-500">
             <div className="p-10">
               <h2 className="text-2xl font-black text-white mb-10 text-center font-display tracking-tight uppercase">
                 Update Results
@@ -251,11 +251,11 @@ export const MatchesPage: React.FC = () => {
                     <input
                       type="number"
                       className="input text-center text-4xl font-black h-20 bg-slate-950 rounded-2xl"
-                      value={currentMatch.team_a_score ?? 0}
+                      value={currentMatch.score_a ?? 0}
                       onChange={(e) =>
                         setCurrentMatch({
                           ...currentMatch,
-                          team_a_score: parseInt(e.target.value),
+                          score_a: parseInt(e.target.value),
                         })
                       }
                     />
@@ -275,11 +275,11 @@ export const MatchesPage: React.FC = () => {
                     <input
                       type="number"
                       className="input text-center text-4xl font-black h-20 bg-slate-950 rounded-2xl"
-                      value={currentMatch.team_b_score ?? 0}
+                      value={currentMatch.score_b ?? 0}
                       onChange={(e) =>
                         setCurrentMatch({
                           ...currentMatch,
-                          team_b_score: parseInt(e.target.value),
+                          score_b: parseInt(e.target.value),
                         })
                       }
                     />

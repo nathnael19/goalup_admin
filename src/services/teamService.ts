@@ -1,5 +1,5 @@
 import { apiClient } from "./api";
-import type { Team, CreateTeamDto } from "../types";
+import type { Team, CreateTeamDto, TeamDetail } from "../types";
 
 export const teamService = {
   async getAll(): Promise<Team[]> {
@@ -7,8 +7,8 @@ export const teamService = {
     return response.data;
   },
 
-  async getById(id: string): Promise<Team> {
-    const response = await apiClient.get<Team>(`/teams/${id}`);
+  async getById(id: string): Promise<TeamDetail> {
+    const response = await apiClient.get<TeamDetail>(`/teams/${id}`);
     return response.data;
   },
 

@@ -60,7 +60,7 @@ export const PlayersPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this player?")) {
       try {
         await playerService.delete(id.toString());
@@ -75,8 +75,7 @@ export const PlayersPage: React.FC = () => {
     const matchesSearch = player.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesFilter =
-      filterTeam === "all" || player.team_id.toString() === filterTeam;
+    const matchesFilter = filterTeam === "all" || player.team_id === filterTeam;
     return matchesSearch && matchesFilter;
   });
 
@@ -290,7 +289,7 @@ export const PlayersPage: React.FC = () => {
                       onChange={(e) =>
                         setCurrentPlayer({
                           ...currentPlayer,
-                          team_id: parseInt(e.target.value),
+                          team_id: e.target.value,
                         })
                       }
                     >

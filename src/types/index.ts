@@ -20,7 +20,7 @@ export interface AuthTokens {
 }
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   full_name: string;
   is_active: boolean;
@@ -29,7 +29,7 @@ export interface User {
 
 // Tournament Types
 export interface Tournament {
-  id: number;
+  id: string;
   name: string;
   year: number;
   type: string;
@@ -45,12 +45,12 @@ export interface CreateTournamentDto {
 
 // Team Types
 export interface Team {
-  id: number;
+  id: string;
   name: string;
   batch: string;
-  year: number;
-  tournament_id: number;
+  tournament_id: string;
   logo_url?: string;
+  color?: string;
   created_at: string;
   updated_at: string;
 }
@@ -58,15 +58,29 @@ export interface Team {
 export interface CreateTeamDto {
   name: string;
   batch: string;
-  year: number;
-  tournament_id: number;
+  tournament_id: string;
+  logo_url?: string;
+  color?: string;
+}
+
+export interface TeamRoster {
+  goalkeepers: Player[];
+  defenders: Player[];
+  midfielders: Player[];
+  forwards: Player[];
+}
+
+export interface TeamDetail extends Team {
+  roster: TeamRoster;
+  standings: Standing[];
+  matches: Match[];
 }
 
 // Player Types
 export interface Player {
-  id: number;
+  id: string;
   name: string;
-  team_id: number;
+  team_id: string;
   jersey_number: number;
   position: string;
   goals: number;
@@ -78,12 +92,16 @@ export interface Player {
 
 export interface CreatePlayerDto {
   name: string;
-  team_id: number;
+  team_id: string;
   jersey_number: number;
   position: string;
 }
 
 export interface UpdatePlayerStatsDto {
+  name?: string;
+  team_id?: string;
+  jersey_number?: number;
+  position?: string;
   goals?: number;
   yellow_cards?: number;
   red_cards?: number;
@@ -93,14 +111,14 @@ export interface UpdatePlayerStatsDto {
 export type MatchStatus = "scheduled" | "live" | "finished";
 
 export interface Match {
-  id: number;
-  tournament_id: number;
-  team_a_id: number;
-  team_b_id: number;
-  team_a_score: number;
-  team_b_score: number;
+  id: string;
+  tournament_id: string;
+  team_a_id: string;
+  team_b_id: string;
+  score_a: number;
+  score_b: number;
   status: MatchStatus;
-  match_time: string;
+  start_time: string;
   created_at: string;
   updated_at: string;
   team_a?: Team;
@@ -108,28 +126,32 @@ export interface Match {
 }
 
 export interface CreateMatchDto {
-  tournament_id: number;
-  team_a_id: number;
-  team_b_id: number;
-  match_time: string;
+  tournament_id: string;
+  team_a_id: string;
+  team_b_id: string;
+  start_time: string;
 }
 
 export interface UpdateMatchScoreDto {
-  team_a_score?: number;
-  team_b_score?: number;
+  tournament_id?: string;
+  team_a_id?: string;
+  team_b_id?: string;
+  score_a?: number;
+  score_b?: number;
   status?: MatchStatus;
+  start_time?: string;
 }
 
 // Standings Types
 export interface Standing {
-  team_id: number;
-  team_name: string;
+  team_id: string;
+  tournament_id: string;
   played: number;
-  wins: number;
-  draws: number;
-  losses: number;
+  won: number;
+  drawn: number;
+  lost: number;
   goals_for: number;
   goals_against: number;
-  goal_difference: number;
   points: number;
+  team?: Team;
 }
