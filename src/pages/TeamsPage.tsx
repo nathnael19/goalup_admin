@@ -83,12 +83,14 @@ export const TeamsPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white">Teams</h1>
-          <p className="text-slate-400">
-            Manage teams and assign them to tournaments.
+          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+            Club Management
+          </h1>
+          <p className="text-slate-400 font-medium">
+            Register clubs, assign them to leagues, and manage identities.
           </p>
         </div>
         <button
@@ -102,20 +104,20 @@ export const TeamsPage: React.FC = () => {
             });
             setShowModal(true);
           }}
-          className="btn btn-primary flex items-center gap-2"
+          className="btn btn-primary h-12"
         >
           <FiPlus /> Add Team
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="md:col-span-2">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative group">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Search teams..."
-              className="input pl-10 h-11"
+              placeholder="Filter by name..."
+              className="input pl-12 h-12 bg-slate-800/40 border-slate-800"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -123,9 +125,9 @@ export const TeamsPage: React.FC = () => {
         </div>
         <div>
           <div className="relative">
-            <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <FiFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
             <select
-              className="input pl-10 h-11 appearance-none"
+              className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800"
               value={filterTournament}
               onChange={(e) => setFilterTournament(e.target.value)}
             >
@@ -138,13 +140,17 @@ export const TeamsPage: React.FC = () => {
             </select>
           </div>
         </div>
-        <div className="card flex items-center justify-between p-3">
+        <div className="card flex items-center justify-between p-4 px-6 border-slate-800 bg-slate-800/20">
           <div>
-            <p className="text-xs text-slate-400">Total Teams</p>
-            <p className="text-lg font-bold text-white">{teams.length}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              Registered
+            </p>
+            <p className="text-2xl font-black text-white font-display leading-none">
+              {teams.length}
+            </p>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-            <FiUsers />
+          <div className="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-500">
+            <FiUsers size={20} />
           </div>
         </div>
       </div>
@@ -154,68 +160,78 @@ export const TeamsPage: React.FC = () => {
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden border-slate-800/50">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-slate-700/50">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Team Name
+              <thead>
+                <tr className="bg-slate-900/50 border-b border-slate-800">
+                  <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest">
+                    Team Profile
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Tournament
+                  <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest">
+                    Active League
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Batch
+                  <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-center">
+                    Batch / Year
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Year
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">
+                  <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700">
+              <tbody className="divide-y divide-slate-800/50">
                 {filteredTeams.map((team) => (
                   <tr
                     key={team.id}
-                    className="hover:bg-slate-700/30 transition-colors"
+                    className="hover:bg-slate-800/20 transition-colors group"
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-blue-400 font-bold">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/50 flex items-center justify-center text-blue-500 font-black text-lg shadow-inner group-hover:scale-110 transition-transform">
                           {team.name.charAt(0)}
                         </div>
-                        <span className="font-medium text-white">
-                          {team.name}
+                        <div>
+                          <span className="block font-bold text-white tracking-tight">
+                            {team.name}
+                          </span>
+                          <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+                            ID: {team.id.toString().slice(0, 8)}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-blue-500/5 border border-blue-500/10 text-blue-400 text-xs font-bold whitespace-nowrap">
+                        <FiAward size={14} />
+                        {tournaments.find((t) => t.id === team.tournament_id)
+                          ?.name || "Not Assigned"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-300">
+                          {team.batch}
+                        </span>
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                          {team.year}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
-                        <FiAward size={12} />
-                        {tournaments.find((t) => t.id === team.tournament_id)
-                          ?.name || "Unknown"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">{team.batch}</td>
-                    <td className="px-6 py-4 text-slate-300">{team.year}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setIsEditing(true);
                             setCurrentTeam(team);
                             setShowModal(true);
                           }}
-                          className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                          className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
                         >
                           <FiEdit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(team.id)}
-                          className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
                         >
                           <FiTrash2 size={16} />
                         </button>
@@ -232,33 +248,44 @@ export const TeamsPage: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-white mb-6">
-                {isEditing ? "Edit Team" : "Add New Team"}
-              </h2>
-              <form onSubmit={handleCreate} className="space-y-4">
+          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in duration-300">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center">
+                  <FiPlus size={24} />
+                </div>
                 <div>
-                  <label className="label">Team Name</label>
+                  <h2 className="text-2xl font-black text-white font-display tracking-tight">
+                    {isEditing ? "Modify Team" : "Add Club"}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                    Registry registration
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-6">
+                <div>
+                  <label className="label">Legal Name</label>
                   <input
                     required
                     type="text"
-                    className="input"
+                    className="input h-12"
                     value={currentTeam.name || ""}
                     onChange={(e) =>
                       setCurrentTeam({ ...currentTeam, name: e.target.value })
                     }
-                    placeholder="e.g. Red Warriors"
+                    placeholder="e.g. Red Warriors FC"
                   />
                 </div>
                 <div>
-                  <label className="label">Tournament</label>
+                  <label className="label">Primary League</label>
                   <select
                     required
-                    className="input"
+                    className="input h-12 appearance-none"
                     value={currentTeam.tournament_id || ""}
                     onChange={(e) =>
                       setCurrentTeam({
@@ -279,11 +306,11 @@ export const TeamsPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Batch</label>
+                    <label className="label">Batch Code</label>
                     <input
                       required
                       type="text"
-                      className="input"
+                      className="input h-12"
                       value={currentTeam.batch || ""}
                       onChange={(e) =>
                         setCurrentTeam({
@@ -291,15 +318,15 @@ export const TeamsPage: React.FC = () => {
                           batch: e.target.value,
                         })
                       }
-                      placeholder="e.g. 2024"
+                      placeholder="e.g. A-24"
                     />
                   </div>
                   <div>
-                    <label className="label">Year</label>
+                    <label className="label">Founder Year</label>
                     <input
                       required
                       type="number"
-                      className="input"
+                      className="input h-12"
                       value={currentTeam.year || ""}
                       onChange={(e) =>
                         setCurrentTeam({
@@ -310,19 +337,16 @@ export const TeamsPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                    className="btn btn-secondary flex-1 h-12"
                   >
-                    Cancel
+                    Discard
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors font-bold"
-                  >
-                    {isEditing ? "Save Changes" : "Add Team"}
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    {isEditing ? "Update" : "Register"}
                   </button>
                 </div>
               </form>

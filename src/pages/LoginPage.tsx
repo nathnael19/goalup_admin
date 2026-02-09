@@ -36,55 +36,66 @@ export const LoginPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Abstract Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+
+      <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-700">
         {/* Logo/Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">GoalUp! Admin</h1>
-          <p className="text-gray-400">Tournament Management Dashboard</p>
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-2xl italic mx-auto mb-6 shadow-2xl shadow-blue-600/20">
+            GU
+          </div>
+          <h1 className="text-4xl font-black text-white mb-2 font-display tracking-tighter uppercase">
+            GoalUp! <span className="text-blue-500">Admin</span>
+          </h1>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em]">
+            Management Portal
+          </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
-          <h2 className="text-2xl font-semibold text-white mb-6">Sign In</h2>
+        <div className="card p-10 bg-slate-900/40 border-slate-800">
+          <h2 className="text-xl font-black text-white mb-8 border-b border-slate-800 pb-4 tracking-tight">
+            System Access
+          </h2>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-3">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2">
               <FiAlertCircle
                 className="text-red-500 mt-0.5 flex-shrink-0"
                 size={20}
               />
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-400 text-xs font-bold leading-relaxed">
+                {error}
+              </p>
             </div>
           )}
 
-          <form onSubmit={formik.handleSubmit} className="space-y-5">
+          <form onSubmit={formik.handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-gray-500" size={18} />
-                </div>
+              <label className="label">Operator Email</label>
+              <div className="relative group">
+                <FiMail
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors"
+                  size={18}
+                />
                 <input
                   id="email"
                   type="email"
                   {...formik.getFieldProps("email")}
-                  className={`w-full pl-10 pr-4 py-3 bg-gray-700 border ${
+                  className={`input pl-12 h-14 ${
                     formik.touched.email && formik.errors.email
-                      ? "border-red-500"
-                      : "border-gray-600"
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
-                  placeholder="admin@example.com"
+                      ? "border-red-500/50 bg-red-500/5"
+                      : ""
+                  }`}
+                  placeholder="admin@goalup.pro"
                 />
               </div>
               {formik.touched.email && formik.errors.email && (
-                <p className="mt-1 text-sm text-red-400">
+                <p className="mt-2 text-[10px] font-black uppercase text-red-500 tracking-widest px-1">
                   {formik.errors.email}
                 </p>
               )}
@@ -92,50 +103,52 @@ export const LoginPage: React.FC = () => {
 
             {/* Password Field */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="text-gray-500" size={18} />
-                </div>
+              <label className="label">Security Token</label>
+              <div className="relative group">
+                <FiLock
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors"
+                  size={18}
+                />
                 <input
                   id="password"
                   type="password"
                   {...formik.getFieldProps("password")}
-                  className={`w-full pl-10 pr-4 py-3 bg-gray-700 border ${
+                  className={`input pl-12 h-14 ${
                     formik.touched.password && formik.errors.password
-                      ? "border-red-500"
-                      : "border-gray-600"
-                  } rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
+                      ? "border-red-500/50 bg-red-500/5"
+                      : ""
+                  }`}
                   placeholder="••••••••"
                 />
               </div>
               {formik.touched.password && formik.errors.password && (
-                <p className="mt-1 text-sm text-red-400">
+                <p className="mt-2 text-[10px] font-black uppercase text-red-500 tracking-widest px-1">
                   {formik.errors.password}
                 </p>
               )}
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={formik.isSubmitting}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {formik.isSubmitting ? "Signing in..." : "Sign In"}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={formik.isSubmitting}
+                className="btn btn-primary w-full h-14 text-sm font-black uppercase tracking-widest"
+              >
+                {formik.isSubmitting
+                  ? "Authenticating..."
+                  : "Establish Session"}
+              </button>
+            </div>
           </form>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
-          GoalUp! Admin Dashboard © 2026
-        </p>
+        <div className="text-center mt-10">
+          <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em]">
+            GoalUp Platform / v1.0.4-stable
+          </p>
+        </div>
       </div>
     </div>
   );

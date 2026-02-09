@@ -74,15 +74,15 @@ export const TournamentsPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white">
+          <h1 className="text-3xl font-black text-white font-display tracking-tight">
             Tournaments
           </h1>
-          <p className="text-slate-400">
-            Manage all your football tournaments from here.
+          <p className="text-slate-400 font-medium">
+            Create and manage your competitive football leagues.
           </p>
         </div>
         <button
@@ -95,33 +95,37 @@ export const TournamentsPage: React.FC = () => {
             });
             setShowModal(true);
           }}
-          className="btn btn-primary flex items-center gap-2"
+          className="btn btn-primary h-12"
         >
-          <FiPlus /> Create Tournament
+          <FiPlus /> New Tournament
         </button>
       </div>
 
       {/* Search & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative group">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Search tournaments..."
-              className="input pl-10 h-12"
+              placeholder="Filter by name..."
+              className="input pl-12 h-14 bg-slate-800/40"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-        <div className="card flex items-center justify-between p-4">
+        <div className="card flex items-center justify-between p-4 px-6">
           <div>
-            <p className="text-sm text-slate-400">Total</p>
-            <p className="text-xl font-bold text-white">{tournaments.length}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              Total Active
+            </p>
+            <p className="text-2xl font-black text-white font-display leading-none">
+              {tournaments.length}
+            </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-            <FiAward />
+          <div className="w-12 h-12 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 shadow-inner">
+            <FiAward size={24} />
           </div>
         </div>
       </div>
@@ -129,66 +133,70 @@ export const TournamentsPage: React.FC = () => {
       {/* Main Content */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTournaments.map((tournament) => (
             <div
               key={tournament.id}
-              className="card group hover:border-blue-500/50 transition-all duration-300"
+              className="card group hover:border-blue-500/40 transition-all duration-300 relative overflow-hidden"
             >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center text-blue-400">
-                    <FiAward size={24} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setIsEditing(true);
-                        setCurrentTournament(tournament);
-                        setShowModal(true);
-                      }}
-                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                    >
-                      <FiEdit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tournament.id)}
-                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-bold text-white mb-1">
-                  {tournament.name}
-                </h3>
-                <div className="flex items-center gap-4 text-sm text-slate-400 mb-6">
-                  <span className="flex items-center gap-1">
-                    <FiCalendar className="text-blue-400" /> {tournament.year}
-                  </span>
-                  <span className="capitalize px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                    {tournament.type}
-                  </span>
-                </div>
-
-                <div className="pt-6 border-t border-slate-700 flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-slate-600 border-2 border-slate-800"
-                      />
-                    ))}
-                  </div>
-                  <button className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-                    Manage <FiChevronRight />
+              <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setCurrentTournament(tournament);
+                      setShowModal(true);
+                    }}
+                    className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                  >
+                    <FiEdit2 size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(tournament.id)}
+                    className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                  >
+                    <FiTrash2 size={14} />
                   </button>
                 </div>
               </div>
+
+              <div className="p-8">
+                <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500">
+                  <FiAward size={28} />
+                </div>
+
+                <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
+                  {tournament.name}
+                </h3>
+                <div className="flex items-center gap-4 text-xs font-bold mb-8">
+                  <span className="flex items-center gap-1.5 text-slate-400 bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <FiCalendar className="text-blue-500" /> {tournament.year}
+                  </span>
+                  <span className="capitalize px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20">
+                    {tournament.type.replace("_", " ")}
+                  </span>
+                </div>
+
+                <div className="pt-6 border-t border-slate-700/50 flex items-center justify-between">
+                  <div className="flex -space-x-3">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="w-9 h-9 rounded-xl bg-slate-700 border-2 border-slate-800 flex items-center justify-center text-[10px] font-black text-slate-400"
+                      >
+                        {i}
+                      </div>
+                    ))}
+                  </div>
+                  <button className="flex items-center gap-1.5 text-sm font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors">
+                    Dashboard <FiChevronRight />
+                  </button>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-blue-600/10 group-hover:bg-blue-600/40 transition-colors" />
             </div>
           ))}
         </div>
@@ -198,21 +206,32 @@ export const TournamentsPage: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-white mb-6">
-                {isEditing ? "Edit Tournament" : "New Tournament"}
-              </h2>
-              <form onSubmit={handleCreate} className="space-y-4">
+          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in duration-300">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-500 flex items-center justify-center">
+                  <FiPlus size={24} />
+                </div>
                 <div>
-                  <label className="label">Tournament Name</label>
+                  <h2 className="text-2xl font-black text-white font-display tracking-tight">
+                    {isEditing ? "Edit Config" : "New Tournament"}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                    Setup league parameters
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-6">
+                <div>
+                  <label className="label">Display Name</label>
                   <input
                     required
                     type="text"
-                    className="input"
+                    className="input h-12"
                     value={currentTournament.name || ""}
                     onChange={(e) =>
                       setCurrentTournament({
@@ -220,16 +239,16 @@ export const TournamentsPage: React.FC = () => {
                         name: e.target.value,
                       })
                     }
-                    placeholder="e.g. Summer League 2026"
+                    placeholder="e.g. AFC Champions League"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Year</label>
+                    <label className="label">Season Year</label>
                     <input
                       required
                       type="number"
-                      className="input"
+                      className="input h-12"
                       value={currentTournament.year || ""}
                       onChange={(e) =>
                         setCurrentTournament({
@@ -240,9 +259,9 @@ export const TournamentsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="label">Type</label>
+                    <label className="label">Format</label>
                     <select
-                      className="input"
+                      className="input h-12 appearance-none"
                       value={currentTournament.type || "league"}
                       onChange={(e) =>
                         setCurrentTournament({
@@ -251,25 +270,22 @@ export const TournamentsPage: React.FC = () => {
                         })
                       }
                     >
-                      <option value="league">League</option>
-                      <option value="knockout">Knockout</option>
-                      <option value="group_knockout">Group + Knockout</option>
+                      <option value="league">Pure League</option>
+                      <option value="knockout">Direct Knockout</option>
+                      <option value="group_knockout">Champions Format</option>
                     </select>
                   </div>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                    className="btn btn-secondary flex-1 h-12"
                   >
-                    Cancel
+                    Discard
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors font-bold"
-                  >
-                    {isEditing ? "Save Changes" : "Create Tournament"}
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    {isEditing ? "Update" : "Launch"}
                   </button>
                 </div>
               </form>

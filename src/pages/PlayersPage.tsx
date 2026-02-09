@@ -81,14 +81,14 @@ export const PlayersPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold font-display text-white">
-            Players
+          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+            Roster Management
           </h1>
-          <p className="text-slate-400">
-            Manage player profiles, stats and team assignments.
+          <p className="text-slate-400 font-medium">
+            Add players, assign numbers, and track individual performance.
           </p>
         </div>
         <button
@@ -102,20 +102,20 @@ export const PlayersPage: React.FC = () => {
             });
             setShowModal(true);
           }}
-          className="btn btn-primary flex items-center gap-2"
+          className="btn btn-primary h-12"
         >
-          <FiPlus /> Add Player
+          <FiPlus /> New Player
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="md:col-span-2">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative group">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Search players..."
-              className="input pl-10 h-11"
+              placeholder="Filter by name..."
+              className="input pl-12 h-12 bg-slate-800/40 border-slate-800"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -123,9 +123,9 @@ export const PlayersPage: React.FC = () => {
         </div>
         <div>
           <div className="relative">
-            <FiShield className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
             <select
-              className="input pl-10 h-11 appearance-none"
+              className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800"
               value={filterTeam}
               onChange={(e) => setFilterTeam(e.target.value)}
             >
@@ -138,13 +138,17 @@ export const PlayersPage: React.FC = () => {
             </select>
           </div>
         </div>
-        <div className="card flex items-center justify-between p-3">
+        <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10">
           <div>
-            <p className="text-xs text-slate-400">Active Players</p>
-            <p className="text-lg font-bold text-white">{players.length}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+              Active
+            </p>
+            <p className="text-2xl font-black text-white font-display leading-none">
+              {players.length}
+            </p>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-            <FiActivity />
+          <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-500">
+            <FiActivity size={20} />
           </div>
         </div>
       </div>
@@ -154,132 +158,119 @@ export const PlayersPage: React.FC = () => {
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-700/50">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Player
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Team
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Stats
-                  </th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700">
-                {filteredPlayers.map((player) => (
-                  <tr
-                    key={player.id}
-                    className="hover:bg-slate-700/30 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-blue-400 font-bold overflow-hidden">
-                            {player.name.charAt(0)}
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white font-bold">
-                            {player.jersey_number}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-white">
-                            {player.name}
-                          </div>
-                          <div className="text-xs text-slate-400 uppercase tracking-wider font-bold">
-                            {player.position}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-slate-300 font-medium">
-                        {teams.find((t) => t.id === player.team_id)?.name ||
-                          "Unknown"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex flex-col items-center">
-                          <span className="text-slate-400 uppercase">
-                            Goals
-                          </span>
-                          <span className="text-blue-400 font-bold text-sm">
-                            {player.goals}
-                          </span>
-                        </div>
-                        <div className="w-px h-6 bg-slate-700" />
-                        <div className="flex flex-col items-center">
-                          <span className="text-slate-400 uppercase">
-                            Yellow
-                          </span>
-                          <span className="text-yellow-400 font-bold text-sm">
-                            {player.yellow_cards}
-                          </span>
-                        </div>
-                        <div className="w-px h-6 bg-slate-700" />
-                        <div className="flex flex-col items-center">
-                          <span className="text-slate-400 uppercase">Red</span>
-                          <span className="text-red-400 font-bold text-sm">
-                            {player.red_cards}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            setIsEditing(true);
-                            setCurrentPlayer(player);
-                            setShowModal(true);
-                          }}
-                          className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(player.id)}
-                          className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPlayers.map((player) => (
+            <div
+              key={player.id}
+              className="card group hover:border-purple-500/30 transition-all duration-300 relative overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-slate-700 to-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 font-black text-2xl shadow-xl group-hover:scale-110 transition-transform">
+                      {player.name.charAt(0)}
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-slate-900 border-2 border-slate-800 flex items-center justify-center text-xs text-white font-black shadow-lg">
+                      #{player.jersey_number}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => {
+                        setIsEditing(true);
+                        setCurrentPlayer(player);
+                        setShowModal(true);
+                      }}
+                      className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                    >
+                      <FiEdit2 size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(player.id)}
+                      className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                    >
+                      <FiTrash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-xl font-black text-white font-display mb-1 group-hover:text-blue-400 transition-colors uppercase tracking-tight">
+                    {player.name}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800">
+                      {player.position}
+                    </span>
+                    <span className="text-xs font-bold text-slate-400">
+                      • {teams.find((t) => t.id === player.team_id)?.name}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-700/50">
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-1">
+                      Goals
+                    </p>
+                    <p className="text-lg font-black text-white">
+                      {player.goals}
+                    </p>
+                  </div>
+                  <div className="text-center border-x border-slate-700/50">
+                    <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-1">
+                      Yellow
+                    </p>
+                    <p className="text-lg font-black text-yellow-500">
+                      {player.yellow_cards}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-1">
+                      Red
+                    </p>
+                    <p className="text-lg font-black text-red-500">
+                      {player.red_cards}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-purple-600/5 group-hover:bg-purple-600/40 transition-colors" />
+            </div>
+          ))}
         </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-white mb-6">
-                {isEditing ? "Edit Player Profile" : "Add New Player"}
-              </h2>
-              <form onSubmit={handleCreate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-300">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center">
+                  <FiPlus size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white font-display tracking-tight">
+                    {isEditing ? "Modify Stats" : "Add Player"}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                    Athlete registration
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <label className="label">Full Name</label>
                     <input
                       required
                       type="text"
-                      className="input"
+                      className="input h-12"
                       value={currentPlayer.name || ""}
                       onChange={(e) =>
                         setCurrentPlayer({
@@ -287,14 +278,14 @@ export const PlayersPage: React.FC = () => {
                           name: e.target.value,
                         })
                       }
-                      placeholder="e.g. Lionel Messi"
+                      placeholder="e.g. Kylian Mbappé"
                     />
                   </div>
                   <div>
-                    <label className="label">Team</label>
+                    <label className="label">Current Team</label>
                     <select
                       required
-                      className="input"
+                      className="input h-12 appearance-none"
                       value={currentPlayer.team_id || ""}
                       onChange={(e) =>
                         setCurrentPlayer({
@@ -314,11 +305,11 @@ export const PlayersPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Jersey Number</label>
+                    <label className="label">Squad Number</label>
                     <input
                       required
                       type="number"
-                      className="input"
+                      className="input h-12"
                       value={currentPlayer.jersey_number || ""}
                       onChange={(e) =>
                         setCurrentPlayer({
@@ -329,9 +320,9 @@ export const PlayersPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="label">Position</label>
+                    <label className="label">On-Field Position</label>
                     <select
-                      className="input"
+                      className="input h-12 appearance-none"
                       value={currentPlayer.position || "ST"}
                       onChange={(e) =>
                         setCurrentPlayer({
@@ -340,41 +331,36 @@ export const PlayersPage: React.FC = () => {
                         })
                       }
                     >
-                      <optgroup label="Goalkeeper">
+                      <optgroup label="Core Skills">
                         <option value="GK">Goalkeeper (GK)</option>
-                      </optgroup>
-                      <optgroup label="Defenders">
                         <option value="CB">Center Back (CB)</option>
-                        <option value="RB">Right Back (RB)</option>
-                        <option value="LB">Left Back (LB)</option>
-                      </optgroup>
-                      <optgroup label="Midfielders">
-                        <option value="CDM">Defensive Mid (CDM)</option>
                         <option value="CM">Central Mid (CM)</option>
-                        <option value="CAM">Attacking Mid (CAM)</option>
-                      </optgroup>
-                      <optgroup label="Forwards">
                         <option value="ST">Striker (ST)</option>
+                      </optgroup>
+                      <optgroup label="Wide / Support">
+                        <option value="LB">Left Back (LB)</option>
+                        <option value="RB">Right Back (RB)</option>
                         <option value="LW">Left Wing (LW)</option>
                         <option value="RW">Right Wing (RW)</option>
+                        <option value="CAM">Playmaker (CAM)</option>
                       </optgroup>
                     </select>
                   </div>
                 </div>
 
                 {isEditing && (
-                  <div className="pt-4 border-t border-slate-700">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">
-                      Player Stats
+                  <div className="pt-6 border-t border-slate-700/50">
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
+                      Live Performance Stats
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="text-xs text-slate-400 mb-1 block">
+                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
                           Goals
                         </label>
                         <input
                           type="number"
-                          className="input h-10"
+                          className="input h-12 text-center text-lg font-black"
                           value={currentPlayer.goals || 0}
                           onChange={(e) =>
                             setCurrentPlayer({
@@ -385,12 +371,12 @@ export const PlayersPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 mb-1 block">
+                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
                           Yellow
                         </label>
                         <input
                           type="number"
-                          className="input h-10"
+                          className="input h-12 text-center text-lg font-black text-yellow-500"
                           value={currentPlayer.yellow_cards || 0}
                           onChange={(e) =>
                             setCurrentPlayer({
@@ -401,12 +387,12 @@ export const PlayersPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 mb-1 block">
+                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
                           Red
                         </label>
                         <input
                           type="number"
-                          className="input h-10"
+                          className="input h-12 text-center text-lg font-black text-red-500"
                           value={currentPlayer.red_cards || 0}
                           onChange={(e) =>
                             setCurrentPlayer({
@@ -420,19 +406,16 @@ export const PlayersPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-4 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                    className="btn btn-secondary flex-1 h-12"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors font-bold"
-                  >
-                    {isEditing ? "Update Player" : "Create Player"}
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    {isEditing ? "Sync Data" : "Register"}
                   </button>
                 </div>
               </form>
