@@ -67,6 +67,8 @@ export interface Player {
   id: number;
   name: string;
   team_id: number;
+  jersey_number: number;
+  position: string;
   goals: number;
   yellow_cards: number;
   red_cards: number;
@@ -77,6 +79,8 @@ export interface Player {
 export interface CreatePlayerDto {
   name: string;
   team_id: number;
+  jersey_number: number;
+  position: string;
 }
 
 export interface UpdatePlayerStatsDto {

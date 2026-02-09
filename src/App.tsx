@@ -5,6 +5,11 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { MainLayout } from "./layouts/MainLayout";
+import { TournamentsPage } from "./pages/TournamentsPage";
+import { TeamsPage } from "./pages/TeamsPage";
+import { PlayersPage } from "./pages/PlayersPage";
+import { MatchesPage } from "./pages/MatchesPage";
+import { StandingsPage } from "./pages/StandingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,38 +36,11 @@ function App() {
               }
             >
               <Route index element={<DashboardPage />} />
-              <Route
-                path="tournaments"
-                element={
-                  <div className="p-8 text-white">
-                    Tournaments (Coming Soon)
-                  </div>
-                }
-              />
-              <Route
-                path="teams"
-                element={
-                  <div className="p-8 text-white">Teams (Coming Soon)</div>
-                }
-              />
-              <Route
-                path="players"
-                element={
-                  <div className="p-8 text-white">Players (Coming Soon)</div>
-                }
-              />
-              <Route
-                path="matches"
-                element={
-                  <div className="p-8 text-white">Matches (Coming Soon)</div>
-                }
-              />
-              <Route
-                path="standings"
-                element={
-                  <div className="p-8 text-white">Standings (Coming Soon)</div>
-                }
-              />
+              <Route path="tournaments" element={<TournamentsPage />} />
+              <Route path="teams" element={<TeamsPage />} />
+              <Route path="players" element={<PlayersPage />} />
+              <Route path="matches" element={<MatchesPage />} />
+              <Route path="standings" element={<StandingsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
