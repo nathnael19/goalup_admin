@@ -43,10 +43,19 @@ export const MatchDetailPage: React.FC = () => {
     is_own_goal: false,
   });
 
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (id) {
       fetchMatch(id);
     }
+
+    // Refresh time every 10 seconds
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   const fetchMatch = async (matchId: string) => {
@@ -129,7 +138,7 @@ export const MatchDetailPage: React.FC = () => {
     }
   };
 
-  const calculateMatchTime = (m: Match) => {
+  const calculateMatchTime = (m: Match, _tick?: number) => {
     if (m.status !== "live") return null;
     if (m.is_halftime) return "HT";
 
@@ -137,10 +146,12 @@ export const MatchDetailPage: React.FC = () => {
     const now = new Date().getTime();
     const diffInMinutes = Math.floor((now - start) / 60000);
 
-    if (diffInMinutes > 45 && diffInMinutes < 46) return "45'";
-    if (diffInMinutes >= 90) return "90'";
+    if (diffInMinutes < 0) return "1'";
 
-    return `${Math.max(1, diffInMinutes)}'`;
+    const totalTime = m.total_time || 90;
+    if (diffInMinutes >= totalTime) return `${totalTime}'`;
+
+    return `${diffInMinutes + 1}'`;
   };
 
   const updateScore = (team: "a" | "b", delta: number) => {
@@ -189,7 +200,7 @@ export const MatchDetailPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (m: Match) => {
+  const getStatusBadge = (m: Match, _tick?: number) => {
     switch (m.status) {
       case "finished":
         return (
@@ -198,7 +209,7 @@ export const MatchDetailPage: React.FC = () => {
           </span>
         );
       case "live":
-        const timeDisplay = calculateMatchTime(m);
+        const timeDisplay = calculateMatchTime(m, _tick);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
@@ -325,7 +336,7 @@ export const MatchDetailPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div>{getStatusBadge(match)}</div>
+            <div>{getStatusBadge(match, tick)}</div>
           </div>
 
           {/* Scoreboard */}
@@ -455,14 +466,14 @@ export const MatchDetailPage: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
+                      const currentMinute = calculateMatchTime(match)?.replace(
+                        "'",
+                        "",
+                      );
                       setGoalData({
                         ...goalData,
                         team_id: match.team_a_id,
-                        minute: calculateMatchTime(match)?.replace("'", "")
-                          ? parseInt(
-                              calculateMatchTime(match)!.replace("'", ""),
-                            )
-                          : 1,
+                        minute: currentMinute ? parseInt(currentMinute) : 1,
                       });
                       setShowGoalModal(true);
                     }}
@@ -472,14 +483,14 @@ export const MatchDetailPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
+                      const currentMinute = calculateMatchTime(match)?.replace(
+                        "'",
+                        "",
+                      );
                       setGoalData({
                         ...goalData,
                         team_id: match.team_b_id,
-                        minute: calculateMatchTime(match)?.replace("'", "")
-                          ? parseInt(
-                              calculateMatchTime(match)!.replace("'", ""),
-                            )
-                          : 1,
+                        minute: currentMinute ? parseInt(currentMinute) : 1,
                       });
                       setShowGoalModal(true);
                     }}
@@ -724,12 +735,12 @@ export const MatchDetailPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Minute</label>
+                    <label className="label">Minute (Auto-calculated)</label>
                     <input
                       type="number"
                       required
                       min="1"
-                      className="input h-12"
+                      className="input h-12 border-blue-500/30 focus:border-blue-500"
                       value={goalData.minute}
                       onChange={(e) =>
                         setGoalData({
@@ -738,6 +749,9 @@ export const MatchDetailPage: React.FC = () => {
                         })
                       }
                     />
+                    <p className="text-[10px] text-blue-500/70 mt-1 font-bold">
+                      Based on current match time
+                    </p>
                   </div>
                   <div className="flex items-end">
                     <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-700 bg-slate-800/50 w-full hover:bg-slate-800 transition-colors">

@@ -34,8 +34,17 @@ export const MatchesPage: React.FC = () => {
     type: "success" | "error";
   } | null>(null);
 
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     fetchData();
+
+    // Live clock update every 10 seconds for smoothness
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
@@ -103,7 +112,7 @@ export const MatchesPage: React.FC = () => {
     }
   };
 
-  const calculateMatchTime = (match: Match) => {
+  const calculateMatchTime = (match: Match, _tick?: number) => {
     if (match.status !== "live") return null;
     if (match.is_halftime) return "HT";
 
@@ -111,14 +120,16 @@ export const MatchesPage: React.FC = () => {
     const now = new Date().getTime();
     const diffInMinutes = Math.floor((now - start) / 60000);
 
-    // Simple logic: if > 45 and not halftime yet, show 45+
-    if (diffInMinutes > 45 && diffInMinutes < 46) return "45'";
-    if (diffInMinutes >= 90) return "90'";
+    // If match started in the future (according to client clock), show 1'
+    if (diffInMinutes < 0) return "1'";
 
-    return `${Math.max(1, diffInMinutes)}'`;
+    const totalTime = match.total_time || 90;
+    if (diffInMinutes >= totalTime) return `${totalTime}'`;
+
+    return `${diffInMinutes + 1}'`;
   };
 
-  const getStatusBadge = (match: Match) => {
+  const getStatusBadge = (match: Match, _tick?: number) => {
     switch (match.status) {
       case "finished":
         return (
@@ -127,7 +138,7 @@ export const MatchesPage: React.FC = () => {
           </span>
         );
       case "live":
-        const timeDisplay = calculateMatchTime(match);
+        const timeDisplay = calculateMatchTime(match, _tick);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
@@ -360,7 +371,7 @@ export const MatchesPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="hidden lg:block">
-                      {getStatusBadge(match)}
+                      {getStatusBadge(match, tick)}
                     </div>
                   </div>
 
@@ -403,7 +414,9 @@ export const MatchesPage: React.FC = () => {
                           {match.score_b}
                         </span>
                       </div>
-                      <div className="lg:hidden">{getStatusBadge(match)}</div>
+                      <div className="lg:hidden">
+                        {getStatusBadge(match, tick)}
+                      </div>
                     </div>
 
                     {/* Away Team */}
