@@ -12,6 +12,7 @@ import {
   type MatchStatus,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { Toast } from "../components/Toast";
 
 export const MatchesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +28,11 @@ export const MatchesPage: React.FC = () => {
 
   const [selectedTournamentId, setSelectedTournamentId] =
     useState<string>("all");
+
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -81,8 +87,18 @@ export const MatchesPage: React.FC = () => {
       }
       setShowModal(false);
       fetchData();
+      setToast({
+        message: currentMatch.id
+          ? "Match updated successfully!"
+          : "Match created successfully!",
+        type: "success",
+      });
     } catch (err) {
       console.error("Failed to save match", err);
+      setToast({
+        message: "Failed to save match. Please try again.",
+        type: "error",
+      });
     }
   };
 
@@ -137,13 +153,28 @@ export const MatchesPage: React.FC = () => {
 
       setShowAutoScheduleModal(false);
       fetchData();
-      // Ideally show success toast
-    } catch (err) {
+      setToast({
+        message: "Fixtures generated successfully!",
+        type: "success",
+      });
+    } catch (err: any) {
       console.error("Failed to generate schedule", err);
+      const errorMessage =
+        err?.response?.data?.detail ||
+        "Failed to generate fixtures. Please try again.";
+      setToast({ message: errorMessage, type: "error" });
     }
   };
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-white font-display tracking-tight">
