@@ -6,6 +6,13 @@ import {
   FiClock,
   FiMapPin,
   FiTrash2,
+  FiEdit2,
+  FiSave,
+  FiX,
+  FiPlay,
+  FiCheckCircle,
+  FiPlus,
+  FiMinus,
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import type { Match, MatchStatus } from "../types";
@@ -16,6 +23,8 @@ export const MatchDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedMatch, setEditedMatch] = useState<Partial<Match>>({});
 
   useEffect(() => {
     if (id) {
@@ -28,9 +37,9 @@ export const MatchDetailPage: React.FC = () => {
       setLoading(true);
       const data = await matchService.getById(matchId);
       setMatch(data);
+      setEditedMatch(data);
     } catch (err) {
       console.error("Failed to fetch match details", err);
-      // improved error handling could go here (e.g. redirect or toast)
     } finally {
       setLoading(false);
     }
@@ -48,6 +57,50 @@ export const MatchDetailPage: React.FC = () => {
     } catch (err) {
       console.error("Failed to delete match", err);
     }
+  };
+
+  const handleSave = async () => {
+    if (!match) return;
+    try {
+      await matchService.update(match.id, {
+        score_a: editedMatch.score_a,
+        score_b: editedMatch.score_b,
+        status: editedMatch.status,
+        additional_time_first_half: editedMatch.additional_time_first_half,
+        additional_time_second_half: editedMatch.additional_time_second_half,
+      });
+      await fetchMatch(match.id);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update match", err);
+    }
+  };
+
+  const handleStartMatch = async () => {
+    if (!match) return;
+    try {
+      await matchService.update(match.id, { status: "live" });
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to start match", err);
+    }
+  };
+
+  const handleFinishMatch = async () => {
+    if (!match) return;
+    try {
+      await matchService.update(match.id, { status: "finished" });
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to finish match", err);
+    }
+  };
+
+  const updateScore = (team: "a" | "b", delta: number) => {
+    const key = team === "a" ? "score_a" : "score_b";
+    const currentScore = editedMatch[key] ?? 0;
+    const newScore = Math.max(0, currentScore + delta);
+    setEditedMatch({ ...editedMatch, [key]: newScore });
   };
 
   const getStatusBadge = (status: MatchStatus) => {
@@ -115,15 +168,37 @@ export const MatchDetailPage: React.FC = () => {
         </button>
 
         <div className="flex gap-3">
-          <button
-            onClick={handleDelete}
-            className="btn btn-secondary text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
-          >
-            <FiTrash2 className="mr-2" /> Delete
-          </button>
-          {/* Edit functionality could be added here or via the modal on MatchesPage. 
-                For now, linking back to MatchesPage to edit is easiest, or we re-implement the modal here.
-                Let's stick to simple display first. */}
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedMatch(match);
+                }}
+                className="btn btn-secondary"
+              >
+                <FiX className="mr-2" /> Cancel
+              </button>
+              <button onClick={handleSave} className="btn btn-primary">
+                <FiSave className="mr-2" /> Save Changes
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn btn-secondary"
+              >
+                <FiEdit2 className="mr-2" /> Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                className="btn btn-secondary text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+              >
+                <FiTrash2 className="mr-2" /> Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -188,13 +263,61 @@ export const MatchDetailPage: React.FC = () => {
             {/* VS / Score */}
             <div className="flex flex-col items-center gap-4">
               <div className="flex items-center gap-6 md:gap-12">
-                <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
-                  {match.score_a}
-                </span>
+                {isEditing ? (
+                  <>
+                    {/* Team A Score Controls */}
+                    <div className="flex flex-col items-center gap-3">
+                      <button
+                        onClick={() => updateScore("a", 1)}
+                        className="p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                      >
+                        <FiPlus size={20} />
+                      </button>
+                      <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
+                        {editedMatch.score_a ?? 0}
+                      </span>
+                      <button
+                        onClick={() => updateScore("a", -1)}
+                        className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                      >
+                        <FiMinus size={20} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
+                    {match.score_a}
+                  </span>
+                )}
+
                 <span className="text-4xl text-slate-700 font-black">:</span>
-                <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
-                  {match.score_b}
-                </span>
+
+                {isEditing ? (
+                  <>
+                    {/* Team B Score Controls */}
+                    <div className="flex flex-col items-center gap-3">
+                      <button
+                        onClick={() => updateScore("b", 1)}
+                        className="p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                      >
+                        <FiPlus size={20} />
+                      </button>
+                      <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
+                        {editedMatch.score_b ?? 0}
+                      </span>
+                      <button
+                        onClick={() => updateScore("b", -1)}
+                        className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                      >
+                        <FiMinus size={20} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-6xl md:text-8xl font-black text-white font-display tracking-tighter tabular-nums drop-shadow-2xl">
+                    {match.score_b}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -222,7 +345,97 @@ export const MatchDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Additional Stats/Info (Placeholder for now) */}
+      {/* Match Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status Controls */}
+        <div className="card p-6">
+          <h3 className="text-lg font-black text-white mb-4">Match Status</h3>
+          <div className="flex flex-col gap-3">
+            {match.status === "scheduled" && (
+              <button
+                onClick={handleStartMatch}
+                className="btn btn-primary w-full"
+              >
+                <FiPlay className="mr-2" /> Start Match
+              </button>
+            )}
+            {match.status === "live" && (
+              <button
+                onClick={handleFinishMatch}
+                className="btn btn-primary w-full bg-green-600 hover:bg-green-500"
+              >
+                <FiCheckCircle className="mr-2" /> Finish Match
+              </button>
+            )}
+            {match.status === "finished" && (
+              <div className="text-center py-4 text-slate-400">
+                Match has ended
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Time */}
+        <div className="card p-6">
+          <h3 className="text-lg font-black text-white mb-4">
+            Additional Time
+          </h3>
+          {isEditing ? (
+            <div className="space-y-4">
+              <div>
+                <label className="label">First Half (+45')</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input"
+                  value={editedMatch.additional_time_first_half ?? 0}
+                  onChange={(e) =>
+                    setEditedMatch({
+                      ...editedMatch,
+                      additional_time_first_half: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="Minutes"
+                />
+              </div>
+              <div>
+                <label className="label">Second Half (+90')</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input"
+                  value={editedMatch.additional_time_second_half ?? 0}
+                  onChange={(e) =>
+                    setEditedMatch({
+                      ...editedMatch,
+                      additional_time_second_half:
+                        parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="Minutes"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold">First Half:</span>
+                <span className="text-white font-black text-lg">
+                  +{match.additional_time_first_half || 0} min
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold">Second Half:</span>
+                <span className="text-white font-black text-lg">
+                  +{match.additional_time_second_half || 0} min
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Additional Stats/Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card p-6">
           <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
@@ -230,7 +443,6 @@ export const MatchDetailPage: React.FC = () => {
           </h3>
           <p className="text-slate-400">
             Venue information is not yet available for this match.
-            {/* Future: Add venue to Match model */}
           </p>
         </div>
         <div className="card p-6">

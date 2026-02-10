@@ -124,6 +124,8 @@ export interface Match {
   team_a?: Team;
   team_b?: Team;
   tournament?: Tournament;
+  additional_time_first_half?: number;
+  additional_time_second_half?: number;
 }
 
 export interface CreateMatchDto {
@@ -141,6 +143,8 @@ export interface UpdateMatchScoreDto {
   score_b?: number;
   status?: MatchStatus;
   start_time?: string;
+  additional_time_first_half?: number;
+  additional_time_second_half?: number;
 }
 
 // Standings Types
