@@ -128,6 +128,25 @@ export interface Match {
   additional_time_second_half?: number;
   total_time?: number;
   is_halftime?: boolean;
+  goals_list?: Goal[];
+}
+
+export interface Goal {
+  id: string;
+  match_id: string;
+  player_id?: string;
+  team_id: string;
+  minute: number;
+  is_own_goal: boolean;
+  player?: Player;
+}
+
+export interface CreateGoalDto {
+  match_id: string;
+  player_id?: string;
+  team_id: string;
+  minute: number;
+  is_own_goal: boolean;
 }
 
 export interface CreateMatchDto {

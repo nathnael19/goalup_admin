@@ -15,7 +15,9 @@ import {
   FiMinus,
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
-import type { Match } from "../types";
+import { goalService } from "../services/goalService";
+import { teamService } from "../services/teamService";
+import type { Match, Goal, TeamDetail } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchDetailPage: React.FC = () => {
@@ -25,6 +27,21 @@ export const MatchDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMatch, setEditedMatch] = useState<Partial<Match>>({});
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [teamADetail, setTeamADetail] = useState<TeamDetail | null>(null);
+  const [teamBDetail, setTeamBDetail] = useState<TeamDetail | null>(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalData, setGoalData] = useState<{
+    team_id: string;
+    player_id: string;
+    minute: number;
+    is_own_goal: boolean;
+  }>({
+    team_id: "",
+    player_id: "",
+    minute: 1,
+    is_own_goal: false,
+  });
 
   useEffect(() => {
     if (id) {
@@ -35,9 +52,23 @@ export const MatchDetailPage: React.FC = () => {
   const fetchMatch = async (matchId: string) => {
     try {
       setLoading(true);
-      const data = await matchService.getById(matchId);
-      setMatch(data);
-      setEditedMatch(data);
+      const [matchData, goalsData] = await Promise.all([
+        matchService.getById(matchId),
+        goalService.getByMatchId(matchId),
+      ]);
+      setMatch(matchData);
+      setEditedMatch(matchData);
+      setGoals(goalsData);
+
+      // Fetch team details for roster
+      if (matchData.team_a_id && matchData.team_b_id) {
+        const [a, b] = await Promise.all([
+          teamService.getById(matchData.team_a_id),
+          teamService.getById(matchData.team_b_id),
+        ]);
+        setTeamADetail(a as TeamDetail);
+        setTeamBDetail(b as TeamDetail);
+      }
     } catch (err) {
       console.error("Failed to fetch match details", err);
     } finally {
@@ -127,6 +158,34 @@ export const MatchDetailPage: React.FC = () => {
       await fetchMatch(match.id);
     } catch (err) {
       console.error("Failed to toggle halftime", err);
+    }
+  };
+
+  const handleAddGoal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!match) return;
+    try {
+      await goalService.create({
+        match_id: match.id,
+        team_id: goalData.team_id,
+        player_id: goalData.player_id || undefined,
+        minute: goalData.minute,
+        is_own_goal: goalData.is_own_goal,
+      });
+      setShowGoalModal(false);
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to add goal", err);
+    }
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (!window.confirm("Delete this goal?")) return;
+    try {
+      await goalService.delete(goalId);
+      if (match) await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to delete goal", err);
     }
   };
 
@@ -393,6 +452,42 @@ export const MatchDetailPage: React.FC = () => {
             )}
             {match.status === "live" && (
               <>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setGoalData({
+                        ...goalData,
+                        team_id: match.team_a_id,
+                        minute: calculateMatchTime(match)?.replace("'", "")
+                          ? parseInt(
+                              calculateMatchTime(match)!.replace("'", ""),
+                            )
+                          : 1,
+                      });
+                      setShowGoalModal(true);
+                    }}
+                    className="btn btn-secondary flex-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  >
+                    <FiPlus className="mr-2" /> Goal {match.team_a?.name}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGoalData({
+                        ...goalData,
+                        team_id: match.team_b_id,
+                        minute: calculateMatchTime(match)?.replace("'", "")
+                          ? parseInt(
+                              calculateMatchTime(match)!.replace("'", ""),
+                            )
+                          : 1,
+                      });
+                      setShowGoalModal(true);
+                    }}
+                    className="btn btn-secondary flex-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  >
+                    <FiPlus className="mr-2" /> Goal {match.team_b?.name}
+                  </button>
+                </div>
                 <button
                   onClick={toggleHalftime}
                   className={`btn w-full ${match.is_halftime ? "btn-primary bg-amber-600 hover:bg-amber-500" : "btn-secondary"}`}
@@ -520,12 +615,166 @@ export const MatchDetailPage: React.FC = () => {
           </p>
         </div>
         <div className="card p-6">
-          <h3 className="text-lg font-black text-white mb-4">Match Events</h3>
-          <p className="text-slate-400">
-            Live commentary and match events coming soon.
-          </p>
+          <h3 className="text-lg font-black text-white mb-4 flex items-center justify-between">
+            <span className="flex items-center gap-2">Match Events</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Timeline
+            </span>
+          </h3>
+          <div className="space-y-4">
+            {goals.length === 0 ? (
+              <p className="text-slate-500 text-sm italic">
+                No goals recorded yet.
+              </p>
+            ) : (
+              <div className="relative border-l-2 border-slate-800 ml-3 pl-6 space-y-6">
+                {goals.map((g) => (
+                  <div key={g.id} className="relative">
+                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-900 shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-500 font-black text-sm">
+                            {g.minute}'
+                          </span>
+                          <span className="text-white font-black">GOAL!</span>
+                          {g.is_own_goal && (
+                            <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-black uppercase">
+                              OG
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-bold text-slate-300">
+                          {g.player?.name || "Unknown Player"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                          {g.team_id === match.team_a_id
+                            ? match.team_a?.name
+                            : match.team_b?.name}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGoal(g.id)}
+                        className="p-2 text-slate-600 hover:text-red-400 transition-colors"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Goal Modal */}
+      {showGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setShowGoalModal(false)}
+          />
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-8">
+              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">
+                Record Goal
+              </h2>
+              <form onSubmit={handleAddGoal} className="space-y-6">
+                <div>
+                  <label className="label">
+                    Scorer (
+                    {goalData.team_id === match.team_a_id
+                      ? match.team_a?.name
+                      : match.team_b?.name}
+                    )
+                  </label>
+                  <select
+                    className="input h-12 appearance-none"
+                    value={goalData.player_id}
+                    onChange={(e) =>
+                      setGoalData({ ...goalData, player_id: e.target.value })
+                    }
+                  >
+                    <option value="">Select Scorer (Optional)</option>
+                    {(goalData.team_id === match.team_a_id
+                      ? teamADetail
+                      : teamBDetail
+                    )?.roster.goalkeepers
+                      .concat(
+                        (goalData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.defenders || [],
+                        (goalData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.midfielders || [],
+                        (goalData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.forwards || [],
+                      )
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.jersey_number}. {p.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Minute</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      className="input h-12"
+                      value={goalData.minute}
+                      onChange={(e) =>
+                        setGoalData({
+                          ...goalData,
+                          minute: parseInt(e.target.value) || 1,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-700 bg-slate-800/50 w-full hover:bg-slate-800 transition-colors">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-600 focus:ring-offset-slate-900"
+                        checked={goalData.is_own_goal}
+                        onChange={(e) =>
+                          setGoalData({
+                            ...goalData,
+                            is_own_goal: e.target.checked,
+                          })
+                        }
+                      />
+                      <span className="text-xs font-black text-slate-300 uppercase tracking-widest leading-none">
+                        Own Goal
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowGoalModal(false)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1">
+                    Record Goal
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
