@@ -61,6 +61,18 @@ export const StandingsPage: React.FC = () => {
       filterTournament === "all" || group.tournament.id === filterTournament,
   );
 
+  // Group by competition name
+  const competitionsMap = filteredGroups.reduce(
+    (acc, group) => {
+      const compName =
+        group.tournament.competition?.name || "Standalone Tournaments";
+      if (!acc[compName]) acc[compName] = [];
+      acc[compName].push(group);
+      return acc;
+    },
+    {} as Record<string, typeof filteredGroups>,
+  );
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -116,167 +128,185 @@ export const StandingsPage: React.FC = () => {
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="space-y-16">
-          {filteredGroups.map((group) => {
-            const leagueWinner = group.teams[0];
-            return (
-              <div key={group.tournament.id} className="space-y-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-2">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl">
-                      <FiAward size={28} />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-black text-white font-display tracking-tight uppercase">
-                        {group.tournament.name}
-                      </h2>
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                        <span>Season {group.tournament.year}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-700" />
-                        <span className="text-blue-500">
-                          {group.tournament.type.replace("_", " ")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    {leagueWinner && (
-                      <div className="hidden md:flex items-center gap-3 bg-slate-800/40 px-4 py-2.5 rounded-2xl border border-slate-800">
-                        <div className="w-8 h-8 rounded-full bg-yellow-500/10 text-yellow-500 flex items-center justify-center border border-yellow-500/20">
-                          <FiAward size={14} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-slate-500 tracking-widest leading-none mb-1 uppercase">
-                            Top Ranked
-                          </span>
-                          <span className="text-xs font-black text-white leading-none">
-                            {leagueWinner.team?.name}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handleRecalculate(group.tournament.id)}
-                      disabled={recalculating === group.tournament.id}
-                      className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
-                    >
-                      <FiRefreshCw
-                        className={
-                          recalculating === group.tournament.id
-                            ? "animate-spin"
-                            : ""
-                        }
-                      />
-                      Sync Standings
-                    </button>
-                  </div>
-                </div>
-
-                <div className="card card-hover overflow-hidden border-white/10 bg-slate-900/40">
-                  <div className="overflow-x-auto custom-scrollbar">
-                    <div className="min-w-[800px] lg:min-w-0">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-white/5 border-b border-white/10">
-                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                              Rank
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                              Club
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                              MP
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
-                              W
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                              D
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
-                              L
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                              Diff
-                            </th>
-                            <th className="px-6 py-5 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center w-24 bg-blue-600/10">
-                              Points
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/40">
-                          {group.teams.map((standing, index) => (
-                            <tr
-                              key={standing.team_id}
-                              className="hover:bg-slate-800/30 transition-colors group"
-                            >
-                              <td className="px-6 py-5 text-center">
-                                <span
-                                  className={`text-sm font-black w-8 h-8 rounded-lg flex items-center justify-center mx-auto ${
-                                    index === 0
-                                      ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-lg shadow-yellow-500/5"
-                                      : index < 3
-                                        ? "bg-blue-600/10 text-blue-400 border border-blue-600/10"
-                                        : "bg-slate-800 text-slate-500 border border-slate-700/50"
-                                  }`}
-                                >
-                                  {index + 1}
-                                </span>
-                              </td>
-                              <td className="px-6 py-5">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-tighter group-hover:scale-110 transition-transform">
-                                    {standing.team?.name.charAt(0)}
-                                  </div>
-                                  <div>
-                                    <span className="block text-sm font-bold text-white tracking-tight leading-none mb-1">
-                                      {standing.team?.name}
-                                    </span>
-                                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                                      {standing.team?.batch}
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                                {standing.played}
-                              </td>
-                              <td className="px-6 py-5 text-center text-sm font-black text-blue-400/80">
-                                {standing.won}
-                              </td>
-                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                                {standing.drawn}
-                              </td>
-                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                                {standing.lost}
-                              </td>
-                              <td className="px-6 py-5 text-center">
-                                <span
-                                  className={`text-sm font-black ${standing.goals_for - standing.goals_against >= 0 ? "text-green-500" : "text-red-500"}`}
-                                >
-                                  {standing.goals_for - standing.goals_against >
-                                  0
-                                    ? "+"
-                                    : ""}
-                                  {standing.goals_for - standing.goals_against}
-                                </span>
-                              </td>
-                              <td className="px-6 py-5 text-center bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors">
-                                <span className="text-lg font-black text-white font-display tabular-nums tracking-tighter">
-                                  {standing.points}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+        <div className="space-y-24">
+          {Object.entries(competitionsMap).map(([compName, groups]) => (
+            <div key={compName} className="space-y-12">
+              <div className="flex items-center gap-4 px-2">
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-800 to-transparent" />
+                <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] text-center">
+                  {compName}
+                </h2>
+                <div className="h-px flex-1 bg-linear-to-r from-slate-800 via-slate-800 to-transparent" />
               </div>
-            );
-          })}
+
+              <div className="space-y-16">
+                {groups.map((group) => {
+                  const leagueWinner = group.teams[0];
+                  return (
+                    <div key={group.tournament.id} className="space-y-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-2">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl">
+                            <FiAward size={28} />
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-black text-white font-display tracking-tight uppercase text-glow-blue">
+                              {group.tournament.name}
+                            </h2>
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                              <span>Season {group.tournament.year}</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-700" />
+                              <span className="text-blue-500">
+                                {group.tournament.type.replace("_", " ")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          {leagueWinner && (
+                            <div className="hidden md:flex items-center gap-3 bg-slate-800/40 px-4 py-2.5 rounded-2xl border border-slate-800">
+                              <div className="w-8 h-8 rounded-full bg-yellow-500/10 text-yellow-500 flex items-center justify-center border border-yellow-500/20">
+                                <FiAward size={14} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-500 tracking-widest leading-none mb-1 uppercase">
+                                  Top Ranked
+                                </span>
+                                <span className="text-xs font-black text-white leading-none">
+                                  {leagueWinner.team?.name}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          <button
+                            onClick={() =>
+                              handleRecalculate(group.tournament.id)
+                            }
+                            disabled={recalculating === group.tournament.id}
+                            className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
+                          >
+                            <FiRefreshCw
+                              className={
+                                recalculating === group.tournament.id
+                                  ? "animate-spin"
+                                  : ""
+                              }
+                            />
+                            Sync Standings
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="card card-hover overflow-hidden border-white/10 bg-slate-900/40">
+                        <div className="overflow-x-auto custom-scrollbar">
+                          <div className="min-w-[800px] lg:min-w-0">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="bg-white/5 border-b border-white/10">
+                                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
+                                    Rank
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                    Club
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
+                                    MP
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
+                                    W
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
+                                    D
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
+                                    L
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
+                                    Diff
+                                  </th>
+                                  <th className="px-6 py-5 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center w-24 bg-blue-600/10">
+                                    Points
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/40">
+                                {group.teams.map((standing, index) => (
+                                  <tr
+                                    key={standing.team_id}
+                                    className="hover:bg-slate-800/30 transition-colors group"
+                                  >
+                                    <td className="px-6 py-5 text-center">
+                                      <span
+                                        className={`text-sm font-black w-8 h-8 rounded-lg flex items-center justify-center mx-auto ${
+                                          index === 0
+                                            ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-lg shadow-yellow-500/5"
+                                            : index < 3
+                                              ? "bg-blue-600/10 text-blue-400 border border-blue-600/10"
+                                              : "bg-slate-800 text-slate-500 border border-slate-700/50"
+                                        }`}
+                                      >
+                                        {index + 1}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-tighter group-hover:scale-110 transition-transform">
+                                          {standing.team?.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <span className="block text-sm font-bold text-white tracking-tight leading-none mb-1">
+                                            {standing.team?.name}
+                                          </span>
+                                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                            {standing.team?.batch}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                      {standing.played}
+                                    </td>
+                                    <td className="px-6 py-5 text-center text-sm font-black text-blue-400/80">
+                                      {standing.won}
+                                    </td>
+                                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                      {standing.drawn}
+                                    </td>
+                                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                      {standing.lost}
+                                    </td>
+                                    <td className="px-6 py-5 text-center">
+                                      <span
+                                        className={`text-sm font-black ${standing.goals_for - standing.goals_against >= 0 ? "text-green-500" : "text-red-500"}`}
+                                      >
+                                        {standing.goals_for -
+                                          standing.goals_against >
+                                        0
+                                          ? "+"
+                                          : ""}
+                                        {standing.goals_for -
+                                          standing.goals_against}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-5 text-center bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors">
+                                      <span className="text-lg font-black text-white font-display tabular-nums tracking-tighter">
+                                        {standing.points}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {filteredGroups.length === 0 && (
             <div className="flex flex-col items-center justify-center py-32 text-center group">

@@ -9,19 +9,26 @@ import {
   FiAward,
 } from "react-icons/fi";
 import { tournamentService } from "../services/tournamentService";
+import { competitionService } from "../services/competitionService";
 import { ImageUpload } from "../components/ImageUpload";
-import type { Tournament, CreateTournamentDto } from "../types";
+import type { Tournament, CreateTournamentDto, Competition } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TournamentsPage: React.FC = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTournament, setCurrentTournament] = useState<
     Partial<Tournament>
   >({});
+  const [newCompetition, setNewCompetition] = useState({
+    name: "",
+    description: "",
+  });
   const [searchTerm, setSearchTerm] = useState("");
 
   // Confirmation Modal State
@@ -36,10 +43,14 @@ export const TournamentsPage: React.FC = () => {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const data = await tournamentService.getAll();
-      setTournaments(data);
+      const [tournamentsData, competitionsData] = await Promise.all([
+        tournamentService.getAll(),
+        competitionService.getAll(),
+      ]);
+      setTournaments(tournamentsData);
+      setCompetitions(competitionsData);
     } catch (err) {
-      console.error("Failed to fetch tournaments", err);
+      console.error("Failed to fetch data", err);
     } finally {
       setLoading(false);
     }
@@ -63,6 +74,22 @@ export const TournamentsPage: React.FC = () => {
       setCurrentTournament({});
     } catch (err) {
       console.error("Failed to save tournament", err);
+    }
+  };
+
+  const handleCreateCompetition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const competition = await competitionService.create(newCompetition);
+      setCompetitions([...competitions, competition]);
+      setCurrentTournament({
+        ...currentTournament,
+        competition_id: competition.id,
+      });
+      setShowCompetitionModal(false);
+      setNewCompetition({ name: "", description: "" });
+    } catch (err) {
+      console.error("Failed to create competition", err);
     }
   };
 
@@ -205,13 +232,20 @@ export const TournamentsPage: React.FC = () => {
                 <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
                   {tournament.name}
                 </h3>
-                <div className="flex items-center gap-4 text-xs font-bold mb-8">
-                  <span className="flex items-center gap-1.5 text-slate-400 bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800">
-                    <FiCalendar className="text-blue-500" /> {tournament.year}
-                  </span>
-                  <span className="capitalize px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20">
-                    {tournament.type.replace("_", " ")}
-                  </span>
+                <div className="flex flex-col gap-2 mb-8">
+                  <div className="flex items-center gap-4 text-xs font-bold">
+                    <span className="flex items-center gap-1.5 text-slate-400 bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <FiCalendar className="text-blue-500" /> {tournament.year}
+                    </span>
+                    <span className="capitalize px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20">
+                      {tournament.type.replace("_", " ")}
+                    </span>
+                  </div>
+                  {tournament.competition && (
+                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest pl-1">
+                      Part of: {tournament.competition.name}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-6 border-t border-slate-700/50 flex items-center justify-between">
@@ -280,6 +314,37 @@ export const TournamentsPage: React.FC = () => {
                     placeholder="e.g. AFC Champions League"
                   />
                 </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label mb-0">
+                      Competition / League Group
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCompetitionModal(true)}
+                      className="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
+                    >
+                      + New Group
+                    </button>
+                  </div>
+                  <select
+                    className="input h-12 appearance-none"
+                    value={currentTournament.competition_id || ""}
+                    onChange={(e) =>
+                      setCurrentTournament({
+                        ...currentTournament,
+                        competition_id: e.target.value || undefined,
+                      })
+                    }
+                  >
+                    <option value="">Standalone (No Group)</option>
+                    {competitions.map((comp) => (
+                      <option key={comp.id} value={comp.id}>
+                        {comp.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label">Season Year</label>
@@ -336,6 +401,67 @@ export const TournamentsPage: React.FC = () => {
                   </button>
                   <button type="submit" className="btn btn-primary flex-1 h-12">
                     {isEditing ? "Update" : "Launch"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Competition Modal */}
+      {showCompetitionModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+            onClick={() => setShowCompetitionModal(false)}
+          />
+          <div className="relative glass-panel bg-[#020617]/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+            <div className="p-8">
+              <h2 className="text-xl font-black text-white mb-6 uppercase tracking-tight">
+                New Competition Group
+              </h2>
+              <form onSubmit={handleCreateCompetition} className="space-y-6">
+                <div>
+                  <label className="label">Group Name</label>
+                  <input
+                    required
+                    type="text"
+                    className="input h-12"
+                    placeholder="e.g. English Premier League"
+                    value={newCompetition.name}
+                    onChange={(e) =>
+                      setNewCompetition({
+                        ...newCompetition,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label">Description (Optional)</label>
+                  <textarea
+                    className="input py-3 min-h-[100px]"
+                    placeholder="Short summary of the league group..."
+                    value={newCompetition.description}
+                    onChange={(e) =>
+                      setNewCompetition({
+                        ...newCompetition,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompetitionModal(false)}
+                    className="btn btn-secondary flex-1 h-12"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    Create
                   </button>
                 </div>
               </form>
