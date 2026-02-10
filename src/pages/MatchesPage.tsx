@@ -21,7 +21,8 @@ export const MatchesPage: React.FC = () => {
   const [currentMatch, setCurrentMatch] = useState<Partial<Match>>({});
   const [filter, setFilter] = useState<"all" | "live">("all");
 
-  const [mode, setMode] = useState<"create" | "update">("create");
+  const [selectedTournamentId, setSelectedTournamentId] =
+    useState<string>("all");
 
   useEffect(() => {
     fetchData();
@@ -44,6 +45,8 @@ export const MatchesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const [mode, setMode] = useState<"create" | "update">("create");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,7 +138,6 @@ export const MatchesPage: React.FC = () => {
       console.error("Failed to generate schedule", err);
     }
   };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -174,6 +176,19 @@ export const MatchesPage: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner">
+            <select
+              className="bg-transparent text-xs font-bold text-slate-300 appearance-none outline-none px-3 py-2 [&>option]:bg-slate-900"
+              value={selectedTournamentId}
+              onChange={(e) => setSelectedTournamentId(e.target.value)}
+            >
+              <option value="all">All Tournaments</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <div className="w-px h-4 bg-white/10 mx-1" />
             <button
               onClick={() => setFilter("all")}
               className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
@@ -211,136 +226,147 @@ export const MatchesPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {(filter === "all"
-            ? matches
-            : matches.filter((m) => m.status === "live")
-          ).map((match, i) => (
-            <div
-              key={match.id}
-              className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
-                (i % 4) + 1
-              } relative overflow-hidden`}
-            >
-              <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
-                {/* Meta Info */}
-                <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
-                  <div>
-                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3">
-                      {tournaments.find((t) => t.id === match.tournament_id)
-                        ?.name || "League Match"}
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
-                        <FiCalendar className="text-slate-500" size={14} />
-                        <span>
-                          {new Date(match.start_time || "").toLocaleDateString(
-                            undefined,
-                            { month: "short", day: "numeric", year: "numeric" },
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
-                        <FiClock className="text-slate-500" size={14} />
-                        <span>
-                          {new Date(match.start_time || "").toLocaleTimeString(
-                            [],
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hidden lg:block">
-                    {getStatusBadge(match.status)}
-                  </div>
-                </div>
-
-                {/* Scoreboard */}
-                <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
-                  {/* Home Team */}
-                  <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                      <span className="relative z-10">
-                        {teams
-                          .find((t) => t.id === match.team_a_id)
-                          ?.name.charAt(0)}
-                      </span>
-                    </div>
+          {matches
+            .filter((m) => {
+              const statusMatch = filter === "all" ? true : m.status === "live";
+              const tournamentMatch =
+                selectedTournamentId === "all"
+                  ? true
+                  : m.tournament_id === selectedTournamentId;
+              return statusMatch && tournamentMatch;
+            })
+            .map((match, i) => (
+              <div
+                key={match.id}
+                className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                  (i % 4) + 1
+                } relative overflow-hidden`}
+              >
+                <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
+                  {/* Meta Info */}
+                  <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
                     <div>
-                      <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
-                        {teams.find((t) => t.id === match.team_a_id)?.name}
-                      </h4>
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                        Home
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* VS / Score */}
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="flex items-center gap-6 md:gap-10">
-                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.score_a}
-                      </span>
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
-                        <span className="text-slate-700 font-black text-lg">
-                          :
-                        </span>
-                        <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
+                      <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3">
+                        {tournaments.find((t) => t.id === match.tournament_id)
+                          ?.name || "League Match"}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
+                          <FiCalendar className="text-slate-500" size={14} />
+                          <span>
+                            {new Date(
+                              match.start_time || "",
+                            ).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
+                          <FiClock className="text-slate-500" size={14} />
+                          <span>
+                            {new Date(
+                              match.start_time || "",
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.score_b}
-                      </span>
                     </div>
-                    <div className="lg:hidden">
+                    <div className="hidden lg:block">
                       {getStatusBadge(match.status)}
                     </div>
                   </div>
 
-                  {/* Away Team */}
-                  <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                      <span className="relative z-10">
-                        {teams
-                          .find((t) => t.id === match.team_b_id)
-                          ?.name.charAt(0)}
-                      </span>
+                  {/* Scoreboard */}
+                  <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
+                    {/* Home Team */}
+                    <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
+                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                        <span className="relative z-10">
+                          {teams
+                            .find((t) => t.id === match.team_a_id)
+                            ?.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                          {teams.find((t) => t.id === match.team_a_id)?.name}
+                        </h4>
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                          Home
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
-                        {teams.find((t) => t.id === match.team_b_id)?.name}
-                      </h4>
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                        Away
-                      </span>
+
+                    {/* VS / Score */}
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="flex items-center gap-6 md:gap-10">
+                        <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
+                          {match.score_a}
+                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
+                          <span className="text-slate-700 font-black text-lg">
+                            :
+                          </span>
+                          <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
+                        </div>
+                        <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
+                          {match.score_b}
+                        </span>
+                      </div>
+                      <div className="lg:hidden">
+                        {getStatusBadge(match.status)}
+                      </div>
+                    </div>
+
+                    {/* Away Team */}
+                    <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
+                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                        <span className="relative z-10">
+                          {teams
+                            .find((t) => t.id === match.team_b_id)
+                            ?.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                          {teams.find((t) => t.id === match.team_b_id)?.name}
+                        </h4>
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                          Away
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Vertical Actions */}
-                <div className="w-full lg:w-auto flex lg:flex-col justify-center gap-3 border-t lg:border-t-0 lg:border-l border-slate-800/50 pt-6 lg:pt-0 lg:pl-10">
-                  <button
-                    onClick={() => {
-                      setMode("update");
-                      setCurrentMatch(match);
-                      setShowModal(true);
-                    }}
-                    className="p-4 bg-blue-600 text-white hover:bg-blue-500 rounded-2xl shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 font-bold"
-                  >
-                    <FiEdit2 size={18} />
-                    <span className="lg:hidden">Update Results</span>
-                  </button>
-                  <button className="p-4 bg-slate-800/80 text-slate-300 hover:bg-slate-700 rounded-2xl border border-slate-700/50 transition-all">
-                    <FiCheckCircle size={18} />
-                  </button>
+                  {/* Vertical Actions */}
+                  <div className="w-full lg:w-auto flex lg:flex-col justify-center gap-3 border-t lg:border-t-0 lg:border-l border-slate-800/50 pt-6 lg:pt-0 lg:pl-10">
+                    <button
+                      onClick={() => {
+                        setMode("update");
+                        setCurrentMatch(match);
+                        setShowModal(true);
+                      }}
+                      className="p-4 bg-blue-600 text-white hover:bg-blue-500 rounded-2xl shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 font-bold"
+                    >
+                      <FiEdit2 size={18} />
+                      <span className="lg:hidden">Update Results</span>
+                    </button>
+                    <button className="p-4 bg-slate-800/80 text-slate-300 hover:bg-slate-700 rounded-2xl border border-slate-700/50 transition-all">
+                      <FiCheckCircle size={18} />
+                    </button>
+                  </div>
                 </div>
+                <div className="absolute top-0 left-0 w-2 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />
               </div>
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />
-            </div>
-          ))}
+            ))}
         </div>
       )}
 
