@@ -123,6 +123,7 @@ export interface Match {
   updated_at: string;
   team_a?: Team;
   team_b?: Team;
+  tournament?: Tournament;
 }
 
 export interface CreateMatchDto {

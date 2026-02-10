@@ -3,16 +3,18 @@ import { FiEdit2, FiClock, FiCalendar, FiCheckCircle } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
-import type {
-  Match,
-  Team,
-  Tournament,
-  UpdateMatchScoreDto,
-  MatchStatus,
+import { useNavigate } from "react-router-dom";
+import {
+  type Match,
+  type Team,
+  type Tournament,
+  type UpdateMatchScoreDto,
+  type MatchStatus,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -238,9 +240,14 @@ export const MatchesPage: React.FC = () => {
             .map((match, i) => (
               <div
                 key={match.id}
+                onClick={(e) => {
+                  // Prevent navigation if clicking on action buttons
+                  if ((e.target as HTMLElement).closest("button")) return;
+                  navigate(`/matches/${match.id}`);
+                }}
                 className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
                   (i % 4) + 1
-                } relative overflow-hidden`}
+                } relative overflow-hidden cursor-pointer`}
               >
                 <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
                   {/* Meta Info */}
