@@ -12,18 +12,24 @@ import {
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
+import { competitionService } from "../services/competitionService";
 import { ImageUpload } from "../components/ImageUpload";
-import type { Team, CreateTeamDto, Tournament } from "../types";
+import type { Team, CreateTeamDto, Tournament, Competition } from "../types";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TeamsPage: React.FC = () => {
   const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTeam, setCurrentTeam] = useState<Partial<Team>>({});
+  // For modal selection
+  const [selectedCompetitionId, setSelectedCompetitionId] =
+    useState<string>("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTournament, setFilterTournament] = useState<string>("all");
 
@@ -39,12 +45,14 @@ export const TeamsPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [teamsData, tournamentsData] = await Promise.all([
+      const [teamsData, tournamentsData, competitionsData] = await Promise.all([
         teamService.getAll(),
         tournamentService.getAll(),
+        competitionService.getAll(),
       ]);
       setTeams(teamsData);
       setTournaments(tournamentsData);
+      setCompetitions(competitionsData);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -117,9 +125,9 @@ export const TeamsPage: React.FC = () => {
             setIsEditing(false);
             setCurrentTeam({
               name: "",
-              batch: "",
-              tournament_id: tournaments[0]?.id,
+              tournament_id: "",
             });
+            setSelectedCompetitionId("");
             setShowModal(true);
           }}
           className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -152,7 +160,7 @@ export const TeamsPage: React.FC = () => {
               <option value="all">All Tournaments</option>
               {tournaments.map((t) => (
                 <option key={t.id} value={t.id.toString()}>
-                  {t.name}
+                  {t.name} ({t.year})
                 </option>
               ))}
             </select>
@@ -190,7 +198,7 @@ export const TeamsPage: React.FC = () => {
                     Active League
                   </th>
                   <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-center">
-                    Batch
+                    Season
                   </th>
                   <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-right">
                     Actions
@@ -249,7 +257,8 @@ export const TeamsPage: React.FC = () => {
                     <td className="px-6 py-5 text-center">
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-300">
-                          {team.batch}
+                          {tournaments.find((t) => t.id === team.tournament_id)
+                            ?.year || "-"}
                         </span>
                       </div>
                     </td>
@@ -266,6 +275,17 @@ export const TeamsPage: React.FC = () => {
                           onClick={() => {
                             setIsEditing(true);
                             setCurrentTeam(team);
+                            // Find competition for this team's tournament
+                            const tournament = tournaments.find(
+                              (t) => t.id === team.tournament_id,
+                            );
+                            if (tournament && tournament.competition_id) {
+                              setSelectedCompetitionId(
+                                tournament.competition_id,
+                              );
+                            } else {
+                              setSelectedCompetitionId("");
+                            }
                             setShowModal(true);
                           }}
                           className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
@@ -326,7 +346,26 @@ export const TeamsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="label">Primary League</label>
+                  <label className="label">Tournament (Leagues)</label>
+                  <select
+                    className="input h-12 appearance-none mb-4"
+                    value={selectedCompetitionId}
+                    onChange={(e) => {
+                      setSelectedCompetitionId(e.target.value);
+                      setCurrentTeam({ ...currentTeam, tournament_id: "" }); // Reset season when competition changes
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a tournament
+                    </option>
+                    {competitions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="label">Season (Edition)</label>
                   <select
                     required
                     className="input h-12 appearance-none"
@@ -337,34 +376,21 @@ export const TeamsPage: React.FC = () => {
                         tournament_id: e.target.value,
                       })
                     }
+                    disabled={!selectedCompetitionId}
                   >
                     <option value="" disabled>
-                      Select a tournament
+                      {selectedCompetitionId
+                        ? "Select a season"
+                        : "Select a tournament first"}
                     </option>
-                    {tournaments.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
+                    {tournaments
+                      .filter((t) => t.competition_id === selectedCompetitionId)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.year})
+                        </option>
+                      ))}
                   </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Batch Code</label>
-                    <input
-                      required
-                      type="text"
-                      className="input h-12"
-                      value={currentTeam.batch || ""}
-                      onChange={(e) =>
-                        setCurrentTeam({
-                          ...currentTeam,
-                          batch: e.target.value,
-                        })
-                      }
-                      placeholder="e.g. A-24"
-                    />
-                  </div>
                 </div>
 
                 <ImageUpload

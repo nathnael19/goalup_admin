@@ -9,18 +9,34 @@ import {
 } from "react-icons/fi";
 import { playerService } from "../services/playerService";
 import { teamService } from "../services/teamService";
+import { tournamentService } from "../services/tournamentService";
+import { competitionService } from "../services/competitionService";
 import { ImageUpload } from "../components/ImageUpload";
-import type { Player, CreatePlayerDto, Team } from "../types";
+import type {
+  Player,
+  CreatePlayerDto,
+  Team,
+  Tournament,
+  Competition,
+} from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const PlayersPage: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState<Partial<Player>>({});
+
+  // Modal selection state
+  const [selectedCompetitionId, setSelectedCompetitionId] =
+    useState<string>("");
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTeam, setFilterTeam] = useState<string>("all");
 
@@ -36,12 +52,17 @@ export const PlayersPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [playersData, teamsData] = await Promise.all([
-        playerService.getAll(),
-        teamService.getAll(),
-      ]);
+      const [playersData, teamsData, tournamentsData, competitionsData] =
+        await Promise.all([
+          playerService.getAll(),
+          teamService.getAll(),
+          tournamentService.getAll(),
+          competitionService.getAll(),
+        ]);
       setPlayers(playersData);
       setTeams(teamsData);
+      setTournaments(tournamentsData);
+      setCompetitions(competitionsData);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -113,10 +134,12 @@ export const PlayersPage: React.FC = () => {
             setIsEditing(false);
             setCurrentPlayer({
               name: "",
-              team_id: teams[0]?.id,
-              position: "ST",
+              team_id: "",
+              position: "ST" as any,
               jersey_number: 10,
             });
+            setSelectedCompetitionId("");
+            setSelectedTournamentId("");
             setShowModal(true);
           }}
           className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -215,6 +238,22 @@ export const PlayersPage: React.FC = () => {
                       onClick={() => {
                         setIsEditing(true);
                         setCurrentPlayer(player);
+                        // Find team -> tournament -> competition
+                        const team = teams.find((t) => t.id === player.team_id);
+                        if (team) {
+                          setSelectedTournamentId(team.tournament_id);
+                          const tournament = tournaments.find(
+                            (t) => t.id === team.tournament_id,
+                          );
+                          if (tournament && tournament.competition_id) {
+                            setSelectedCompetitionId(tournament.competition_id);
+                          } else {
+                            setSelectedCompetitionId("");
+                          }
+                        } else {
+                          setSelectedTournamentId("");
+                          setSelectedCompetitionId("");
+                        }
                         setShowModal(true);
                       }}
                       className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
@@ -331,7 +370,53 @@ export const PlayersPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="label">Current Team</label>
+                    <label className="label">League / Tournament</label>
+                    <select
+                      className="input h-12 appearance-none mb-4"
+                      value={selectedCompetitionId}
+                      onChange={(e) => {
+                        setSelectedCompetitionId(e.target.value);
+                        setSelectedTournamentId("");
+                        setCurrentPlayer({ ...currentPlayer, team_id: "" });
+                      }}
+                    >
+                      <option value="" disabled>
+                        Select a tournament
+                      </option>
+                      {competitions.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <label className="label">Season</label>
+                    <select
+                      className="input h-12 appearance-none mb-4"
+                      value={selectedTournamentId}
+                      onChange={(e) => {
+                        setSelectedTournamentId(e.target.value);
+                        setCurrentPlayer({ ...currentPlayer, team_id: "" });
+                      }}
+                      disabled={!selectedCompetitionId}
+                    >
+                      <option value="" disabled>
+                        {selectedCompetitionId
+                          ? "Select a season"
+                          : "Select a league first"}
+                      </option>
+                      {tournaments
+                        .filter(
+                          (t) => t.competition_id === selectedCompetitionId,
+                        )
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.year})
+                          </option>
+                        ))}
+                    </select>
+
+                    <label className="label">Team</label>
                     <select
                       required
                       className="input h-12 appearance-none"
@@ -342,15 +427,20 @@ export const PlayersPage: React.FC = () => {
                           team_id: e.target.value,
                         })
                       }
+                      disabled={!selectedTournamentId}
                     >
                       <option value="" disabled>
-                        Select Team
+                        {selectedTournamentId
+                          ? "Select Team"
+                          : "Select a season first"}
                       </option>
-                      {teams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
+                      {teams
+                        .filter((t) => t.tournament_id === selectedTournamentId)
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div>
@@ -376,7 +466,7 @@ export const PlayersPage: React.FC = () => {
                       onChange={(e) =>
                         setCurrentPlayer({
                           ...currentPlayer,
-                          position: e.target.value,
+                          position: e.target.value as any,
                         })
                       }
                     >

@@ -68,7 +68,6 @@ export interface CreateTournamentDto {
 export interface Team {
   id: string;
   name: string;
-  batch: string;
   tournament_id: string;
   logo_url?: string;
   color?: string;
@@ -78,7 +77,6 @@ export interface Team {
 
 export interface CreateTeamDto {
   name: string;
-  batch: string;
   tournament_id: string;
   logo_url?: string;
   color?: string;
