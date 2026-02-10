@@ -145,7 +145,7 @@ export const TeamDetailPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="space-y-4">
-                  {players.map((player) => (
+                  {players.map((player: any) => (
                     <div
                       key={player.id}
                       className="card group/player p-4 hover:border-slate-600 transition-all cursor-pointer"

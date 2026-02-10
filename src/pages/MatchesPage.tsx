@@ -12,6 +12,7 @@ export const MatchesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Partial<Match>>({});
+  const [filter, setFilter] = useState<"all" | "live">("all");
 
   useEffect(() => {
     fetchData();
@@ -89,10 +90,24 @@ export const MatchesPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 p-1 bg-slate-800/40 rounded-2xl border border-slate-800">
-          <button className="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/20 transition-all">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-4 py-2 font-bold rounded-xl text-xs transition-all ${
+              filter === "all"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                : "text-slate-500 hover:text-white"
+            }`}
+          >
             All Matches
           </button>
-          <button className="px-4 py-2 text-slate-500 font-bold hover:text-white transition-all text-xs">
+          <button
+            onClick={() => setFilter("live")}
+            className={`px-4 py-2 font-bold rounded-xl text-xs transition-all ${
+              filter === "live"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                : "text-slate-500 hover:text-white"
+            }`}
+          >
             Live Now
           </button>
         </div>
@@ -104,7 +119,10 @@ export const MatchesPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {matches.map((match) => (
+          {(filter === "all"
+            ? matches
+            : matches.filter((m) => m.status === "live")
+          ).map((match) => (
             <div
               key={match.id}
               className="card group hover:border-slate-700 transition-all duration-300 relative overflow-hidden"
