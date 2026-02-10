@@ -16,8 +16,9 @@ import {
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { goalService } from "../services/goalService";
+import { cardService } from "../services/cardService";
 import { teamService } from "../services/teamService";
-import type { Match, Goal, TeamDetail } from "../types";
+import type { Match, Goal, TeamDetail, CardEvent, CardType } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchDetailPage: React.FC = () => {
@@ -28,6 +29,7 @@ export const MatchDetailPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedMatch, setEditedMatch] = useState<Partial<Match>>({});
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [cards, setCards] = useState<CardEvent[]>([]);
   const [teamADetail, setTeamADetail] = useState<TeamDetail | null>(null);
   const [teamBDetail, setTeamBDetail] = useState<TeamDetail | null>(null);
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -41,6 +43,18 @@ export const MatchDetailPage: React.FC = () => {
     player_id: "",
     minute: 1,
     is_own_goal: false,
+  });
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardData, setCardData] = useState<{
+    team_id: string;
+    player_id: string;
+    minute: number;
+    type: CardType;
+  }>({
+    team_id: "",
+    player_id: "",
+    minute: 1,
+    type: "yellow",
   });
 
   const [tick, setTick] = useState(0);
@@ -61,13 +75,15 @@ export const MatchDetailPage: React.FC = () => {
   const fetchMatch = async (matchId: string) => {
     try {
       setLoading(true);
-      const [matchData, goalsData] = await Promise.all([
+      const [matchData, goalsData, cardsData] = await Promise.all([
         matchService.getById(matchId),
         goalService.getByMatchId(matchId),
+        cardService.getByMatchId(matchId),
       ]);
       setMatch(matchData);
       setEditedMatch(matchData);
       setGoals(goalsData);
+      setCards(cardsData);
 
       // Fetch team details for roster
       if (matchData.team_a_id && matchData.team_b_id) {
@@ -205,6 +221,34 @@ export const MatchDetailPage: React.FC = () => {
       if (match) await fetchMatch(match.id);
     } catch (err) {
       console.error("Failed to delete goal", err);
+    }
+  };
+
+  const handleAddCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!match) return;
+    try {
+      await cardService.create({
+        match_id: match.id,
+        team_id: cardData.team_id,
+        player_id: cardData.player_id,
+        minute: cardData.minute,
+        type: cardData.type,
+      });
+      setShowCardModal(false);
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to add card", err);
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!window.confirm("Delete this card?")) return;
+    try {
+      await cardService.delete(cardId);
+      if (match) await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to delete card", err);
     }
   };
 
@@ -520,6 +564,86 @@ export const MatchDetailPage: React.FC = () => {
                 >
                   <FiCheckCircle className="mr-2" /> Finish Match
                 </button>
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">
+                    Cards
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        const currentMinute = calculateMatchTime(
+                          match,
+                        )?.replace("'", "");
+                        setCardData({
+                          ...cardData,
+                          team_id: match.team_a_id,
+                          minute: currentMinute ? parseInt(currentMinute) : 1,
+                          type: "yellow",
+                        });
+                        setShowCardModal(true);
+                      }}
+                      className="btn btn-secondary border-amber-500/20 text-amber-500 hover:bg-amber-500/10 text-[10px] py-2 h-auto"
+                    >
+                      <div className="w-2 h-3 bg-amber-500 rounded-xs mr-2" />{" "}
+                      {match.team_a?.name.split(" ")[0]}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const currentMinute = calculateMatchTime(
+                          match,
+                        )?.replace("'", "");
+                        setCardData({
+                          ...cardData,
+                          team_id: match.team_b_id,
+                          minute: currentMinute ? parseInt(currentMinute) : 1,
+                          type: "yellow",
+                        });
+                        setShowCardModal(true);
+                      }}
+                      className="btn btn-secondary border-amber-500/20 text-amber-500 hover:bg-amber-500/10 text-[10px] py-2 h-auto"
+                    >
+                      <div className="w-2 h-3 bg-amber-500 rounded-xs mr-2" />{" "}
+                      {match.team_b?.name.split(" ")[0]}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const currentMinute = calculateMatchTime(
+                          match,
+                        )?.replace("'", "");
+                        setCardData({
+                          ...cardData,
+                          team_id: match.team_a_id,
+                          minute: currentMinute ? parseInt(currentMinute) : 1,
+                          type: "red",
+                        });
+                        setShowCardModal(true);
+                      }}
+                      className="btn btn-secondary border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] py-2 h-auto"
+                    >
+                      <div className="w-2 h-3 bg-red-600 rounded-xs mr-2" />{" "}
+                      {match.team_a?.name.split(" ")[0]}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const currentMinute = calculateMatchTime(
+                          match,
+                        )?.replace("'", "");
+                        setCardData({
+                          ...cardData,
+                          team_id: match.team_b_id,
+                          minute: currentMinute ? parseInt(currentMinute) : 1,
+                          type: "red",
+                        });
+                        setShowCardModal(true);
+                      }}
+                      className="btn btn-secondary border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] py-2 h-auto"
+                    >
+                      <div className="w-2 h-3 bg-red-600 rounded-xs mr-2" />{" "}
+                      {match.team_b?.name.split(" ")[0]}
+                    </button>
+                  </div>
+                </div>
               </>
             )}
             {match.status === "finished" && (
@@ -641,46 +765,79 @@ export const MatchDetailPage: React.FC = () => {
             </span>
           </h3>
           <div className="space-y-4">
-            {goals.length === 0 ? (
+            {goals.length === 0 && cards.length === 0 ? (
               <p className="text-slate-500 text-sm italic">
-                No goals recorded yet.
+                No events recorded yet.
               </p>
             ) : (
               <div className="relative border-l-2 border-slate-800 ml-3 pl-6 space-y-6">
-                {goals.map((g) => (
-                  <div key={g.id} className="relative">
-                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-900 shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-500 font-black text-sm">
-                            {g.minute}'
-                          </span>
-                          <span className="text-white font-black">GOAL!</span>
-                          {g.is_own_goal && (
-                            <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-black uppercase">
-                              OG
+                {[
+                  ...goals.map((g) => ({ ...g, event_type: "goal" as const })),
+                  ...cards.map((c) => ({ ...c, event_type: "card" as const })),
+                ]
+                  .sort((a, b) => a.minute - b.minute)
+                  .map((event) => (
+                    <div key={event.id} className="relative">
+                      <div
+                        className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-4 border-slate-900 shadow-lg ${
+                          event.event_type === "goal"
+                            ? "bg-blue-600 shadow-blue-500/20"
+                            : (event as CardEvent).type === "yellow"
+                              ? "bg-amber-500 shadow-amber-500/20"
+                              : "bg-red-600 shadow-red-500/20"
+                        }`}
+                      />
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-slate-400 font-black text-xs">
+                              {event.minute}'
                             </span>
-                          )}
+                            {event.event_type === "goal" ? (
+                              <>
+                                <span className="text-white font-black text-sm uppercase">
+                                  Goal
+                                </span>
+                                {(event as Goal).is_own_goal && (
+                                  <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-black uppercase">
+                                    OG
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span
+                                className={`font-black text-sm uppercase ${
+                                  (event as CardEvent).type === "yellow"
+                                    ? "text-amber-500"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {(event as CardEvent).type} Card
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-bold text-slate-200">
+                            {event.player?.name || "Unknown Player"}
+                          </p>
+                          <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                            {event.team_id === match.team_a_id
+                              ? match.team_a?.name
+                              : match.team_b?.name}
+                          </p>
                         </div>
-                        <p className="text-sm font-bold text-slate-300">
-                          {g.player?.name || "Unknown Player"}
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                          {g.team_id === match.team_a_id
-                            ? match.team_a?.name
-                            : match.team_b?.name}
-                        </p>
+                        <button
+                          onClick={() =>
+                            event.event_type === "goal"
+                              ? handleDeleteGoal(event.id)
+                              : handleDeleteCard(event.id)
+                          }
+                          className="p-2 text-slate-600 hover:text-red-400 transition-colors"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleDeleteGoal(g.id)}
-                        className="p-2 text-slate-600 hover:text-red-400 transition-colors"
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
@@ -790,6 +947,125 @@ export const MatchDetailPage: React.FC = () => {
                   </button>
                   <button type="submit" className="btn btn-primary flex-1">
                     Record Goal
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Modal */}
+      {showCardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setShowCardModal(false)}
+          />
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-8">
+              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight flex items-center gap-3">
+                <div
+                  className={`w-3 h-5 rounded-xs ${cardData.type === "yellow" ? "bg-amber-500" : "bg-red-600"}`}
+                />
+                Record {cardData.type} Card
+              </h2>
+              <form onSubmit={handleAddCard} className="space-y-6">
+                <div>
+                  <label className="label">
+                    Player (
+                    {cardData.team_id === match.team_a_id
+                      ? match.team_a?.name
+                      : match.team_b?.name}
+                    )
+                  </label>
+                  <select
+                    required
+                    className="input h-12 appearance-none font-bold"
+                    value={cardData.player_id}
+                    onChange={(e) =>
+                      setCardData({ ...cardData, player_id: e.target.value })
+                    }
+                  >
+                    <option value="" disabled>
+                      Select Player
+                    </option>
+                    {(cardData.team_id === match.team_a_id
+                      ? teamADetail
+                      : teamBDetail
+                    )?.roster.goalkeepers
+                      .concat(
+                        (cardData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.defenders || [],
+                        (cardData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.midfielders || [],
+                        (cardData.team_id === match.team_a_id
+                          ? teamADetail
+                          : teamBDetail
+                        )?.roster.forwards || [],
+                      )
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.jersey_number}. {p.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Minute</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      className="input h-12 border-blue-500/30 focus:border-blue-500"
+                      value={cardData.minute}
+                      onChange={(e) =>
+                        setCardData({
+                          ...cardData,
+                          minute: parseInt(e.target.value) || 1,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Card Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCardData({ ...cardData, type: "yellow" })
+                        }
+                        className={`h-12 rounded-xl border flex items-center justify-center transition-all ${cardData.type === "yellow" ? "bg-amber-500 border-amber-400 text-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.3)]" : "bg-slate-800 border-slate-700 text-slate-400 opacity-50"}`}
+                      >
+                        <div className="w-2 h-3 bg-current rounded-xs" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCardData({ ...cardData, type: "red" })
+                        }
+                        className={`h-12 rounded-xl border flex items-center justify-center transition-all ${cardData.type === "red" ? "bg-red-600 border-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]" : "bg-slate-800 border-slate-700 text-slate-400 opacity-50"}`}
+                      >
+                        <div className="w-2 h-3 bg-current rounded-xs" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCardModal(false)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1">
+                    Record Card
                   </button>
                 </div>
               </form>

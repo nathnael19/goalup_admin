@@ -129,6 +129,27 @@ export interface Match {
   total_time?: number;
   is_halftime?: boolean;
   goals_list?: Goal[];
+  cards_list?: CardEvent[];
+}
+
+export type CardType = "yellow" | "red";
+
+export interface CardEvent {
+  id: string;
+  match_id: string;
+  player_id: string;
+  team_id: string;
+  minute: number;
+  type: CardType;
+  player?: Player;
+}
+
+export interface CreateCardDto {
+  match_id: string;
+  player_id: string;
+  team_id: string;
+  minute: number;
+  type: CardType;
 }
 
 export interface Goal {
