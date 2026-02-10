@@ -115,7 +115,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
           : statCards.map((stat, i) => (
@@ -155,7 +155,7 @@ export const DashboardPage: React.FC = () => {
             ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
         {/* Quick Actions */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between bg-slate-800/20 p-4 rounded-2xl border border-slate-700/30">

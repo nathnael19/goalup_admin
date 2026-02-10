@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   FiLogOut,
@@ -14,6 +14,7 @@ import {
 
 export const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(
     window.innerWidth > 1024,
   );
@@ -31,8 +32,22 @@ export const MainLayout: React.FC = () => {
   // Close mobile menu on route change
   React.useEffect(() => {
     setMobileMenuOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [window.location.pathname]);
+  }, [location.pathname]);
+
+  // Handle window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMobileMenuOpen(false);
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#0f172a] font-body text-slate-200 overflow-hidden">
@@ -149,12 +164,14 @@ export const MainLayout: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-[#020617] relative pt-16 lg:pt-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#020617] relative pt-16 lg:pt-0">
         {/* Background Gradients */}
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] pointer-events-none animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/10 blur-[150px] pointer-events-none animate-pulse" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/10 blur-[150px] animate-pulse" />
+        </div>
 
-        <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto">
+        <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto relative z-10">
           <Outlet />
         </div>
       </main>
