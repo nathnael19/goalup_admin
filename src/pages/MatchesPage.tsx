@@ -21,6 +21,8 @@ export const MatchesPage: React.FC = () => {
   const [currentMatch, setCurrentMatch] = useState<Partial<Match>>({});
   const [filter, setFilter] = useState<"all" | "live">("all");
 
+  const [mode, setMode] = useState<"create" | "update">("create");
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -43,21 +45,37 @@ export const MatchesPage: React.FC = () => {
     }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (currentMatch.id) {
+      if (mode === "update" && currentMatch.id) {
         const updateData: UpdateMatchScoreDto = {
           score_a: currentMatch.score_a,
           score_b: currentMatch.score_b,
           status: currentMatch.status,
         };
         await matchService.update(currentMatch.id, updateData);
-        setShowModal(false);
-        fetchData();
+      } else if (mode === "create") {
+        if (
+          !currentMatch.tournament_id ||
+          !currentMatch.team_a_id ||
+          !currentMatch.team_b_id ||
+          !currentMatch.start_time
+        ) {
+          // Basic validation (could be improved with toast)
+          return;
+        }
+        await matchService.create({
+          tournament_id: currentMatch.tournament_id,
+          team_a_id: currentMatch.team_a_id,
+          team_b_id: currentMatch.team_b_id,
+          start_time: currentMatch.start_time,
+        });
       }
+      setShowModal(false);
+      fetchData();
     } catch (err) {
-      console.error("Failed to update match", err);
+      console.error("Failed to save match", err);
     }
   };
 
@@ -85,6 +103,39 @@ export const MatchesPage: React.FC = () => {
     }
   };
 
+  // Filter teams based on selected tournament during creation
+  const availableTeams =
+    mode === "create" && currentMatch.tournament_id
+      ? teams.filter((t) => t.tournament_id === currentMatch.tournament_id)
+      : teams;
+
+  const [showAutoScheduleModal, setShowAutoScheduleModal] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState({
+    tournament_id: "",
+    start_date: "",
+    matches_per_day: 1,
+    interval_days: 1,
+  });
+
+  const handleAutoSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!scheduleConfig.tournament_id || !scheduleConfig.start_date) return;
+
+      await tournamentService.schedule(scheduleConfig.tournament_id, {
+        start_date: new Date(scheduleConfig.start_date).toISOString(),
+        matches_per_day: scheduleConfig.matches_per_day,
+        interval_days: scheduleConfig.interval_days,
+      });
+
+      setShowAutoScheduleModal(false);
+      fetchData();
+      // Ideally show success toast
+    } catch (err) {
+      console.error("Failed to generate schedule", err);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -96,27 +147,54 @@ export const MatchesPage: React.FC = () => {
             Coordinate schedules, update live scores and manage event statuses.
           </p>
         </div>
-        <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner">
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => setFilter("all")}
-            className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
-              filter === "all"
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
-            }`}
+            onClick={() => {
+              setMode("create");
+              setCurrentMatch({ status: "scheduled" as MatchStatus });
+              setShowModal(true);
+            }}
+            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
           >
-            All Matches
+            <FiClock className="mr-2" /> Schedule Match
           </button>
           <button
-            onClick={() => setFilter("live")}
-            className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
-              filter === "live"
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
-            }`}
+            onClick={() => {
+              setShowAutoScheduleModal(true);
+              setScheduleConfig({
+                tournament_id: "",
+                start_date: "",
+                matches_per_day: 1,
+                interval_days: 1,
+              });
+            }}
+            className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
           >
-            Live Now
+            <FiCalendar className="mr-2" /> Auto Fixtures
           </button>
+
+          <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
+                filter === "all"
+                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              All Matches
+            </button>
+            <button
+              onClick={() => setFilter("live")}
+              className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
+                filter === "live"
+                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              Live Now
+            </button>
+          </div>
         </div>
       </div>
 
@@ -246,6 +324,7 @@ export const MatchesPage: React.FC = () => {
                 <div className="w-full lg:w-auto flex lg:flex-col justify-center gap-3 border-t lg:border-t-0 lg:border-l border-slate-800/50 pt-6 lg:pt-0 lg:pl-10">
                   <button
                     onClick={() => {
+                      setMode("update");
                       setCurrentMatch(match);
                       setShowModal(true);
                     }}
@@ -265,7 +344,129 @@ export const MatchesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Score Modal */}
+      {/* Auto Schedule Modal */}
+      {showAutoScheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setShowAutoScheduleModal(false)}
+          />
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
+            <div className="p-6 md:p-8 shrink-0">
+              <h2 className="text-2xl font-black text-white mb-2 text-center font-display tracking-tight uppercase">
+                Auto Schedule
+              </h2>
+              <p className="text-xs text-center text-slate-500 font-bold uppercase tracking-widest">
+                Generate home & away fixtures
+              </p>
+            </div>
+            <div className="px-6 md:px-8 pb-8 modal-content overflow-y-auto">
+              <form onSubmit={handleAutoSchedule} className="space-y-6">
+                {/* Tournament Selection */}
+                <div>
+                  <label className="label">Tournament context</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none"
+                    value={scheduleConfig.tournament_id}
+                    onChange={(e) =>
+                      setScheduleConfig({
+                        ...scheduleConfig,
+                        tournament_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="" disabled>
+                      Select Tournament
+                    </option>
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date Selection */}
+                <div>
+                  <label className="label">Start Date</label>
+                  <input
+                    required
+                    type="date"
+                    className="input h-12"
+                    value={scheduleConfig.start_date}
+                    onChange={(e) =>
+                      setScheduleConfig({
+                        ...scheduleConfig,
+                        start_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Matches / Day</label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      className="input h-12"
+                      value={scheduleConfig.matches_per_day}
+                      onChange={(e) =>
+                        setScheduleConfig({
+                          ...scheduleConfig,
+                          matches_per_day: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Day Interval</label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      className="input h-12"
+                      value={scheduleConfig.interval_days}
+                      onChange={(e) =>
+                        setScheduleConfig({
+                          ...scheduleConfig,
+                          interval_days: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                  <p className="text-xs text-slate-400 leading-relaxed font-bold">
+                    <span className="text-blue-400">Note:</span> This will
+                    generate a full Double Round Robin schedule (Home & Away)
+                    for all teams in the selected tournament.
+                  </p>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAutoScheduleModal(false)}
+                    className="btn btn-secondary flex-1 h-12"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    Generate Fixtures
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Match Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -275,90 +476,212 @@ export const MatchesPage: React.FC = () => {
           <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
             <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
             <div className="p-6 md:p-8 shrink-0">
-              <h2 className="text-2xl font-black text-white mb-6 text-center font-display tracking-tight uppercase">
-                Update Results
+              <h2 className="text-2xl font-black text-white mb-2 text-center font-display tracking-tight uppercase">
+                {mode === "create" ? "Schedule Match" : "Update Results"}
               </h2>
+              {mode === "create" && (
+                <p className="text-xs text-center text-slate-500 font-bold uppercase tracking-widest">
+                  Create a new fixture
+                </p>
+              )}
             </div>
-            <div className="px-6 md:px-8 pb-8 modal-content">
-              <form onSubmit={handleUpdate} className="space-y-10">
-                <div className="flex items-center justify-between gap-6">
-                  <div className="text-center flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto mb-4 border border-slate-700 flex items-center justify-center font-black text-slate-500 uppercase text-lg">
-                      {teams
-                        .find((t) => t.id === currentMatch.team_a_id)
-                        ?.name.charAt(0)}
+            <div className="px-6 md:px-8 pb-8 modal-content overflow-y-auto">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {mode === "create" ? (
+                  <>
+                    {/* Tournament Selection */}
+                    <div>
+                      <label className="label">Tournament</label>
+                      <select
+                        required
+                        className="input h-12 appearance-none"
+                        value={currentMatch.tournament_id || ""}
+                        onChange={(e) =>
+                          setCurrentMatch({
+                            ...currentMatch,
+                            tournament_id: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="" disabled>
+                          Select Tournament
+                        </option>
+                        {tournaments.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 line-clamp-1">
-                      {teams.find((t) => t.id === currentMatch.team_a_id)?.name}
-                    </p>
-                    <input
-                      type="number"
-                      className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
-                      value={currentMatch.score_a ?? 0}
-                      onChange={(e) =>
-                        setCurrentMatch({
-                          ...currentMatch,
-                          score_a: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="text-3xl font-black text-slate-700 mt-14">
-                    :
-                  </div>
-                  <div className="text-center flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto mb-4 border border-slate-700 flex items-center justify-center font-black text-slate-500 uppercase text-lg">
-                      {teams
-                        .find((t) => t.id === currentMatch.team_b_id)
-                        ?.name.charAt(0)}
+
+                    {/* Teams Selection */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="label">Home Team</label>
+                        <select
+                          required
+                          className="input h-12 appearance-none"
+                          value={currentMatch.team_a_id || ""}
+                          onChange={(e) =>
+                            setCurrentMatch({
+                              ...currentMatch,
+                              team_a_id: e.target.value,
+                            })
+                          }
+                          disabled={!currentMatch.tournament_id}
+                        >
+                          <option value="" disabled>
+                            Select Team
+                          </option>
+                          {availableTeams
+                            .filter((t) => t.id !== currentMatch.team_b_id)
+                            .map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Away Team</label>
+                        <select
+                          required
+                          className="input h-12 appearance-none"
+                          value={currentMatch.team_b_id || ""}
+                          onChange={(e) =>
+                            setCurrentMatch({
+                              ...currentMatch,
+                              team_b_id: e.target.value,
+                            })
+                          }
+                          disabled={!currentMatch.tournament_id}
+                        >
+                          <option value="" disabled>
+                            Select Team
+                          </option>
+                          {availableTeams
+                            .filter((t) => t.id !== currentMatch.team_a_id)
+                            .map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
                     </div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 line-clamp-1">
-                      {teams.find((t) => t.id === currentMatch.team_b_id)?.name}
-                    </p>
-                    <input
-                      type="number"
-                      className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
-                      value={currentMatch.score_b ?? 0}
-                      onChange={(e) =>
-                        setCurrentMatch({
-                          ...currentMatch,
-                          score_b: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="label uppercase tracking-widest text-[10px] mb-3">
-                    Live Status Phase
-                  </label>
-                  <select
-                    className="input h-14 appearance-none font-bold"
-                    value={currentMatch.status}
-                    onChange={(e) =>
-                      setCurrentMatch({
-                        ...currentMatch,
-                        status: e.target.value as MatchStatus,
-                      })
-                    }
-                  >
-                    <option value="scheduled">Scheduled / Upcoming</option>
-                    <option value="live">Live In-Game</option>
-                    <option value="finished">Full Time (Finished)</option>
-                  </select>
-                </div>
+                    {/* Date Time */}
+                    <div>
+                      <label className="label">Kick-off Time</label>
+                      <input
+                        required
+                        type="datetime-local"
+                        className="input h-12"
+                        value={
+                          currentMatch.start_time
+                            ? new Date(currentMatch.start_time)
+                                .toISOString()
+                                .slice(0, 16)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setCurrentMatch({
+                            ...currentMatch,
+                            start_time: new Date(e.target.value).toISOString(),
+                          })
+                        }
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Update Score UI */}
+                    <div className="flex items-center justify-between gap-6">
+                      <div className="text-center flex-1">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto mb-4 border border-slate-700 flex items-center justify-center font-black text-slate-500 uppercase text-lg">
+                          {teams
+                            .find((t) => t.id === currentMatch.team_a_id)
+                            ?.name.charAt(0)}
+                        </div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 line-clamp-1">
+                          {
+                            teams.find((t) => t.id === currentMatch.team_a_id)
+                              ?.name
+                          }
+                        </p>
+                        <input
+                          type="number"
+                          className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
+                          value={currentMatch.score_a ?? 0}
+                          onChange={(e) =>
+                            setCurrentMatch({
+                              ...currentMatch,
+                              score_a: parseInt(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="text-3xl font-black text-slate-700 mt-14">
+                        :
+                      </div>
+                      <div className="text-center flex-1">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto mb-4 border border-slate-700 flex items-center justify-center font-black text-slate-500 uppercase text-lg">
+                          {teams
+                            .find((t) => t.id === currentMatch.team_b_id)
+                            ?.name.charAt(0)}
+                        </div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 line-clamp-1">
+                          {
+                            teams.find((t) => t.id === currentMatch.team_b_id)
+                              ?.name
+                          }
+                        </p>
+                        <input
+                          type="number"
+                          className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
+                          value={currentMatch.score_b ?? 0}
+                          onChange={(e) =>
+                            setCurrentMatch({
+                              ...currentMatch,
+                              score_b: parseInt(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex gap-4">
+                    <div>
+                      <label className="label uppercase tracking-widest text-[10px] mb-3">
+                        Live Status Phase
+                      </label>
+                      <select
+                        className="input h-14 appearance-none font-bold"
+                        value={currentMatch.status}
+                        onChange={(e) =>
+                          setCurrentMatch({
+                            ...currentMatch,
+                            status: e.target.value as MatchStatus,
+                          })
+                        }
+                      >
+                        <option value="scheduled">Scheduled / Upcoming</option>
+                        <option value="live">Live In-Game</option>
+                        <option value="finished">Full Time (Finished)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-4 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="btn btn-secondary flex-1 h-14"
+                    className="btn btn-secondary flex-1 h-12"
                   >
                     Discard
                   </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-14">
-                    Sync Match
+                  <button type="submit" className="btn btn-primary flex-1 h-12">
+                    {mode === "create" ? "Schedule Match" : "Sync Result"}
                   </button>
                 </div>
               </form>
