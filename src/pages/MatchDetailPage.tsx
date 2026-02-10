@@ -121,7 +121,11 @@ export const MatchDetailPage: React.FC = () => {
   const handleStartMatch = async () => {
     if (!match) return;
     try {
-      await matchService.update(match.id, { status: "live" });
+      const updateData: Partial<Match> = { status: "live" };
+      if (match.status !== "live") {
+        updateData.start_time = new Date().toISOString();
+      }
+      await matchService.update(match.id, updateData);
       await fetchMatch(match.id);
     } catch (err) {
       console.error("Failed to start match", err);
@@ -142,7 +146,11 @@ export const MatchDetailPage: React.FC = () => {
     if (m.status !== "live") return null;
     if (m.is_halftime) return "HT";
 
-    const start = new Date(m.start_time).getTime();
+    const startTimeStr =
+      m.start_time.includes("Z") || m.start_time.includes("+")
+        ? m.start_time
+        : `${m.start_time}Z`;
+    const start = new Date(startTimeStr).getTime();
     const now = new Date().getTime();
     const diffInMinutes = Math.floor((now - start) / 60000);
 

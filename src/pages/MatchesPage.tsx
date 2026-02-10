@@ -76,6 +76,15 @@ export const MatchesPage: React.FC = () => {
           score_b: currentMatch.score_b,
           status: currentMatch.status,
         };
+
+        const existingMatch = matches.find((m) => m.id === currentMatch.id);
+        if (
+          currentMatch.status === "live" &&
+          existingMatch?.status !== "live"
+        ) {
+          updateData.start_time = new Date().toISOString();
+        }
+
         await matchService.update(currentMatch.id, updateData);
       } else if (mode === "create") {
         if (
@@ -116,7 +125,11 @@ export const MatchesPage: React.FC = () => {
     if (match.status !== "live") return null;
     if (match.is_halftime) return "HT";
 
-    const start = new Date(match.start_time).getTime();
+    const startTimeStr =
+      match.start_time.includes("Z") || match.start_time.includes("+")
+        ? match.start_time
+        : `${match.start_time}Z`;
+    const start = new Date(startTimeStr).getTime();
     const now = new Date().getTime();
     const diffInMinutes = Math.floor((now - start) / 60000);
 
