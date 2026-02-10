@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiEdit2, FiClock, FiCalendar, FiCheckCircle } from "react-icons/fi";
+import { FiClock, FiCalendar } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
@@ -83,6 +83,7 @@ export const MatchesPage: React.FC = () => {
           team_a_id: currentMatch.team_a_id,
           team_b_id: currentMatch.team_b_id,
           start_time: currentMatch.start_time,
+          total_time: currentMatch.total_time || 90,
         });
       }
       setShowModal(false);
@@ -188,7 +189,10 @@ export const MatchesPage: React.FC = () => {
           <button
             onClick={() => {
               setMode("create");
-              setCurrentMatch({ status: "scheduled" as MatchStatus });
+              setCurrentMatch({
+                status: "scheduled" as MatchStatus,
+                total_time: 90,
+              });
               setShowModal(true);
             }}
             className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -404,24 +408,6 @@ export const MatchesPage: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Vertical Actions */}
-                  <div className="w-full lg:w-auto flex lg:flex-col justify-center gap-3 border-t lg:border-t-0 lg:border-l border-slate-800/50 pt-6 lg:pt-0 lg:pl-10">
-                    <button
-                      onClick={() => {
-                        setMode("update");
-                        setCurrentMatch(match);
-                        setShowModal(true);
-                      }}
-                      className="p-4 bg-blue-600 text-white hover:bg-blue-500 rounded-2xl shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 font-bold"
-                    >
-                      <FiEdit2 size={18} />
-                      <span className="lg:hidden">Update Results</span>
-                    </button>
-                    <button className="p-4 bg-slate-800/80 text-slate-300 hover:bg-slate-700 rounded-2xl border border-slate-700/50 transition-all">
-                      <FiCheckCircle size={18} />
-                    </button>
                   </div>
                 </div>
                 <div className="absolute top-0 left-0 w-2 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />
@@ -654,6 +640,26 @@ export const MatchesPage: React.FC = () => {
                             ))}
                         </select>
                       </div>
+                    </div>
+
+                    {/* Match Duration */}
+                    <div>
+                      <label className="label">Match Duration (minutes)</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max="240"
+                        className="input h-12"
+                        placeholder="e.g. 90"
+                        value={currentMatch.total_time || 90}
+                        onChange={(e) =>
+                          setCurrentMatch({
+                            ...currentMatch,
+                            total_time: parseInt(e.target.value) || 90,
+                          })
+                        }
+                      />
                     </div>
 
                     {/* Date Time */}

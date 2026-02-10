@@ -68,6 +68,7 @@ export const MatchDetailPage: React.FC = () => {
         status: editedMatch.status,
         additional_time_first_half: editedMatch.additional_time_first_half,
         additional_time_second_half: editedMatch.additional_time_second_half,
+        total_time: editedMatch.total_time,
       });
       await fetchMatch(match.id);
       setIsEditing(false);
@@ -226,11 +227,15 @@ export const MatchDetailPage: React.FC = () => {
                 </span>
                 <span className="w-1 h-1 rounded-full bg-slate-700" />
                 <span className="flex items-center gap-2">
-                  <FiClock />
                   {new Date(match.start_time).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-slate-700" />
+                <span className="flex items-center gap-2">
+                  <FiClock className="text-blue-400" />
+                  <span>{match.total_time || 90} Min Game</span>
                 </span>
               </div>
             </div>
@@ -430,6 +435,39 @@ export const MatchDetailPage: React.FC = () => {
                   +{match.additional_time_second_half || 0} min
                 </span>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Match Settings (Duration) */}
+        <div className="card p-6">
+          <h3 className="text-lg font-black text-white mb-4">Match Settings</h3>
+          {isEditing ? (
+            <div>
+              <label className="label">Total Duration (minutes)</label>
+              <input
+                type="number"
+                min="1"
+                max="240"
+                className="input"
+                value={editedMatch.total_time ?? 90}
+                onChange={(e) =>
+                  setEditedMatch({
+                    ...editedMatch,
+                    total_time: parseInt(e.target.value) || 90,
+                  })
+                }
+                placeholder="Minutes"
+              />
+            </div>
+          ) : (
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-bold">
+                Planned Duration:
+              </span>
+              <span className="text-white font-black text-lg">
+                {match.total_time || 90} minutes
+              </span>
             </div>
           )}
         </div>
