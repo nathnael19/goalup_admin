@@ -250,8 +250,15 @@ export const TeamsPage: React.FC = () => {
                     <td className="px-6 py-5">
                       <span className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-blue-500/5 border border-blue-500/10 text-blue-400 text-xs font-bold whitespace-nowrap">
                         <FiAward size={14} />
-                        {tournaments.find((t) => t.id === team.tournament_id)
-                          ?.name || "Not Assigned"}
+                        {(() => {
+                          const tournament = tournaments.find(
+                            (t) => t.id === team.tournament_id,
+                          );
+                          const competition = competitions.find(
+                            (c) => c.id === tournament?.competition_id,
+                          );
+                          return competition?.name || "Not Assigned";
+                        })()}
                       </span>
                     </td>
                     <td className="px-6 py-5 text-center">
