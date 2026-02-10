@@ -78,10 +78,10 @@ export const StandingsPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-white font-display tracking-tight">
-            League Tables
+            Standings
           </h1>
           <p className="text-slate-400 font-medium font-body mt-1">
-            Auto-generated rankings based on match outcomes and goal metrics.
+            View standings organized by Tournament and Season.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export const StandingsPage: React.FC = () => {
               value={filterTournament}
               onChange={(e) => setFilterTournament(e.target.value)}
             >
-              <option value="all">Global (All Leagues)</option>
+              <option value="all">All Seasons</option>
               {tournaments
                 .filter((t) => selectedYear === null || t.year === selectedYear)
                 .map((t) => (
@@ -324,7 +324,7 @@ export const StandingsPage: React.FC = () => {
                 onClick={() => setFilterTournament("all")}
                 className="mt-8 text-blue-500 font-black uppercase text-xs tracking-[0.2em] border-b-2 border-blue-500/20 hover:border-blue-500 transition-all pb-1"
               >
-                Reset League Filter
+                Reset Filter
               </button>
             </div>
           )}
