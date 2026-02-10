@@ -12,6 +12,7 @@ import { tournamentService } from "../services/tournamentService";
 import { ImageUpload } from "../components/ImageUpload";
 import type { Tournament, CreateTournamentDto } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TournamentsPage: React.FC = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -22,6 +23,11 @@ export const TournamentsPage: React.FC = () => {
     Partial<Tournament>
   >({});
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Confirmation Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchTournaments();
@@ -60,14 +66,24 @@ export const TournamentsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this tournament?")) {
-      try {
-        await tournamentService.delete(id.toString());
-        fetchTournaments();
-      } catch (err) {
-        console.error("Failed to delete tournament", err);
-      }
+  const confirmDelete = (id: string) => {
+    setItemToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await tournamentService.delete(itemToDelete.toString());
+      fetchTournaments();
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete tournament", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -161,7 +177,7 @@ export const TournamentsPage: React.FC = () => {
                     <FiEdit2 size={14} />
                   </button>
                   <button
-                    onClick={() => handleDelete(tournament.id)}
+                    onClick={() => confirmDelete(tournament.id)}
                     className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
                   >
                     <FiTrash2 size={14} />
@@ -220,7 +236,7 @@ export const TournamentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -327,6 +343,19 @@ export const TournamentsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Tournament"
+        message="Are you sure you want to delete this tournament? This action cannot be undone."
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

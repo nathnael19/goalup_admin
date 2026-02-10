@@ -14,6 +14,7 @@ import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
 import { ImageUpload } from "../components/ImageUpload";
 import type { Team, CreateTeamDto, Tournament } from "../types";
+import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TeamsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +26,11 @@ export const TeamsPage: React.FC = () => {
   const [currentTeam, setCurrentTeam] = useState<Partial<Team>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTournament, setFilterTournament] = useState<string>("all");
+
+  // Confirmation Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -65,14 +71,24 @@ export const TeamsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this team?")) {
-      try {
-        await teamService.delete(id.toString());
-        fetchData();
-      } catch (err) {
-        console.error("Failed to delete team", err);
-      }
+  const confirmDelete = (id: string) => {
+    setItemToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await teamService.delete(itemToDelete.toString());
+      fetchData();
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete team", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -257,7 +273,7 @@ export const TeamsPage: React.FC = () => {
                           <FiEdit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(team.id)}
+                          onClick={() => confirmDelete(team.id)}
                           className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
                         >
                           <FiTrash2 size={16} />
@@ -376,6 +392,19 @@ export const TeamsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Team"
+        message="Are you sure you want to delete this team? This action cannot be undone."
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

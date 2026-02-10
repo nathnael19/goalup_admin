@@ -12,6 +12,7 @@ import { teamService } from "../services/teamService";
 import { ImageUpload } from "../components/ImageUpload";
 import type { Player, CreatePlayerDto, Team } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const PlayersPage: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -22,6 +23,11 @@ export const PlayersPage: React.FC = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Partial<Player>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTeam, setFilterTeam] = useState<string>("all");
+
+  // Confirmation Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -62,14 +68,24 @@ export const PlayersPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this player?")) {
-      try {
-        await playerService.delete(id.toString());
-        fetchData();
-      } catch (err) {
-        console.error("Failed to delete player", err);
-      }
+  const confirmDelete = (id: string) => {
+    setItemToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await playerService.delete(itemToDelete.toString());
+      fetchData();
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete player", err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -206,7 +222,7 @@ export const PlayersPage: React.FC = () => {
                       <FiEdit2 size={14} />
                     </button>
                     <button
-                      onClick={() => handleDelete(player.id)}
+                      onClick={() => confirmDelete(player.id)}
                       className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
                     >
                       <FiTrash2 size={14} />
@@ -456,6 +472,19 @@ export const PlayersPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Player"
+        message="Are you sure you want to delete this player? This action cannot be undone."
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
