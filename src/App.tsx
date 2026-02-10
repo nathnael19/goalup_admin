@@ -10,6 +10,7 @@ import { TeamsPage } from "./pages/TeamsPage";
 import { PlayersPage } from "./pages/PlayersPage";
 import { MatchesPage } from "./pages/MatchesPage";
 import { StandingsPage } from "./pages/StandingsPage";
+import { TeamDetailPage } from "./pages/TeamDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ function App() {
               <Route index element={<DashboardPage />} />
               <Route path="tournaments" element={<TournamentsPage />} />
               <Route path="teams" element={<TeamsPage />} />
+              <Route path="teams/:id" element={<TeamDetailPage />} />
               <Route path="players" element={<PlayersPage />} />
               <Route path="matches" element={<MatchesPage />} />
               <Route path="standings" element={<StandingsPage />} />

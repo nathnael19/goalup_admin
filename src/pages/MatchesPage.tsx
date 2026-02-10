@@ -109,7 +109,7 @@ export const MatchesPage: React.FC = () => {
               key={match.id}
               className="card group hover:border-slate-700 transition-all duration-300 relative overflow-hidden"
             >
-              <div className="p-6 md:p-10 flex flex-col lg:flex-row items-center gap-10">
+              <div className="p-4 md:p-5 flex flex-col lg:flex-row items-center gap-6">
                 {/* Meta Info */}
                 <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
                   <div>
@@ -147,13 +147,13 @@ export const MatchesPage: React.FC = () => {
                 <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
                   {/* Home Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-4xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-3xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-xl font-black text-white shadow-xl group-hover:scale-105 transition-transform duration-500">
                       {teams
                         .find((t) => t.id === match.team_a_id)
                         ?.name.charAt(0)}
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                      <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
                         {teams.find((t) => t.id === match.team_a_id)?.name}
                       </h4>
                       <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
@@ -165,17 +165,17 @@ export const MatchesPage: React.FC = () => {
                   {/* VS / Score */}
                   <div className="flex flex-col items-center gap-6">
                     <div className="flex items-center gap-6 md:gap-10">
-                      <span className="text-5xl md:text-7xl font-black text-white font-display tracking-tighter tabular-nums">
+                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
                         {match.score_a}
                       </span>
                       <div className="flex flex-col items-center gap-1">
-                        <div className="w-10 h-1 bg-slate-800 rounded-full" />
-                        <span className="text-slate-700 font-black text-2xl">
+                        <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
+                        <span className="text-slate-700 font-black text-lg">
                           :
                         </span>
-                        <div className="w-10 h-1 bg-slate-800 rounded-full" />
+                        <div className="w-6 h-0.5 bg-slate-800 rounded-full" />
                       </div>
-                      <span className="text-5xl md:text-7xl font-black text-white font-display tracking-tighter tabular-nums">
+                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
                         {match.score_b}
                       </span>
                     </div>
@@ -186,13 +186,13 @@ export const MatchesPage: React.FC = () => {
 
                   {/* Away Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-4xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl font-black text-white shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-3xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-xl font-black text-white shadow-xl group-hover:scale-105 transition-transform duration-500">
                       {teams
                         .find((t) => t.id === match.team_b_id)
                         ?.name.charAt(0)}
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                      <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
                         {teams.find((t) => t.id === match.team_b_id)?.name}
                       </h4>
                       <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
@@ -233,7 +233,7 @@ export const MatchesPage: React.FC = () => {
             onClick={() => setShowModal(false)}
           />
           <div className="relative bg-slate-900 border border-slate-800 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in slide-in-from-top-10 duration-500">
-            <div className="p-10">
+            <div className="p-8 text-center sm:text-left">
               <h2 className="text-2xl font-black text-white mb-10 text-center font-display tracking-tight uppercase">
                 Update Results
               </h2>
@@ -250,7 +250,7 @@ export const MatchesPage: React.FC = () => {
                     </p>
                     <input
                       type="number"
-                      className="input text-center text-4xl font-black h-20 bg-slate-950 rounded-2xl"
+                      className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
                       value={currentMatch.score_a ?? 0}
                       onChange={(e) =>
                         setCurrentMatch({
@@ -274,7 +274,7 @@ export const MatchesPage: React.FC = () => {
                     </p>
                     <input
                       type="number"
-                      className="input text-center text-4xl font-black h-20 bg-slate-950 rounded-2xl"
+                      className="input text-center text-4xl font-black h-16 bg-slate-950 rounded-2xl"
                       value={currentMatch.score_b ?? 0}
                       onChange={(e) =>
                         setCurrentMatch({

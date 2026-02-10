@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiPlus,
   FiEdit2,
@@ -7,12 +8,14 @@ import {
   FiSearch,
   FiAward,
   FiFilter,
+  FiActivity,
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
 import type { Team, CreateTeamDto, Tournament } from "../types";
 
 export const TeamsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,11 +188,17 @@ export const TeamsPage: React.FC = () => {
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/50 flex items-center justify-center text-blue-500 font-black text-lg shadow-inner group-hover:scale-110 transition-transform">
+                        <div
+                          className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/50 flex items-center justify-center text-blue-500 font-black text-lg shadow-inner group-hover:scale-110 transition-transform cursor-pointer"
+                          onClick={() => navigate(`/teams/${team.id}`)}
+                        >
                           {team.name.charAt(0)}
                         </div>
-                        <div>
-                          <span className="block font-bold text-white tracking-tight">
+                        <div
+                          className="cursor-pointer"
+                          onClick={() => navigate(`/teams/${team.id}`)}
+                        >
+                          <span className="block font-bold text-white tracking-tight hover:text-blue-400 transition-colors">
                             {team.name}
                           </span>
                           <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
@@ -214,6 +223,13 @@ export const TeamsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => navigate(`/teams/${team.id}`)}
+                          className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                          title="View Dashboard"
+                        >
+                          <FiActivity size={16} />
+                        </button>
                         <button
                           onClick={() => {
                             setIsEditing(true);
