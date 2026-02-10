@@ -21,7 +21,9 @@ export const MatchesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Partial<Match>>({});
-  const [filter, setFilter] = useState<"all" | "live">("all");
+  const [filter, setFilter] = useState<
+    "all" | "scheduled" | "live" | "finished"
+  >("all");
 
   const [selectedTournamentId, setSelectedTournamentId] =
     useState<string>("all");
@@ -199,17 +201,37 @@ export const MatchesPage: React.FC = () => {
                   : "text-slate-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              All Matches
+              All
+            </button>
+            <button
+              onClick={() => setFilter("scheduled")}
+              className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
+                filter === "scheduled"
+                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              Scheduled
             </button>
             <button
               onClick={() => setFilter("live")}
               className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
                 filter === "live"
-                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  ? "bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
                   : "text-slate-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              Live Now
+              Live
+            </button>
+            <button
+              onClick={() => setFilter("finished")}
+              className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
+                filter === "finished"
+                  ? "bg-slate-600 text-white shadow-[0_0_15px_rgba(71,85,105,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              Finished
             </button>
           </div>
         </div>
@@ -230,7 +252,7 @@ export const MatchesPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-6">
           {matches
             .filter((m) => {
-              const statusMatch = filter === "all" ? true : m.status === "live";
+              const statusMatch = filter === "all" ? true : m.status === filter;
               const tournamentMatch =
                 selectedTournamentId === "all"
                   ? true
