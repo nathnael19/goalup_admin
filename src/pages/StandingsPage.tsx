@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { FiAward, FiRefreshCw, FiFilter, FiTrendingUp } from "react-icons/fi";
 import { standingService } from "../services/standingService";
 import { tournamentService } from "../services/tournamentService";
-import type { Tournament } from "../types";
+import type { Tournament, GroupedStanding } from "../types";
 
 export const StandingsPage: React.FC = () => {
-  const [groupedStandings, setGroupedStandings] = useState<any[]>([]);
+  const [groupedStandings, setGroupedStandings] = useState<GroupedStanding[]>(
+    [],
+  );
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState<string | null>(null);
@@ -141,101 +143,104 @@ export const StandingsPage: React.FC = () => {
                 </div>
 
                 <div className="card card-hover overflow-hidden border-white/10 bg-slate-900/40">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-white/5 border-b border-white/10">
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                            Rank
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                            Club
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                            MP
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
-                            W
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                            D
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
-                            L
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                            Diff
-                          </th>
-                          <th className="px-6 py-5 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center w-24 bg-blue-600/10">
-                            Points
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/40">
-                        {group.teams.map((standing: any, index: number) => (
-                          <tr
-                            key={standing.team_id}
-                            className="hover:bg-slate-800/30 transition-colors group"
-                          >
-                            <td className="px-6 py-5 text-center">
-                              <span
-                                className={`text-sm font-black w-8 h-8 rounded-lg flex items-center justify-center mx-auto ${
-                                  index === 0
-                                    ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-lg shadow-yellow-500/5"
-                                    : index < 3
-                                      ? "bg-blue-600/10 text-blue-400 border border-blue-600/10"
-                                      : "bg-slate-800 text-slate-500 border border-slate-700/50"
-                                }`}
-                              >
-                                {index + 1}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-tighter group-hover:scale-110 transition-transform">
-                                  {standing.team?.name.charAt(0)}
-                                </div>
-                                <div>
-                                  <span className="block text-sm font-bold text-white tracking-tight leading-none mb-1">
-                                    {standing.team?.name}
-                                  </span>
-                                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                                    {standing.batch}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                              {standing.played}
-                            </td>
-                            <td className="px-6 py-5 text-center text-sm font-black text-blue-400/80">
-                              {standing.won}
-                            </td>
-                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                              {standing.drawn}
-                            </td>
-                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                              {standing.lost}
-                            </td>
-                            <td className="px-6 py-5 text-center">
-                              <span
-                                className={`text-sm font-black ${standing.goals_for - standing.goals_against >= 0 ? "text-green-500" : "text-red-500"}`}
-                              >
-                                {standing.goals_for - standing.goals_against > 0
-                                  ? "+"
-                                  : ""}
-                                {standing.goals_for - standing.goals_against}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 text-center bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors">
-                              <span className="text-lg font-black text-white font-display tabular-nums tracking-tighter">
-                                {standing.points}
-                              </span>
-                            </td>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <div className="min-w-[800px] lg:min-w-0">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-white/5 border-b border-white/10">
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
+                              Rank
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                              Club
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
+                              MP
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
+                              W
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
+                              D
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
+                              L
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
+                              Diff
+                            </th>
+                            <th className="px-6 py-5 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center w-24 bg-blue-600/10">
+                              Points
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/40">
+                          {group.teams.map((standing, index) => (
+                            <tr
+                              key={standing.team_id}
+                              className="hover:bg-slate-800/30 transition-colors group"
+                            >
+                              <td className="px-6 py-5 text-center">
+                                <span
+                                  className={`text-sm font-black w-8 h-8 rounded-lg flex items-center justify-center mx-auto ${
+                                    index === 0
+                                      ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-lg shadow-yellow-500/5"
+                                      : index < 3
+                                        ? "bg-blue-600/10 text-blue-400 border border-blue-600/10"
+                                        : "bg-slate-800 text-slate-500 border border-slate-700/50"
+                                  }`}
+                                >
+                                  {index + 1}
+                                </span>
+                              </td>
+                              <td className="px-6 py-5">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-tighter group-hover:scale-110 transition-transform">
+                                    {standing.team?.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <span className="block text-sm font-bold text-white tracking-tight leading-none mb-1">
+                                      {standing.team?.name}
+                                    </span>
+                                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                      {standing.team?.batch}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                {standing.played}
+                              </td>
+                              <td className="px-6 py-5 text-center text-sm font-black text-blue-400/80">
+                                {standing.won}
+                              </td>
+                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                {standing.drawn}
+                              </td>
+                              <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
+                                {standing.lost}
+                              </td>
+                              <td className="px-6 py-5 text-center">
+                                <span
+                                  className={`text-sm font-black ${standing.goals_for - standing.goals_against >= 0 ? "text-green-500" : "text-red-500"}`}
+                                >
+                                  {standing.goals_for - standing.goals_against >
+                                  0
+                                    ? "+"
+                                    : ""}
+                                  {standing.goals_for - standing.goals_against}
+                                </span>
+                              </td>
+                              <td className="px-6 py-5 text-center bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors">
+                                <span className="text-lg font-black text-white font-display tabular-nums tracking-tighter">
+                                  {standing.points}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -267,10 +267,12 @@ export const PlayersPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
             <div className="absolute inset-0 bg-purple-600/5 pointer-events-none" />
-            <div className="p-8">
-              <div className="flex items-center gap-4 mb-8">
+
+            {/* Modal Header */}
+            <div className="p-6 md:p-8 shrink-0 border-b border-white/5">
+              <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center">
                   <FiPlus size={24} />
                 </div>
@@ -283,7 +285,10 @@ export const PlayersPage: React.FC = () => {
                   </p>
                 </div>
               </div>
+            </div>
 
+            {/* Modal Body */}
+            <div className="px-6 md:px-8 py-8 modal-content flex-1">
               <form onSubmit={handleCreate} className="space-y-6">
                 <ImageUpload
                   label="Profile Picture"

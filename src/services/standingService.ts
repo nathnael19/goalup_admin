@@ -1,13 +1,16 @@
 import { apiClient } from "./api";
+import type { GroupedStanding } from "../types";
 
 export const standingService = {
-  async getAll(): Promise<any[]> {
-    const response = await apiClient.get<any[]>("/standings/");
+  async getAll(): Promise<GroupedStanding[]> {
+    const response = await apiClient.get<GroupedStanding[]>("/standings/");
     return response.data;
   },
 
-  async getByTournament(tournamentId: string): Promise<any> {
-    const response = await apiClient.get<any>(`/standings/${tournamentId}`);
+  async getByTournament(tournamentId: string): Promise<GroupedStanding> {
+    const response = await apiClient.get<GroupedStanding>(
+      `/standings/${tournamentId}`,
+    );
     return response.data;
   },
 

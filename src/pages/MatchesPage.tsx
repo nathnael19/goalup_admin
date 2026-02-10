@@ -3,7 +3,13 @@ import { FiEdit2, FiClock, FiCalendar, FiCheckCircle } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
-import type { Match, Team, Tournament, UpdateMatchScoreDto } from "../types";
+import type {
+  Match,
+  Team,
+  Tournament,
+  UpdateMatchScoreDto,
+  MatchStatus,
+} from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchesPage: React.FC = () => {
@@ -266,12 +272,14 @@ export const MatchesPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
             <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
-            <div className="p-8 text-center sm:text-left">
-              <h2 className="text-2xl font-black text-white mb-10 text-center font-display tracking-tight uppercase">
+            <div className="p-6 md:p-8 shrink-0">
+              <h2 className="text-2xl font-black text-white mb-6 text-center font-display tracking-tight uppercase">
                 Update Results
               </h2>
+            </div>
+            <div className="px-6 md:px-8 pb-8 modal-content">
               <form onSubmit={handleUpdate} className="space-y-10">
                 <div className="flex items-center justify-between gap-6">
                   <div className="text-center flex-1">
@@ -331,7 +339,7 @@ export const MatchesPage: React.FC = () => {
                     onChange={(e) =>
                       setCurrentMatch({
                         ...currentMatch,
-                        status: e.target.value as any,
+                        status: e.target.value as MatchStatus,
                       })
                     }
                   >

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -26,11 +27,12 @@ export const LoginPage: React.FC = () => {
         setError("");
         await login(values.email, values.password);
         navigate("/");
-      } catch (err: any) {
-        setError(
-          err.response?.data?.detail ||
-            "Login failed. Please check your credentials.",
-        );
+      } catch (err: unknown) {
+        let errorMsg = "Login failed. Please check your credentials.";
+        if (err instanceof AxiosError && err.response?.data?.detail) {
+          errorMsg = err.response.data.detail;
+        }
+        setError(errorMsg);
       }
     },
   });
@@ -66,7 +68,7 @@ export const LoginPage: React.FC = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2">
               <FiAlertCircle
-                className="text-red-500 mt-0.5 flex-shrink-0"
+                className="text-red-500 mt-0.5 shrink-0"
                 size={20}
               />
               <p className="text-red-400 text-xs font-bold leading-relaxed">

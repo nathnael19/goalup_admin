@@ -155,3 +155,7 @@ export interface Standing {
   points: number;
   team?: Team;
 }
+export interface GroupedStanding {
+  tournament: Tournament;
+  teams: Standing[];
+}

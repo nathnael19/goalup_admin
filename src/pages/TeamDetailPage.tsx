@@ -10,7 +10,7 @@ import {
   FiMapPin,
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
-import type { TeamDetail } from "../types";
+import type { TeamDetail, Player } from "../types";
 
 export const TeamDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +25,7 @@ export const TeamDetailPage: React.FC = () => {
     if (id) {
       fetchTeamDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchTeamDetails = async () => {
@@ -145,7 +146,7 @@ export const TeamDetailPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="space-y-4">
-                  {players.map((player: any) => (
+                  {players.map((player: Player) => (
                     <div
                       key={player.id}
                       className="card group/player p-4 hover:border-slate-600 transition-all cursor-pointer"

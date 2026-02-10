@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useContext,
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
         } catch (error) {
+          console.error(error);
           localStorage.removeItem("access_token");
         }
       }

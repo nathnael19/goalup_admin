@@ -227,10 +227,10 @@ export const TournamentsPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative glass-panel bg-[#020617]/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+          <div className="relative glass-panel bg-[#020617]/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
             <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
-            <div className="p-8">
-              <div className="flex items-center gap-4 mb-8">
+            <div className="p-6 md:p-8 overflow-hidden flex flex-col">
+              <div className="flex items-center gap-4 mb-6 shrink-0">
                 <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-500 flex items-center justify-center">
                   <FiPlus size={24} />
                 </div>
@@ -244,7 +244,10 @@ export const TournamentsPage: React.FC = () => {
                 </div>
               </div>
 
-              <form onSubmit={handleCreate} className="space-y-6">
+              <form
+                onSubmit={handleCreate}
+                className="space-y-6 modal-content pr-2"
+              >
                 <div>
                   <label className="label">Display Name</label>
                   <input

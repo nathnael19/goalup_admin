@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-700) var(--color-slate-900);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: var(--color-slate-900);
+    border-radius: 9999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--color-slate-700);
+    border-radius: 9999px;
+    border: 2px solid var(--color-slate-900);
+
+    &:hover {
+      background-color: var(--color-slate-600);
+    }
+  }
+}
+
 @theme {
   --font-display: "Outfit", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -45,29 +70,11 @@
     @apply bg-white/3 backdrop-blur-xl border border-white/5 rounded-3xl;
   }
 
-  .animate-stagger-1 {
-    animation-delay: 100ms;
+  .modal-content {
+    @apply max-h-[calc(100vh-250px)] overflow-y-auto px-1;
   }
-  .animate-stagger-2 {
-    animation-delay: 200ms;
-  }
-  .animate-stagger-3 {
-    animation-delay: 300ms;
-  }
+
   .animate-stagger-4 {
     animation-delay: 400ms;
   }
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-slate-900;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-700 rounded-full hover:bg-slate-600;
 }
