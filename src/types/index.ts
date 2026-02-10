@@ -127,6 +127,7 @@ export interface Match {
   additional_time_first_half?: number;
   additional_time_second_half?: number;
   total_time?: number;
+  is_halftime?: boolean;
 }
 
 export interface CreateMatchDto {
@@ -148,6 +149,7 @@ export interface UpdateMatchScoreDto {
   additional_time_first_half?: number;
   additional_time_second_half?: number;
   total_time?: number;
+  is_halftime?: boolean;
 }
 
 // Standings Types

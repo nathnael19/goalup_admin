@@ -103,19 +103,35 @@ export const MatchesPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const calculateMatchTime = (match: Match) => {
+    if (match.status !== "live") return null;
+    if (match.is_halftime) return "HT";
+
+    const start = new Date(match.start_time).getTime();
+    const now = new Date().getTime();
+    const diffInMinutes = Math.floor((now - start) / 60000);
+
+    // Simple logic: if > 45 and not halftime yet, show 45+
+    if (diffInMinutes > 45 && diffInMinutes < 46) return "45'";
+    if (diffInMinutes >= 90) return "90'";
+
+    return `${Math.max(1, diffInMinutes)}'`;
+  };
+
+  const getStatusBadge = (match: Match) => {
+    switch (match.status) {
       case "finished":
         return (
           <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-700">
-            Finished
+            FT
           </span>
         );
       case "live":
+        const timeDisplay = calculateMatchTime(match);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
-            Live
+            {timeDisplay || "Live"}
           </span>
         );
       default:
@@ -139,6 +155,7 @@ export const MatchesPage: React.FC = () => {
     start_date: "",
     matches_per_day: 1,
     interval_days: 1,
+    total_time: 90,
   });
 
   const handleAutoSchedule = async (e: React.FormEvent) => {
@@ -150,6 +167,7 @@ export const MatchesPage: React.FC = () => {
         start_date: new Date(scheduleConfig.start_date).toISOString(),
         matches_per_day: scheduleConfig.matches_per_day,
         interval_days: scheduleConfig.interval_days,
+        total_time: scheduleConfig.total_time,
       });
 
       setShowAutoScheduleModal(false);
@@ -207,6 +225,7 @@ export const MatchesPage: React.FC = () => {
                 start_date: "",
                 matches_per_day: 1,
                 interval_days: 1,
+                total_time: 90,
               });
             }}
             className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
@@ -341,7 +360,7 @@ export const MatchesPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="hidden lg:block">
-                      {getStatusBadge(match.status)}
+                      {getStatusBadge(match)}
                     </div>
                   </div>
 
@@ -384,9 +403,7 @@ export const MatchesPage: React.FC = () => {
                           {match.score_b}
                         </span>
                       </div>
-                      <div className="lg:hidden">
-                        {getStatusBadge(match.status)}
-                      </div>
+                      <div className="lg:hidden">{getStatusBadge(match)}</div>
                     </div>
 
                     {/* Away Team */}
@@ -510,6 +527,26 @@ export const MatchesPage: React.FC = () => {
                       }
                     />
                   </div>
+                </div>
+
+                {/* Match Duration */}
+                <div>
+                  <label className="label">Match Duration (minutes)</label>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    max="240"
+                    className="input h-12"
+                    placeholder="e.g. 90"
+                    value={scheduleConfig.total_time}
+                    onChange={(e) =>
+                      setScheduleConfig({
+                        ...scheduleConfig,
+                        total_time: parseInt(e.target.value) || 90,
+                      })
+                    }
+                  />
                 </div>
 
                 <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">

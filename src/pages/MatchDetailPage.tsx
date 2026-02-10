@@ -15,7 +15,7 @@ import {
   FiMinus,
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
-import type { Match, MatchStatus } from "../types";
+import type { Match } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchDetailPage: React.FC = () => {
@@ -69,6 +69,7 @@ export const MatchDetailPage: React.FC = () => {
         additional_time_first_half: editedMatch.additional_time_first_half,
         additional_time_second_half: editedMatch.additional_time_second_half,
         total_time: editedMatch.total_time,
+        is_halftime: editedMatch.is_halftime,
       });
       await fetchMatch(match.id);
       setIsEditing(false);
@@ -97,6 +98,20 @@ export const MatchDetailPage: React.FC = () => {
     }
   };
 
+  const calculateMatchTime = (m: Match) => {
+    if (m.status !== "live") return null;
+    if (m.is_halftime) return "HT";
+
+    const start = new Date(m.start_time).getTime();
+    const now = new Date().getTime();
+    const diffInMinutes = Math.floor((now - start) / 60000);
+
+    if (diffInMinutes > 45 && diffInMinutes < 46) return "45'";
+    if (diffInMinutes >= 90) return "90'";
+
+    return `${Math.max(1, diffInMinutes)}'`;
+  };
+
   const updateScore = (team: "a" | "b", delta: number) => {
     const key = team === "a" ? "score_a" : "score_b";
     const currentScore = editedMatch[key] ?? 0;
@@ -104,19 +119,31 @@ export const MatchDetailPage: React.FC = () => {
     setEditedMatch({ ...editedMatch, [key]: newScore });
   };
 
-  const getStatusBadge = (status: MatchStatus) => {
-    switch (status) {
+  const toggleHalftime = async () => {
+    if (!match) return;
+    try {
+      const newHalftime = !match.is_halftime;
+      await matchService.update(match.id, { is_halftime: newHalftime });
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to toggle halftime", err);
+    }
+  };
+
+  const getStatusBadge = (m: Match) => {
+    switch (m.status) {
       case "finished":
         return (
           <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-500 text-xs font-black uppercase tracking-widest border border-slate-700">
-            Finished
+            FT
           </span>
         );
       case "live":
+        const timeDisplay = calculateMatchTime(m);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
-            Live
+            {timeDisplay || "Live"}
           </span>
         );
       default:
@@ -239,7 +266,7 @@ export const MatchDetailPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div>{getStatusBadge(match.status)}</div>
+            <div>{getStatusBadge(match)}</div>
           </div>
 
           {/* Scoreboard */}
@@ -365,12 +392,21 @@ export const MatchDetailPage: React.FC = () => {
               </button>
             )}
             {match.status === "live" && (
-              <button
-                onClick={handleFinishMatch}
-                className="btn btn-primary w-full bg-green-600 hover:bg-green-500"
-              >
-                <FiCheckCircle className="mr-2" /> Finish Match
-              </button>
+              <>
+                <button
+                  onClick={toggleHalftime}
+                  className={`btn w-full ${match.is_halftime ? "btn-primary bg-amber-600 hover:bg-amber-500" : "btn-secondary"}`}
+                >
+                  <FiClock className="mr-2" />{" "}
+                  {match.is_halftime ? "End Half-Time" : "Set Half-Time (HT)"}
+                </button>
+                <button
+                  onClick={handleFinishMatch}
+                  className="btn btn-primary w-full bg-green-600 hover:bg-green-500"
+                >
+                  <FiCheckCircle className="mr-2" /> Finish Match
+                </button>
+              </>
             )}
             {match.status === "finished" && (
               <div className="text-center py-4 text-slate-400">

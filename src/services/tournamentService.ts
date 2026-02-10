@@ -38,6 +38,7 @@ export const tournamentService = {
       start_date: string;
       matches_per_day: number;
       interval_days: number;
+      total_time: number;
     },
   ): Promise<void> {
     await apiClient.post(`/tournaments/${id}/schedule`, data);
