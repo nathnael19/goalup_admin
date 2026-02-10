@@ -2,8 +2,10 @@ import { apiClient } from "./api";
 import type { GroupedStanding } from "../types";
 
 export const standingService = {
-  async getAll(): Promise<GroupedStanding[]> {
-    const response = await apiClient.get<GroupedStanding[]>("/standings/");
+  async getAll(year?: number): Promise<GroupedStanding[]> {
+    const response = await apiClient.get<GroupedStanding[]>("/standings/", {
+      params: { year },
+    });
     return response.data;
   },
 

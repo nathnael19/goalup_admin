@@ -12,20 +12,31 @@ export const StandingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState<string | null>(null);
   const [filterTournament, setFilterTournament] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedYear]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [standingsData, tournamentsData] = await Promise.all([
-        standingService.getAll(),
+        standingService.getAll(selectedYear || undefined),
         tournamentService.getAll(),
       ]);
       setGroupedStandings(standingsData);
       setTournaments(tournamentsData);
+
+      const years = Array.from(
+        new Set(tournamentsData.map((t) => t.year)),
+      ).sort((a, b) => b - a);
+      setAvailableYears(years);
+
+      if (selectedYear === null && years.length > 0) {
+        setSelectedYear(years[0]);
+      }
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -65,16 +76,36 @@ export const StandingsPage: React.FC = () => {
           <div className="relative group">
             <FiFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-hover:text-blue-500 transition-colors" />
             <select
+              className="input pl-12 h-12 appearance-none w-48 bg-slate-800/40 border-slate-800"
+              value={selectedYear ?? ""}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val)) setSelectedYear(val);
+              }}
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  Season {year}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative group">
+            <FiFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-hover:text-blue-500 transition-colors" />
+            <select
               className="input pl-12 h-12 appearance-none w-56 bg-slate-800/40 border-slate-800"
               value={filterTournament}
               onChange={(e) => setFilterTournament(e.target.value)}
             >
               <option value="all">Global (All Leagues)</option>
-              {tournaments.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
+              {tournaments
+                .filter((t) => selectedYear === null || t.year === selectedYear)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
@@ -263,7 +294,7 @@ export const StandingsPage: React.FC = () => {
                 onClick={() => setFilterTournament("all")}
                 className="mt-8 text-blue-500 font-black uppercase text-xs tracking-[0.2em] border-b-2 border-blue-500/20 hover:border-blue-500 transition-all pb-1"
               >
-                Reset Filters
+                Reset League Filter
               </button>
             </div>
           )}
