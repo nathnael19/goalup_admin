@@ -47,11 +47,13 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-700">
         {/* Logo/Title */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-2xl italic mx-auto mb-6 shadow-2xl shadow-blue-600/20">
-            GU
-          </div>
+          <img
+            src="/logo.png"
+            alt="GoalUP Logo"
+            className="h-20 mx-auto mb-6"
+          />
           <h1 className="text-4xl font-black text-white mb-2 font-display tracking-tighter uppercase">
-            GoalUp! <span className="text-blue-500">Admin</span>
+            GoalUP <span className="text-blue-500">Admin</span>
           </h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em]">
             Management Portal

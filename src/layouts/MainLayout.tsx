@@ -54,11 +54,9 @@ export const MainLayout: React.FC = () => {
       {/* Mobile Toggle & Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#020617]/80 backdrop-blur-xl border-b border-white/8 z-30 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white italic">
-            GU
-          </div>
+          <img src="/logo.png" alt="GoalUP" className="w-8 h-8 rounded-lg" />
           <h1 className="text-xl font-black text-white tracking-tighter uppercase font-display">
-            GoalUp!
+            GoalUP
           </h1>
         </div>
         <button
@@ -92,11 +90,13 @@ export const MainLayout: React.FC = () => {
         <div className="h-20 hidden lg:flex items-center justify-between px-6 border-b border-slate-800">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white italic">
-                GU
-              </div>
+              <img
+                src="/logo.png"
+                alt="GoalUP"
+                className="w-8 h-8 rounded-lg"
+              />
               <h1 className="text-xl font-black text-white tracking-tighter uppercase font-display">
-                GoalUp!
+                GoalUP
               </h1>
             </div>
           )}
