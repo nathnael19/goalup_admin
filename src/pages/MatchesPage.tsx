@@ -4,6 +4,7 @@ import { matchService } from "../services/matchService";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
 import type { Match, Team, Tournament, UpdateMatchScoreDto } from "../types";
+import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const MatchesPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -71,7 +72,7 @@ export const MatchesPage: React.FC = () => {
         );
       default:
         return (
-          <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+          <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
             Scheduled
           </span>
         );
@@ -82,30 +83,30 @@ export const MatchesPage: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-4xl font-black text-white font-display tracking-tight">
             Match Center
           </h1>
-          <p className="text-slate-400 font-medium">
+          <p className="text-slate-400 font-medium font-body mt-1">
             Coordinate schedules, update live scores and manage event statuses.
           </p>
         </div>
-        <div className="flex items-center gap-3 p-1 bg-slate-800/40 rounded-2xl border border-slate-800">
+        <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 font-bold rounded-xl text-xs transition-all ${
+            className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
               filter === "all"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-slate-500 hover:text-white"
+                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
             }`}
           >
             All Matches
           </button>
           <button
             onClick={() => setFilter("live")}
-            className={`px-4 py-2 font-bold rounded-xl text-xs transition-all ${
+            className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 ${
               filter === "live"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-slate-500 hover:text-white"
+                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
             }`}
           >
             Live Now
@@ -114,20 +115,29 @@ export const MatchesPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="card p-6 h-32 flex items-center gap-6 animate-stagger-1"
+            >
+              <CardSkeleton />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {(filter === "all"
             ? matches
             : matches.filter((m) => m.status === "live")
-          ).map((match) => (
+          ).map((match, i) => (
             <div
               key={match.id}
-              className="card group hover:border-slate-700 transition-all duration-300 relative overflow-hidden"
+              className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                (i % 4) + 1
+              } relative overflow-hidden`}
             >
-              <div className="p-4 md:p-5 flex flex-col lg:flex-row items-center gap-6">
+              <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
                 {/* Meta Info */}
                 <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
                   <div>
@@ -165,10 +175,13 @@ export const MatchesPage: React.FC = () => {
                 <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
                   {/* Home Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-3xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-xl font-black text-white shadow-xl group-hover:scale-105 transition-transform duration-500">
-                      {teams
-                        .find((t) => t.id === match.team_a_id)
-                        ?.name.charAt(0)}
+                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                      <span className="relative z-10">
+                        {teams
+                          .find((t) => t.id === match.team_a_id)
+                          ?.name.charAt(0)}
+                      </span>
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
@@ -204,10 +217,13 @@ export const MatchesPage: React.FC = () => {
 
                   {/* Away Team */}
                   <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-3xl bg-linear-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-xl font-black text-white shadow-xl group-hover:scale-105 transition-transform duration-500">
-                      {teams
-                        .find((t) => t.id === match.team_b_id)
-                        ?.name.charAt(0)}
+                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl group-hover:scale-110 transition-transform duration-500 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                      <span className="relative z-10">
+                        {teams
+                          .find((t) => t.id === match.team_b_id)
+                          ?.name.charAt(0)}
+                      </span>
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
@@ -250,7 +266,8 @@ export const MatchesPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in slide-in-from-top-10 duration-500">
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
             <div className="p-8 text-center sm:text-left">
               <h2 className="text-2xl font-black text-white mb-10 text-center font-display tracking-tight uppercase">
                 Update Results

@@ -3,6 +3,9 @@
 @theme {
   --font-display: "Outfit", sans-serif;
   --font-body: "Inter", sans-serif;
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-bg: rgba(15, 23, 42, 0.6);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 :root {
@@ -10,36 +13,49 @@
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
-  background-color: #0f172a;
+  background-color: #020617;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(147, 51, 234, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
 @layer components {
   .card {
-    @apply bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl shadow-xl;
+    @apply bg-slate-900/40 backdrop-blur-xl border border-white/8 rounded-2xl shadow-2xl transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:bg-slate-900/60 hover:border-blue-500/30 hover:shadow-blue-500/10 hover:-translate-y-1;
   }
 
   .input {
-    @apply w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all;
-  }
-
-  .label {
-    @apply block text-sm font-semibold text-slate-400 mb-1.5 ml-1;
+    @apply w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all backdrop-blur-sm;
   }
 
   .btn {
-    @apply px-5 py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-95;
+    @apply px-5 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20;
+    @apply bg-blue-600 text-white hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] shadow-lg shadow-blue-600/20;
   }
 
-  .btn-secondary {
-    @apply bg-slate-700 text-slate-200 hover:bg-slate-600;
+  .glass-panel {
+    @apply bg-white/3 backdrop-blur-xl border border-white/5 rounded-3xl;
   }
 
-  .btn-danger {
-    @apply bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white border border-red-500/20;
+  .animate-stagger-1 {
+    animation-delay: 100ms;
+  }
+  .animate-stagger-2 {
+    animation-delay: 200ms;
+  }
+  .animate-stagger-3 {
+    animation-delay: 300ms;
+  }
+  .animate-stagger-4 {
+    animation-delay: 400ms;
   }
 }
 

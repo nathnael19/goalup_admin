@@ -52,10 +52,10 @@ export const StandingsPage: React.FC = () => {
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-4xl font-black text-white font-display tracking-tight">
             League Tables
           </h1>
-          <p className="text-slate-400 font-medium">
+          <p className="text-slate-400 font-medium font-body mt-1">
             Auto-generated rankings based on match outcomes and goal metrics.
           </p>
         </div>
@@ -140,11 +140,11 @@ export const StandingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="card overflow-hidden border-slate-800/50 bg-slate-900/40">
+                <div className="card card-hover overflow-hidden border-white/10 bg-slate-900/40">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="bg-slate-800/50 border-b border-slate-800">
+                        <tr className="bg-white/5 border-b border-white/10">
                           <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
                             Rank
                           </th>

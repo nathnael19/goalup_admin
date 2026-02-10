@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
+import { ImageUpload } from "../components/ImageUpload";
 import type { Team, CreateTeamDto, Tournament } from "../types";
 
 export const TeamsPage: React.FC = () => {
@@ -88,10 +89,10 @@ export const TeamsPage: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-4xl font-black text-white font-display tracking-tight">
             Club Management
           </h1>
-          <p className="text-slate-400 font-medium">
+          <p className="text-slate-400 font-medium font-body mt-1">
             Register clubs, assign them to leagues, and manage identities.
           </p>
         </div>
@@ -105,7 +106,7 @@ export const TeamsPage: React.FC = () => {
             });
             setShowModal(true);
           }}
-          className="btn btn-primary h-12"
+          className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
         >
           <FiPlus /> Add Team
         </button>
@@ -157,11 +158,11 @@ export const TeamsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="card h-96 flex items-center justify-center bg-white/5 animate-pulse">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="card overflow-hidden border-slate-800/50">
+        <div className="card overflow-hidden border-white/10 animate-in fade-in slide-in-from-bottom-6 duration-700">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -189,10 +190,25 @@ export const TeamsPage: React.FC = () => {
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
                         <div
-                          className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/50 flex items-center justify-center text-blue-500 font-black text-lg shadow-inner group-hover:scale-110 transition-transform cursor-pointer"
+                          className="w-14 h-14 rounded-2xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-blue-500 font-black text-lg shadow-2xl group-hover:scale-110 transition-transform cursor-pointer overflow-hidden relative"
                           onClick={() => navigate(`/teams/${team.id}`)}
                         >
-                          {team.name.charAt(0)}
+                          <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                          {team.logo_url ? (
+                            <img
+                              src={
+                                team.logo_url.startsWith("http")
+                                  ? team.logo_url
+                                  : `http://localhost:8000${team.logo_url}`
+                              }
+                              alt={team.name}
+                              className="w-full h-full object-cover relative z-10"
+                            />
+                          ) : (
+                            <span className="relative z-10">
+                              {team.name.charAt(0)}
+                            </span>
+                          )}
                         </div>
                         <div
                           className="cursor-pointer"
@@ -262,7 +278,8 @@ export const TeamsPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in duration-300">
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
             <div className="p-8">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center">
@@ -333,6 +350,15 @@ export const TeamsPage: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                <ImageUpload
+                  label="Team Emblem"
+                  value={currentTeam.logo_url}
+                  onChange={(url) =>
+                    setCurrentTeam({ ...currentTeam, logo_url: url })
+                  }
+                />
+
                 <div className="flex gap-3 pt-6">
                   <button
                     type="button"

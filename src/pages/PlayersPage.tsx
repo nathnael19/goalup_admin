@@ -9,7 +9,9 @@ import {
 } from "react-icons/fi";
 import { playerService } from "../services/playerService";
 import { teamService } from "../services/teamService";
+import { ImageUpload } from "../components/ImageUpload";
 import type { Player, CreatePlayerDto, Team } from "../types";
+import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const PlayersPage: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -83,10 +85,10 @@ export const PlayersPage: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-4xl font-black text-white font-display tracking-tight">
             Roster Management
           </h1>
-          <p className="text-slate-400 font-medium">
+          <p className="text-slate-400 font-medium font-body mt-1">
             Add players, assign numbers, and track individual performance.
           </p>
         </div>
@@ -101,7 +103,7 @@ export const PlayersPage: React.FC = () => {
             });
             setShowModal(true);
           }}
-          className="btn btn-primary h-12"
+          className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
         >
           <FiPlus /> New Player
         </button>
@@ -153,21 +155,40 @@ export const PlayersPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPlayers.map((player) => (
+          {filteredPlayers.map((player, i) => (
             <div
               key={player.id}
-              className="card group hover:border-purple-500/30 transition-all duration-300 relative overflow-hidden"
+              className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                (i % 4) + 1
+              } relative overflow-hidden`}
             >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-6">
                   <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-slate-700 to-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 font-black text-2xl shadow-xl group-hover:scale-110 transition-transform">
-                      {player.name.charAt(0)}
+                    <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-blue-400 font-black text-2xl shadow-xl group-hover:scale-110 transition-transform overflow-hidden relative">
+                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                      {player.image_url ? (
+                        <img
+                          src={
+                            player.image_url.startsWith("http")
+                              ? player.image_url
+                              : `http://localhost:8000${player.image_url}`
+                          }
+                          alt={player.name}
+                          className="w-full h-full object-cover relative z-10"
+                        />
+                      ) : (
+                        <span className="relative z-10">
+                          {player.name.charAt(0)}
+                        </span>
+                      )}
                     </div>
                     <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-slate-900 border-2 border-slate-800 flex items-center justify-center text-xs text-white font-black shadow-lg">
                       #{player.jersey_number}
@@ -246,7 +267,8 @@ export const PlayersPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-300">
+          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+            <div className="absolute inset-0 bg-purple-600/5 pointer-events-none" />
             <div className="p-8">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center">
@@ -263,6 +285,13 @@ export const PlayersPage: React.FC = () => {
               </div>
 
               <form onSubmit={handleCreate} className="space-y-6">
+                <ImageUpload
+                  label="Profile Picture"
+                  value={currentPlayer.image_url}
+                  onChange={(url) =>
+                    setCurrentPlayer({ ...currentPlayer, image_url: url })
+                  }
+                />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <label className="label">Full Name</label>

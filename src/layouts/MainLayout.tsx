@@ -31,8 +31,9 @@ export const MainLayout: React.FC = () => {
       <aside
         className={`${
           sidebarOpen ? "w-72" : "w-20"
-        } bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 transition-all duration-500 flex flex-col z-20`}
+        } bg-[#020617]/80 backdrop-blur-3xl border-r border-white/8 transition-all duration-500 flex flex-col z-20 shadow-[8px_0_32px_rgba(0,0,0,0.5)] relative`}
       >
+        <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
         {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800">
           {sidebarOpen && (
@@ -60,10 +61,10 @@ export const MainLayout: React.FC = () => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${
+                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-500 group relative overflow-hidden ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                    : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                    ? "bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`
               }
             >
@@ -101,7 +102,7 @@ export const MainLayout: React.FC = () => {
           </div>
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300 font-bold text-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-500 font-bold text-sm border border-red-500/20"
           >
             <FiLogOut size={18} />
             {sidebarOpen && <span>Sign Out</span>}
@@ -110,10 +111,10 @@ export const MainLayout: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-[#0f172a] relative">
+      <main className="flex-1 overflow-auto bg-[#020617] relative">
         {/* Background Gradients */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/5 blur-[120px] pointer-events-none" />
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] pointer-events-none animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/10 blur-[150px] pointer-events-none animate-pulse" />
 
         <div className="p-6 lg:p-10 max-w-7xl mx-auto">
           <Outlet />

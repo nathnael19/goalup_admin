@@ -36,10 +36,11 @@ export const LoginPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden">
       {/* Abstract Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-purple-600/10 blur-[150px] rounded-full animate-pulse" />
+      <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-blue-400/5 blur-[100px] rounded-full" />
 
       <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-700">
         {/* Logo/Title */}
@@ -56,8 +57,9 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Card */}
-        <div className="card p-10 bg-slate-900/40 border-slate-800">
-          <h2 className="text-xl font-black text-white mb-8 border-b border-slate-800 pb-4 tracking-tight">
+        <div className="glass-panel p-10 bg-[#020617]/40 backdrop-blur-3xl border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,0.8)] relative overflow-hidden">
+          <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
+          <h2 className="text-xl font-black text-white mb-8 border-b border-white/10 pb-4 tracking-tight relative z-10">
             System Access
           </h2>
 
@@ -129,11 +131,11 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="pt-4">
+            <div className="pt-4 relative z-10">
               <button
                 type="submit"
                 disabled={formik.isSubmitting}
-                className="btn btn-primary w-full h-14 text-sm font-black uppercase tracking-widest"
+                className="btn btn-primary w-full h-14 text-sm font-black uppercase tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]"
               >
                 {formik.isSubmitting
                   ? "Authenticating..."

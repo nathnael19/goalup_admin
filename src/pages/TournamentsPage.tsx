@@ -9,7 +9,9 @@ import {
   FiAward,
 } from "react-icons/fi";
 import { tournamentService } from "../services/tournamentService";
+import { ImageUpload } from "../components/ImageUpload";
 import type { Tournament, CreateTournamentDto } from "../types";
+import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const TournamentsPage: React.FC = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -58,7 +60,7 @@ export const TournamentsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this tournament?")) {
       try {
         await tournamentService.delete(id.toString());
@@ -78,10 +80,10 @@ export const TournamentsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-4xl font-black text-white font-display tracking-tight">
             Tournaments
           </h1>
-          <p className="text-slate-400 font-medium">
+          <p className="text-slate-400 font-medium font-body mt-1">
             Create and manage your competitive football leagues.
           </p>
         </div>
@@ -132,15 +134,19 @@ export const TournamentsPage: React.FC = () => {
 
       {/* Main Content */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTournaments.map((tournament) => (
+          {filteredTournaments.map((tournament, i) => (
             <div
               key={tournament.id}
-              className="card group hover:border-blue-500/40 transition-all duration-300 relative overflow-hidden"
+              className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                (i % 4) + 1
+              } relative overflow-hidden`}
             >
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="flex gap-1.5">
@@ -164,8 +170,20 @@ export const TournamentsPage: React.FC = () => {
               </div>
 
               <div className="p-8">
-                <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500">
-                  <FiAward size={28} />
+                <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
+                  {tournament.image_url ? (
+                    <img
+                      src={
+                        tournament.image_url.startsWith("http")
+                          ? tournament.image_url
+                          : `http://localhost:8000${tournament.image_url}`
+                      }
+                      alt={tournament.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <FiAward size={28} />
+                  )}
                 </div>
 
                 <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
@@ -209,7 +227,8 @@ export const TournamentsPage: React.FC = () => {
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in duration-300">
+          <div className="relative glass-panel bg-[#020617]/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
             <div className="p-8">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-blue-600/10 text-blue-500 flex items-center justify-center">
@@ -276,6 +295,18 @@ export const TournamentsPage: React.FC = () => {
                     </select>
                   </div>
                 </div>
+
+                <ImageUpload
+                  label="Tournament Poster"
+                  value={currentTournament.image_url}
+                  onChange={(url) =>
+                    setCurrentTournament({
+                      ...currentTournament,
+                      image_url: url,
+                    })
+                  }
+                />
+
                 <div className="flex gap-3 pt-6">
                   <button
                     type="button"

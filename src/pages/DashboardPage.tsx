@@ -15,6 +15,7 @@ import { tournamentService } from "../services/tournamentService";
 import { teamService } from "../services/teamService";
 import { playerService } from "../services/playerService";
 import { matchService } from "../services/matchService";
+import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState({
@@ -115,37 +116,43 @@ export const DashboardPage: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, i) => (
-          <div
-            key={i}
-            className="card group hover:scale-[1.02] transition-all duration-300"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+          : statCards.map((stat, i) => (
+              <div
+                key={i}
+                className={`card card-hover animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                  i + 1
+                }`}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.text} flex items-center justify-center shadow-inner`}
+                    >
+                      <stat.icon size={24} />
+                    </div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                      Active
+                    </div>
+                  </div>
+                  <p className="text-slate-400 text-sm font-bold uppercase tracking-tight mb-1">
+                    {stat.label}
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="text-3xl font-black text-white font-display">
+                      {stat.value}
+                    </h3>
+                    <span className="text-xs text-green-500 font-bold">
+                      +0%
+                    </span>
+                  </div>
+                </div>
                 <div
-                  className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.text} flex items-center justify-center`}
-                >
-                  <stat.icon size={24} />
-                </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-700/30 px-2 py-1 rounded-md">
-                  Active
-                </div>
+                  className={`h-1.5 w-full bg-linear-to-r ${stat.color} opacity-20`}
+                />
               </div>
-              <p className="text-slate-400 text-sm font-bold uppercase tracking-tight mb-1">
-                {stat.label}
-              </p>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-3xl font-black text-white font-display">
-                  {loading ? "..." : stat.value}
-                </h3>
-                <span className="text-xs text-green-500 font-bold">+0%</span>
-              </div>
-            </div>
-            <div
-              className={`h-1.5 w-full bg-gradient-to-r ${stat.color} opacity-20`}
-            />
-          </div>
-        ))}
+            ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -160,10 +167,10 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               to="/tournaments"
-              className="card p-6 group hover:bg-blue-600/5 transition-colors"
+              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-1"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-600/10 text-blue-500 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <div className="w-12 h-12 rounded-xl bg-blue-600/10 text-blue-500 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
                   <FiPlus size={24} />
                 </div>
                 <div className="flex-1">
@@ -180,10 +187,10 @@ export const DashboardPage: React.FC = () => {
 
             <Link
               to="/matches"
-              className="card p-6 group hover:bg-green-600/5 transition-colors"
+              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-2"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-600/10 text-green-500 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-all">
+                <div className="w-12 h-12 rounded-xl bg-green-600/10 text-green-500 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-all shadow-inner">
                   <FiActivity size={24} />
                 </div>
                 <div className="flex-1">
@@ -200,10 +207,10 @@ export const DashboardPage: React.FC = () => {
 
             <Link
               to="/players"
-              className="card p-6 group hover:bg-purple-600/5 transition-colors"
+              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-3"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-600/10 text-purple-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">
+                <div className="w-12 h-12 rounded-xl bg-purple-600/10 text-purple-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all shadow-inner">
                   <FiUsers size={24} />
                 </div>
                 <div className="flex-1">
@@ -220,10 +227,10 @@ export const DashboardPage: React.FC = () => {
 
             <Link
               to="/standings"
-              className="card p-6 group hover:bg-slate-600/5 transition-colors"
+              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-4"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-600/10 text-slate-400 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all">
+                <div className="w-12 h-12 rounded-xl bg-slate-600/10 text-slate-400 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all shadow-inner">
                   <FiBarChart2 size={24} />
                 </div>
                 <div className="flex-1">

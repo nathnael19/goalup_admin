@@ -33,14 +33,15 @@ export interface Tournament {
   name: string;
   year: number;
   type: string;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateTournamentDto {
-  name: string;
   year: number;
   type: string;
+  image_url?: string;
 }
 
 // Team Types
@@ -83,6 +84,7 @@ export interface Player {
   team_id: string;
   jersey_number: number;
   position: string;
+  image_url?: string;
   goals: number;
   yellow_cards: number;
   red_cards: number;
@@ -91,10 +93,8 @@ export interface Player {
 }
 
 export interface CreatePlayerDto {
-  name: string;
-  team_id: string;
-  jersey_number: number;
   position: string;
+  image_url?: string;
 }
 
 export interface UpdatePlayerStatsDto {

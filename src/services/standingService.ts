@@ -1,5 +1,4 @@
 import { apiClient } from "./api";
-import type { Standing } from "../types";
 
 export const standingService = {
   async getAll(): Promise<any[]> {
