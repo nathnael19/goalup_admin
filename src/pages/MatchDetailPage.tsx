@@ -27,6 +27,7 @@ import type {
   CardEvent,
   CardType,
   Substitution,
+  CreateGoalDto,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
@@ -43,14 +44,11 @@ export const MatchDetailPage: React.FC = () => {
   const [teamADetail, setTeamADetail] = useState<TeamDetail | null>(null);
   const [teamBDetail, setTeamBDetail] = useState<TeamDetail | null>(null);
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [goalData, setGoalData] = useState<{
-    team_id: string;
-    player_id: string;
-    minute: number;
-    is_own_goal: boolean;
-  }>({
+  const [goalData, setGoalData] = useState<CreateGoalDto>({
+    match_id: "",
     team_id: "",
     player_id: "",
+    assistant_id: "",
     minute: 1,
     is_own_goal: false,
   });
@@ -251,6 +249,7 @@ export const MatchDetailPage: React.FC = () => {
         match_id: match.id,
         team_id: goalData.team_id,
         player_id: goalData.player_id || undefined,
+        assistant_id: goalData.assistant_id || undefined, // Added assistant_id
         minute: goalData.minute,
         is_own_goal: goalData.is_own_goal,
       });
@@ -609,9 +608,12 @@ export const MatchDetailPage: React.FC = () => {
                         "",
                       );
                       setGoalData({
-                        ...goalData,
+                        match_id: match.id, // Ensure match_id is set
                         team_id: match.team_a_id,
+                        player_id: "",
+                        assistant_id: "", // Reset assistant_id
                         minute: currentMinute ? parseInt(currentMinute) : 1,
+                        is_own_goal: false,
                       });
                       setShowGoalModal(true);
                     }}
@@ -626,9 +628,12 @@ export const MatchDetailPage: React.FC = () => {
                         "",
                       );
                       setGoalData({
-                        ...goalData,
+                        match_id: match.id, // Ensure match_id is set
                         team_id: match.team_b_id,
+                        player_id: "",
+                        assistant_id: "", // Reset assistant_id
                         minute: currentMinute ? parseInt(currentMinute) : 1,
+                        is_own_goal: false,
                       });
                       setShowGoalModal(true);
                     }}
@@ -983,6 +988,12 @@ export const MatchDetailPage: React.FC = () => {
                           {event.event_type === "goal" ? (
                             <p className="text-sm font-bold text-slate-200">
                               {(event as Goal).player?.name || "Unknown Player"}
+                              {(event as Goal).assistant &&
+                                !(event as Goal).is_own_goal && (
+                                  <span className="text-xs font-normal text-slate-400 ml-2 italic">
+                                    (Assist: {(event as Goal).assistant?.name})
+                                  </span>
+                                )}
                             </p>
                           ) : event.event_type === "card" ? (
                             <p className="text-sm font-bold text-slate-200">
@@ -1093,6 +1104,47 @@ export const MatchDetailPage: React.FC = () => {
                       ))}
                   </select>
                 </div>
+                {!goalData.is_own_goal && (
+                  <div>
+                    <label className="label">Assisted By (Optional)</label>
+                    <select
+                      className="input h-12 appearance-none"
+                      value={goalData.assistant_id}
+                      onChange={(e) =>
+                        setGoalData({
+                          ...goalData,
+                          assistant_id: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">No Assist</option>
+                      {(goalData.team_id === match.team_a_id
+                        ? teamADetail
+                        : teamBDetail
+                      )?.roster.goalkeepers
+                        .concat(
+                          (goalData.team_id === match.team_a_id
+                            ? teamADetail
+                            : teamBDetail
+                          )?.roster.defenders || [],
+                          (goalData.team_id === match.team_a_id
+                            ? teamADetail
+                            : teamBDetail
+                          )?.roster.midfielders || [],
+                          (goalData.team_id === match.team_a_id
+                            ? teamADetail
+                            : teamBDetail
+                          )?.roster.forwards || [],
+                        )
+                        .filter((p) => p.id !== goalData.player_id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.jersey_number}. {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label">Minute (Auto-calculated)</label>

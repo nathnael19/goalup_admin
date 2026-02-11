@@ -194,12 +194,15 @@ export interface Goal {
   team_id: string;
   minute: number;
   is_own_goal: boolean;
+  assistant_id?: string;
   player?: Player;
+  assistant?: Player;
 }
 
 export interface CreateGoalDto {
   match_id: string;
   player_id?: string;
+  assistant_id?: string;
   team_id: string;
   minute: number;
   is_own_goal: boolean;
