@@ -239,3 +239,24 @@ export interface GroupedStanding {
   tournament: Tournament;
   teams: Standing[];
 }
+
+// Substitution Types
+export interface Substitution {
+  id: string;
+  match_id: string;
+  team_id: string;
+  player_in_id: string;
+  player_out_id: string;
+  minute: number;
+  created_at: string;
+  player_in?: Player;
+  player_out?: Player;
+}
+
+export interface CreateSubstitutionDto {
+  match_id: string;
+  team_id: string;
+  player_in_id: string;
+  player_out_id: string;
+  minute: number;
+}

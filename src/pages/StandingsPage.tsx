@@ -258,9 +258,6 @@ export const StandingsPage: React.FC = () => {
                                           <span className="block text-sm font-bold text-white tracking-tight leading-none mb-1">
                                             {standing.team?.name}
                                           </span>
-                                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                                            {standing.team?.batch}
-                                          </span>
                                         </div>
                                       </div>
                                     </td>

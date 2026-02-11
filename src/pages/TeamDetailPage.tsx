@@ -99,10 +99,7 @@ export const TeamDetailPage: React.FC = () => {
                 <FiMapPin className="text-blue-500" />
                 <span>Arena Main HQ</span>
               </div>
-              <div className="flex items-center gap-2">
-                <FiCalendar className="text-blue-500" />
-                <span>Batch {team.batch}</span>
-              </div>
+
               <div className="flex items-center gap-2 text-white">
                 <FiUsers className="text-blue-500" />
                 <span>
