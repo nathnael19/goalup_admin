@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FiAward,
   FiUsers,
@@ -10,21 +10,34 @@ import {
   FiArrowRight,
   FiCalendar,
   FiBarChart2,
+  FiZap,
+  FiFileText,
+  FiTrendingUp,
+  FiChevronRight,
+  FiClock,
 } from "react-icons/fi";
 import { tournamentService } from "../services/tournamentService";
 import { teamService } from "../services/teamService";
 import { playerService } from "../services/playerService";
 import { matchService } from "../services/matchService";
+import { newsService } from "../services/newsService";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import type { Match, News, Tournament, Team } from "../types";
 
 export const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     tournaments: 0,
     teams: 0,
     players: 0,
     matches: 0,
-    liveMatches: 0,
+    liveMatchesCount: 0,
   });
+  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
+  const [latestNews, setLatestNews] = useState<News[]>([]);
+  const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
+  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,25 +47,54 @@ export const DashboardPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [tournaments, teams, players, matches] = await Promise.all([
-        tournamentService.getAll(),
-        teamService.getAll(),
-        playerService.getAll(),
-        matchService.getAll(),
-      ]);
+      const [tournamentsData, teamsData, playersData, matchesData, newsData] =
+        await Promise.all([
+          tournamentService.getAll(),
+          teamService.getAll(),
+          playerService.getAll(),
+          matchService.getAll(),
+          newsService.getAll(),
+        ]);
+
+      setAllMatches(matchesData);
+      setTeams(teamsData);
+      setLiveMatches(matchesData.filter((m) => m.status === "live"));
+      setLatestNews(
+        newsData
+          .sort(
+            (a, b) =>
+              new Date(b.created_at || "").getTime() -
+              new Date(a.created_at || "").getTime(),
+          )
+          .slice(0, 4),
+      );
+
+      // Active tournaments (simply taking first 2 for spotlight)
+      setActiveTournaments(tournamentsData.slice(0, 2));
 
       setStats({
-        tournaments: tournaments.length,
-        teams: teams.length,
-        players: players.length,
-        matches: matches.length,
-        liveMatches: matches.filter((m) => m.status === "live").length,
+        tournaments: tournamentsData.length,
+        teams: teamsData.length,
+        players: playersData.length,
+        matches: matchesData.length,
+        liveMatchesCount: matchesData.filter((m) => m.status === "live").length,
       });
     } catch (err) {
       console.error("Failed to fetch dashboard stats", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateTournamentProgress = (tournamentId: string) => {
+    const tournamentMatches = allMatches.filter(
+      (m) => m.tournament_id === tournamentId,
+    );
+    if (tournamentMatches.length === 0) return 0;
+    const finishedMatches = tournamentMatches.filter(
+      (m) => m.status === "finished",
+    ).length;
+    return Math.round((finishedMatches / tournamentMatches.length) * 100);
   };
 
   const statCards = [
@@ -102,17 +144,90 @@ export const DashboardPage: React.FC = () => {
             </span>
           </h1>
           <p className="text-slate-400 font-medium">
-            Manage your football ecosystem with real-time analytics.
+            Snapshot of your football ecosystem performance.
           </p>
         </div>
-        {stats.liveMatches > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 font-bold text-sm animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            {stats.liveMatches} Match{stats.liveMatches > 1 ? "es" : ""} Live
-            Now
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex flex-col items-end mr-4">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              System Status
+            </span>
+            <span className="text-xs font-bold text-green-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              Operational
+            </span>
           </div>
-        )}
+          <button
+            onClick={fetchStats}
+            className="w-12 h-12 rounded-2xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all group"
+          >
+            <FiZap className="group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
       </div>
+
+      {/* Live Match Pulse - COOL SURPRISE #1 */}
+      {!loading && liveMatches.length > 0 && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <div className="p-1.5 rounded-lg bg-red-600/10 text-red-500">
+              <FiActivity size={16} className="animate-pulse" />
+            </div>
+            <h2 className="text-sm font-black text-white uppercase tracking-[0.2em]">
+              Match Pulse
+            </h2>
+            <div className="h-px flex-1 bg-linear-to-r from-red-500/20 to-transparent" />
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+            {liveMatches.map((match) => (
+              <div
+                key={match.id}
+                onClick={() => navigate(`/matches/${match.id}`)}
+                className="flex-none w-72 card card-hover p-4 bg-linear-to-br from-slate-900/60 to-slate-800/40 border-red-500/20 border-l-2 border-l-red-500 cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <span className="text-red-500 flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />{" "}
+                    Live
+                  </span>
+                  <span>{match.total_time}'</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col items-center gap-1 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
+                      {teams
+                        .find((t) => t.id === match.team_a_id)
+                        ?.name.charAt(0)}
+                    </div>
+                    <span className="text-xs font-black truncate w-full text-center">
+                      {teams.find((t) => t.id === match.team_a_id)?.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg">
+                    <span className="text-xl font-black text-white">
+                      {match.score_a}
+                    </span>
+                    <span className="text-slate-600">-</span>
+                    <span className="text-xl font-black text-white">
+                      {match.score_b}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
+                      {teams
+                        .find((t) => t.id === match.team_b_id)
+                        ?.name.charAt(0)}
+                    </div>
+                    <span className="text-xs font-black truncate w-full text-center">
+                      {teams.find((t) => t.id === match.team_b_id)?.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -121,9 +236,7 @@ export const DashboardPage: React.FC = () => {
           : statCards.map((stat, i) => (
               <div
                 key={i}
-                className={`card card-hover animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
-                  i + 1
-                }`}
+                className={`card card-hover animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -143,9 +256,6 @@ export const DashboardPage: React.FC = () => {
                     <h3 className="text-3xl font-black text-white font-display">
                       {stat.value}
                     </h3>
-                    <span className="text-xs text-green-500 font-bold">
-                      +0%
-                    </span>
                   </div>
                 </div>
                 <div
@@ -155,126 +265,203 @@ export const DashboardPage: React.FC = () => {
             ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
-        {/* Quick Actions */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between bg-slate-800/20 p-4 rounded-2xl border border-slate-700/30">
-            <h2 className="text-xl font-black text-white font-display flex items-center gap-2">
-              <FiActivity className="text-blue-500" /> Quick Actions
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8">
+        {/* Left Column: News Highlights - COOL SURPRISE #2 */}
+        <div className="xl:col-span-8 space-y-8">
+          <div className="flex items-center justify-between bg-white/2 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <h2 className="text-xl font-black text-white font-display flex items-center gap-3">
+              <FiFileText className="text-blue-500" /> Latest Highlights
             </h2>
+            <Link
+              to="/news"
+              className="text-xs font-black text-blue-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 group"
+            >
+              View All{" "}
+              <FiChevronRight className="group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link
-              to="/tournaments"
-              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-1"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-600/10 text-blue-500 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                  <FiPlus size={24} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {!loading &&
+              latestNews.map((article, i) => (
+                <div
+                  key={article.id}
+                  onClick={() => navigate("/news")}
+                  className={`group relative card overflow-hidden bg-slate-900 border-white/5 card-hover cursor-pointer animate-in fade-in zoom-in-95 duration-700 animate-stagger-${i + 1}`}
+                >
+                  <div className="aspect-video w-full overflow-hidden relative">
+                    {article.image_url ? (
+                      <img
+                        src={
+                          article.image_url.startsWith("http")
+                            ? article.image_url
+                            : `http://localhost:8000${article.image_url}`
+                        }
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-60"
+                        alt={article.title}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                        <FiFileText size={40} className="text-slate-700" />
+                      </div>
+                    )}
+                    <div className="absolute top-4 left-4">
+                      <span className="px-2 py-1 rounded-md bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl">
+                        {article.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 relative">
+                    <h4 className="text-lg font-black text-white mb-2 leading-tight group-hover:text-blue-400 transition-colors line-clamp-2">
+                      {article.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">
+                      {article.content}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600 uppercase">
+                      <FiClock />{" "}
+                      {new Date(article.created_at || "").toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-white mb-0.5">
-                    Start New Tournament
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Configure rounds, groups and rules.
-                  </p>
-                </div>
-                <FiArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link
-              to="/matches"
-              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-2"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-600/10 text-green-500 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-all shadow-inner">
-                  <FiActivity size={24} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-white mb-0.5">
-                    Live Match Center
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Update scores and manage match events.
-                  </p>
-                </div>
-                <FiArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link
-              to="/players"
-              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-3"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-600/10 text-purple-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all shadow-inner">
-                  <FiUsers size={24} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-white mb-0.5">
-                    Roster Management
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Add players and assign team roles.
-                  </p>
-                </div>
-                <FiArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link
-              to="/standings"
-              className="card card-hover p-6 group animate-in fade-in slide-in-from-right-4 duration-700 animate-stagger-4"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-600/10 text-slate-400 flex items-center justify-center group-hover:bg-slate-600 group-hover:text-white transition-all shadow-inner">
-                  <FiBarChart2 size={24} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-white mb-0.5">Data Insights</h4>
-                  <p className="text-xs text-slate-500">
-                    View rankings and performance metrics.
-                  </p>
-                </div>
-                <FiArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
+              ))}
           </div>
         </div>
 
-        {/* System Status / Recent Activity Placeholder */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between bg-slate-800/20 p-4 rounded-2xl border border-slate-700/30">
-            <h2 className="text-xl font-black text-white font-display flex items-center gap-2">
-              <FiCalendar className="text-orange-500" /> Notifications
-            </h2>
-          </div>
-          <div className="card divide-y divide-slate-700/50">
-            <div className="p-4 flex gap-4">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
-              <div>
-                <p className="text-sm font-bold text-white">System Ready</p>
-                <p className="text-xs text-slate-500">
-                  All backend services are operational.
+        {/* Right Column: Spotlight & Actions */}
+        <div className="xl:col-span-4 space-y-8">
+          {/* Tournament Progress spotlight - COOL SURPRISE #3 */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between bg-white/2 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+              <h2 className="text-lg font-black text-white font-display flex items-center gap-3 uppercase tracking-tight">
+                <FiTrendingUp className="text-purple-500" /> Active Seasons
+              </h2>
+            </div>
+            <div className="card p-6 space-y-6 bg-slate-900/40 border-white/5">
+              {!loading &&
+                activeTournaments.map((tour) => {
+                  const progress = calculateTournamentProgress(tour.id);
+                  return (
+                    <div
+                      key={tour.id}
+                      className="space-y-3 group cursor-pointer"
+                      onClick={() => navigate("/tournaments")}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">
+                            {tour.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">
+                              {tour.name}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                              Season {tour.year}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-white">
+                          {progress}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-linear-to-r from-purple-600 to-indigo-500 transition-all duration-1000"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              {activeTournaments.length === 0 && (
+                <p className="text-center text-xs text-slate-500 py-4">
+                  No active tournaments spotlighted.
                 </p>
-                <span className="text-[10px] text-slate-600 font-bold uppercase mt-1 block">
-                  Just Now
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions Re-styled */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2 px-2">
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                Management Console
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                to="/tournaments"
+                className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all group text-center flex flex-col items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FiPlus />
+                </div>
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                  New Event
                 </span>
+              </Link>
+              <Link
+                to="/matches"
+                className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-red-600/10 hover:border-red-500/30 transition-all group text-center flex flex-col items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FiActivity />
+                </div>
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                  Live Desk
+                </span>
+              </Link>
+              <Link
+                to="/players"
+                className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-purple-600/10 hover:border-purple-500/30 transition-all group text-center flex flex-col items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FiUsers />
+                </div>
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                  Roster
+                </span>
+              </Link>
+              <Link
+                to="/news"
+                className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-indigo-600/10 hover:border-indigo-500/30 transition-all group text-center flex flex-col items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FiFileText />
+                </div>
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                  Media
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className="card divide-y divide-white/5 bg-slate-900/40 border-white/5 overflow-hidden">
+            <div className="p-4 bg-white/2 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <FiZap size={10} /> Intelligence Feed
+            </div>
+            <div className="p-5 flex gap-4 hover:bg-white/2 transition-colors">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0 animate-pulse" />
+              <div>
+                <p className="text-xs font-black text-white uppercase tracking-tight">
+                  System Synchronized
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Global databases updated securely.
+                </p>
               </div>
             </div>
-            <div className="p-4 flex gap-4 opacity-50">
+            <div className="p-5 flex gap-4 hover:bg-white/2 transition-colors">
               <div className="w-2 h-2 rounded-full bg-slate-600 mt-2 shrink-0" />
               <div>
-                <p className="text-sm font-bold text-white">Backup Completed</p>
-                <p className="text-xs text-slate-500">
-                  Daily database snapshot successful.
+                <p className="text-xs font-black text-white uppercase opacity-50 tracking-tight">
+                  Optimization Report
                 </p>
-                <span className="text-[10px] text-slate-600 font-bold uppercase mt-1 block">
-                  2 hours ago
-                </span>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Asset pre-rendering complete.
+                </p>
               </div>
             </div>
           </div>
