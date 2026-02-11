@@ -14,12 +14,14 @@ import {
   FiPlus,
   FiMinus,
   FiRepeat,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { goalService } from "../services/goalService";
 import { cardService } from "../services/cardService";
 import { substitutionService } from "../services/substitutionService";
 import { teamService } from "../services/teamService";
+import { lineupService } from "../services/lineupService";
 import type {
   Match,
   Goal,
@@ -28,6 +30,7 @@ import type {
   CardType,
   Substitution,
   CreateGoalDto,
+  MatchLineupDto,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
@@ -77,6 +80,11 @@ export const MatchDetailPage: React.FC = () => {
     minute: 1,
   });
 
+  const [selectedLineupA, setSelectedLineupA] = useState<string[]>([]);
+  const [selectedLineupB, setSelectedLineupB] = useState<string[]>([]);
+  const [savingLineups, setSavingLineups] = useState(false);
+  const [showLineupErrorModal, setShowLineupErrorModal] = useState(false);
+
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -106,6 +114,19 @@ export const MatchDetailPage: React.FC = () => {
       setGoals(goalsData);
       setCards(cardsData);
       setSubstitutions(subData);
+
+      if (matchData.lineups) {
+        setSelectedLineupA(
+          matchData.lineups
+            .filter((l) => l.team_id === matchData.team_a_id && l.is_starting)
+            .map((l) => l.player_id),
+        );
+        setSelectedLineupB(
+          matchData.lineups
+            .filter((l) => l.team_id === matchData.team_b_id && l.is_starting)
+            .map((l) => l.player_id),
+        );
+      }
 
       // Fetch team details for roster
       if (matchData.team_a_id && matchData.team_b_id) {
@@ -158,14 +179,22 @@ export const MatchDetailPage: React.FC = () => {
 
   const handleStartMatch = async () => {
     if (!match) return;
+
+    // Lineup validation
+    if (selectedLineupA.length < 11 || selectedLineupB.length < 11) {
+      setShowLineupErrorModal(true);
+      return;
+    }
+
     try {
       await matchService.update(match.id, {
         status: "live",
         first_half_start: new Date().toISOString(),
       });
       await fetchMatch(match.id);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to start match", err);
+      alert(err.response?.data?.detail || "Failed to start match");
     }
   };
 
@@ -225,9 +254,49 @@ export const MatchDetailPage: React.FC = () => {
 
   const updateScore = (team: "a" | "b", delta: number) => {
     const key = team === "a" ? "score_a" : "score_b";
-    const currentScore = editedMatch[key] ?? 0;
+    const currentScore = (editedMatch as any)[key] ?? 0;
     const newScore = Math.max(0, currentScore + delta);
     setEditedMatch({ ...editedMatch, [key]: newScore });
+  };
+
+  const handleSaveLineups = async () => {
+    if (!match || !teamADetail || !teamBDetail) return;
+    try {
+      setSavingLineups(true);
+      const lineupA: MatchLineupDto[] = teamADetail.roster.goalkeepers
+        .concat(
+          teamADetail.roster.defenders,
+          teamADetail.roster.midfielders,
+          teamADetail.roster.forwards,
+        )
+        .map((p) => ({
+          match_id: match.id,
+          team_id: match.team_a_id,
+          player_id: p.id,
+          is_starting: selectedLineupA.includes(p.id),
+        }));
+
+      const lineupB: MatchLineupDto[] = teamBDetail.roster.goalkeepers
+        .concat(
+          teamBDetail.roster.defenders,
+          teamBDetail.roster.midfielders,
+          teamBDetail.roster.forwards,
+        )
+        .map((p) => ({
+          match_id: match.id,
+          team_id: match.team_b_id,
+          player_id: p.id,
+          is_starting: selectedLineupB.includes(p.id),
+        }));
+
+      await lineupService.setLineups(match.id, [...lineupA, ...lineupB]);
+      await fetchMatch(match.id);
+      alert("Lineups saved successfully!");
+    } catch (err) {
+      console.error("Failed to save lineups", err);
+    } finally {
+      setSavingLineups(false);
+    }
   };
 
   const toggleHalftime = async () => {
@@ -1050,6 +1119,294 @@ export const MatchDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Match Lineups */}
+      <div className="card p-8 mb-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+              Match Lineups
+            </h3>
+            <p className="text-slate-400 text-sm font-medium mt-1">
+              Select the starting XI for both teams
+            </p>
+          </div>
+          <button
+            onClick={handleSaveLineups}
+            disabled={savingLineups || isMatchLocked(match!)}
+            className="btn btn-primary px-8 h-12 rounded-2xl flex items-center gap-2 shadow-lg shadow-blue-600/20 disabled:opacity-50"
+          >
+            {savingLineups ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <FiSave className="text-lg" />
+            )}
+            {savingLineups ? "Saving..." : "Save Lineups"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Team A Lineup */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 pb-4 border-b border-white/5">
+              <div
+                className="w-3 h-10 rounded-full"
+                style={{ backgroundColor: match?.team_a?.color || "#3b82f6" }}
+              />
+              <div>
+                <h4 className="text-lg font-black text-white">
+                  {match?.team_a?.name}
+                </h4>
+                <div className="flex gap-4 mt-1">
+                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+                    Starting: {selectedLineupA.length} / 11 min
+                  </span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Bench:{" "}
+                    {(teamADetail?.roster.goalkeepers.length || 0) +
+                      (teamADetail?.roster.defenders.length || 0) +
+                      (teamADetail?.roster.midfielders.length || 0) +
+                      (teamADetail?.roster.forwards.length || 0) -
+                      selectedLineupA.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {teamADetail &&
+                [
+                  ...teamADetail.roster.goalkeepers,
+                  ...teamADetail.roster.defenders,
+                  ...teamADetail.roster.midfielders,
+                  ...teamADetail.roster.forwards,
+                ]
+                  .filter((p) => selectedLineupA.includes(p.id))
+                  .map((player) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center gap-4 p-4 rounded-3xl border bg-blue-600/10 border-blue-500/50 shadow-lg shadow-blue-500/5 group"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-500/30">
+                        <span className="text-xs font-black text-blue-400">
+                          {player.jersey_number}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm truncate uppercase tracking-tight text-white">
+                          {player.name}
+                        </p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
+                          {player.position}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setSelectedLineupA(
+                            selectedLineupA.filter((id) => id !== player.id),
+                          )
+                        }
+                        className="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+
+              {/* Position-based Dropdowns for Team A */}
+              <div className="col-span-1 sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-6 border-t border-white/5">
+                {[
+                  { label: "GK", key: "goalkeepers", pos: "Goalkeeper" },
+                  { label: "DEF", key: "defenders", pos: "Defender" },
+                  { label: "MID", key: "midfielders", pos: "Midfielder" },
+                  { label: "FWD", key: "forwards", pos: "Forward" },
+                ].map((pos) => (
+                  <div key={pos.key} className="relative group/dropdown">
+                    <button className="w-full h-11 rounded-2xl bg-white/5 border border-white/5 hover:bg-blue-600/10 hover:border-blue-500/30 flex items-center justify-center gap-2 transition-all group">
+                      <FiPlus
+                        size={14}
+                        className="text-slate-500 group-hover:text-blue-400"
+                      />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">
+                        {pos.label}
+                      </span>
+                    </button>
+
+                    {/* Dropdown Content */}
+                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all z-20">
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        {teamADetail?.roster[
+                          pos.key as keyof typeof teamADetail.roster
+                        ]
+                          .filter((p) => !selectedLineupA.includes(p.id))
+                          .map((player) => (
+                            <button
+                              key={player.id}
+                              onClick={() =>
+                                setSelectedLineupA([
+                                  ...selectedLineupA,
+                                  player.id,
+                                ])
+                              }
+                              className="w-full p-2 rounded-xl hover:bg-white/5 flex items-center gap-3 transition-colors text-left"
+                            >
+                              <div className="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+                                <span className="text-[10px] font-black text-blue-400">
+                                  {player.jersey_number}
+                                </span>
+                              </div>
+                              <span className="text-xs font-bold text-slate-200 truncate">
+                                {player.name}
+                              </span>
+                            </button>
+                          ))}
+                        {teamADetail?.roster[
+                          pos.key as keyof typeof teamADetail.roster
+                        ].filter((p) => !selectedLineupA.includes(p.id))
+                          .length === 0 && (
+                          <div className="p-3 text-[10px] text-slate-500 text-center uppercase font-black">
+                            None available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Team B Lineup */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 pb-4 border-b border-white/5">
+              <div
+                className="w-3 h-10 rounded-full"
+                style={{ backgroundColor: match?.team_b?.color || "#ef4444" }}
+              />
+              <div>
+                <h4 className="text-lg font-black text-white">
+                  {match?.team_b?.name}
+                </h4>
+                <div className="flex gap-4 mt-1">
+                  <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                    Starting: {selectedLineupB.length} / 11 min
+                  </span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Bench:{" "}
+                    {(teamBDetail?.roster.goalkeepers.length || 0) +
+                      (teamBDetail?.roster.defenders.length || 0) +
+                      (teamBDetail?.roster.midfielders.length || 0) +
+                      (teamBDetail?.roster.forwards.length || 0) -
+                      selectedLineupB.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {teamBDetail &&
+                [
+                  ...teamBDetail.roster.goalkeepers,
+                  ...teamBDetail.roster.defenders,
+                  ...teamBDetail.roster.midfielders,
+                  ...teamBDetail.roster.forwards,
+                ]
+                  .filter((p) => selectedLineupB.includes(p.id))
+                  .map((player) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center gap-4 p-4 rounded-3xl border bg-red-600/10 border-red-500/50 shadow-lg shadow-red-500/5 group"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center border border-red-500/30">
+                        <span className="text-xs font-black text-red-400">
+                          {player.jersey_number}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm truncate uppercase tracking-tight text-white">
+                          {player.name}
+                        </p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
+                          {player.position}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setSelectedLineupB(
+                            selectedLineupB.filter((id) => id !== player.id),
+                          )
+                        }
+                        className="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+
+              {/* Position-based Dropdowns for Team B */}
+              <div className="col-span-1 sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-6 border-t border-white/5">
+                {[
+                  { label: "GK", key: "goalkeepers", pos: "Goalkeeper" },
+                  { label: "DEF", key: "defenders", pos: "Defender" },
+                  { label: "MID", key: "midfielders", pos: "Midfielder" },
+                  { label: "FWD", key: "forwards", pos: "Forward" },
+                ].map((pos) => (
+                  <div key={pos.key} className="relative group/dropdown">
+                    <button className="w-full h-11 rounded-2xl bg-white/5 border border-white/5 hover:bg-red-600/10 hover:border-red-500/30 flex items-center justify-center gap-2 transition-all group">
+                      <FiPlus
+                        size={14}
+                        className="text-slate-500 group-hover:text-red-400"
+                      />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">
+                        {pos.label}
+                      </span>
+                    </button>
+
+                    {/* Dropdown Content */}
+                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all z-20">
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        {teamBDetail?.roster[
+                          pos.key as keyof typeof teamBDetail.roster
+                        ]
+                          .filter((p) => !selectedLineupB.includes(p.id))
+                          .map((player) => (
+                            <button
+                              key={player.id}
+                              onClick={() =>
+                                setSelectedLineupB([
+                                  ...selectedLineupB,
+                                  player.id,
+                                ])
+                              }
+                              className="w-full p-2 rounded-xl hover:bg-white/5 flex items-center gap-3 transition-colors text-left"
+                            >
+                              <div className="w-6 h-6 rounded-lg bg-red-600/20 border border-red-500/30 flex items-center justify-center">
+                                <span className="text-[10px] font-black text-red-400">
+                                  {player.jersey_number}
+                                </span>
+                              </div>
+                              <span className="text-xs font-bold text-slate-200 truncate">
+                                {player.name}
+                              </span>
+                            </button>
+                          ))}
+                        {teamBDetail?.roster[
+                          pos.key as keyof typeof teamBDetail.roster
+                        ].filter((p) => !selectedLineupB.includes(p.id))
+                          .length === 0 && (
+                          <div className="p-3 text-[10px] text-slate-500 text-center uppercase font-black">
+                            None available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Goal Modal */}
       {showGoalModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1452,6 +1809,63 @@ export const MatchDetailPage: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Lineup Error Modal */}
+      {showLineupErrorModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"
+            onClick={() => setShowLineupErrorModal(false)}
+          />
+          <div className="relative glass-panel bg-slate-900/50 backdrop-blur-3xl border border-red-500/20 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-red-600 via-amber-500 to-red-600" />
+            <div className="p-10 text-center">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                <FiAlertTriangle className="text-4xl text-red-500" />
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">
+                Incomplete Lineups
+              </h2>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                Standard match regulations require both teams to have at least{" "}
+                <span className="text-white font-bold">
+                  11 starting players
+                </span>{" "}
+                before kickoff.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 mb-10">
+                <div className="p-4 rounded-2xl bg-slate-800/50 border border-white/5">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                    {match?.team_a?.name}
+                  </p>
+                  <p
+                    className={`text-2xl font-black ${selectedLineupA.length < 11 ? "text-red-500" : "text-emerald-500"}`}
+                  >
+                    {selectedLineupA.length}
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-800/50 border border-white/5">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                    {match?.team_b?.name}
+                  </p>
+                  <p
+                    className={`text-2xl font-black ${selectedLineupB.length < 11 ? "text-red-500" : "text-emerald-500"}`}
+                  >
+                    {selectedLineupB.length}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowLineupErrorModal(false)}
+                className="btn btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>

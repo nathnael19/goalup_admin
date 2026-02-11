@@ -165,6 +165,7 @@ export interface Match {
   finished_at?: string;
   goals_list?: Goal[];
   cards_list?: CardEvent[];
+  lineups?: Lineup[];
 }
 
 export type CardType = "yellow" | "red";
@@ -308,4 +309,21 @@ export interface UpdateNewsDto {
   team_id?: string;
   player_id?: string;
   is_published?: boolean;
+}
+
+// Lineup Types
+export interface Lineup {
+  id: string;
+  match_id: string;
+  team_id: string;
+  player_id: string;
+  is_starting: boolean;
+  player?: Player;
+}
+
+export interface MatchLineupDto {
+  match_id: string;
+  team_id: string;
+  player_id: string;
+  is_starting: boolean;
 }
