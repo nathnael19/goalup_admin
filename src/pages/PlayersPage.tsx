@@ -6,6 +6,8 @@ import {
   FiSearch,
   FiShield,
   FiActivity,
+  FiAward,
+  FiCalendar,
 } from "react-icons/fi";
 import { playerService } from "../services/playerService";
 import { teamService } from "../services/teamService";
@@ -31,6 +33,12 @@ export const PlayersPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState<Partial<Player>>({});
+
+  // Drill-down selection
+  const [selectedCompetition, setSelectedCompetition] =
+    useState<Competition | null>(null);
+  const [selectedTournament, setSelectedTournament] =
+    useState<Tournament | null>(null);
 
   // Modal selection state
   const [selectedCompetitionId, setSelectedCompetitionId] =
@@ -110,7 +118,342 @@ export const PlayersPage: React.FC = () => {
     }
   };
 
-  const filteredPlayers = players.filter((player) => {
+  // Helper: get player count for a competition
+  const getCompPlayerCount = (compId: string) => {
+    const tourIds = tournaments
+      .filter((t) => t.competition_id === compId)
+      .map((t) => t.id);
+    const teamIds = teams
+      .filter((t) => tourIds.includes(t.tournament_id))
+      .map((t) => t.id);
+    return players.filter((p) => teamIds.includes(p.team_id)).length;
+  };
+
+  // Helper: get player count for a tournament
+  const getTourPlayerCount = (tourId: string) => {
+    const teamIds = teams
+      .filter((t) => t.tournament_id === tourId)
+      .map((t) => t.id);
+    return players.filter((p) => teamIds.includes(p.team_id)).length;
+  };
+
+  // ============ VIEW 1: COMPETITION CARDS ============
+  if (!selectedCompetition) {
+    const filteredComps = competitions.filter((c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-black text-white font-display tracking-tight">
+              Roster Management
+            </h1>
+            <p className="text-slate-400 font-medium font-body mt-1">
+              Select a competition to manage its player roster.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setCurrentPlayer({
+                name: "",
+                team_id: "",
+                position: "ST" as any,
+                jersey_number: 10,
+              });
+              setSelectedCompetitionId("");
+              setSelectedTournamentId("");
+              setShowModal(true);
+            }}
+            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+          >
+            <FiPlus /> New Player
+          </button>
+        </div>
+
+        {/* Search & Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <div className="relative group">
+              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Filter competitions..."
+                className="input pl-12 h-14 bg-slate-800/40"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Total Players
+              </p>
+              <p className="text-2xl font-black text-white font-display leading-none">
+                {players.length}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-500">
+              <FiActivity size={20} />
+            </div>
+          </div>
+        </div>
+
+        {/* Competition Cards */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredComps.length === 0 ? (
+          <div className="card p-12 text-center">
+            <FiAward className="mx-auto text-slate-600 mb-4" size={48} />
+            <p className="text-slate-500 font-bold">No competitions found.</p>
+            <p className="text-slate-600 text-sm mt-1">
+              Create a competition in the Tournaments page first.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredComps.map((comp, i) => {
+              const playerCount = getCompPlayerCount(comp.id);
+              const seasonCount = tournaments.filter(
+                (t) => t.competition_id === comp.id,
+              ).length;
+              return (
+                <div
+                  key={comp.id}
+                  onClick={() => {
+                    setSelectedCompetition(comp);
+                    setSearchTerm("");
+                  }}
+                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                    (i % 4) + 1
+                  } relative overflow-hidden cursor-pointer`}
+                >
+                  <div className="p-8">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
+                      {comp.image_url ? (
+                        <img
+                          src={
+                            comp.image_url.startsWith("http")
+                              ? comp.image_url
+                              : `http://localhost:8000${comp.image_url}`
+                          }
+                          alt={comp.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <FiAward size={28} />
+                      )}
+                    </div>
+                    <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
+                      {comp.name}
+                    </h3>
+                    <p className="text-slate-500 text-sm line-clamp-2 mb-6">
+                      {comp.description || "No description provided."}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <span className="bg-slate-800 px-2 py-1 rounded-md">
+                        {seasonCount} Season{seasonCount !== 1 ? "s" : ""}
+                      </span>
+                      <span className="bg-purple-600/10 text-purple-400 px-2 py-1 rounded-md border border-purple-600/20">
+                        {playerCount} Player{playerCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-1 w-full bg-purple-600/10 group-hover:bg-purple-600/40 transition-colors" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Player Modal (accessible from any view) */}
+        {renderPlayerModal()}
+
+        {/* Delete Confirmation */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setItemToDelete(null);
+          }}
+          onConfirm={handleDelete}
+          title="Delete Player"
+          message="Are you sure you want to delete this player? This action cannot be undone."
+          isLoading={isDeleting}
+        />
+      </div>
+    );
+  }
+
+  // ============ VIEW 2: SEASON CARDS ============
+  if (!selectedTournament) {
+    const compSeasons = tournaments.filter(
+      (t) => t.competition_id === selectedCompetition.id,
+    );
+    const filteredSeasons = compSeasons.filter((s) =>
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <button
+          onClick={() => {
+            setSelectedCompetition(null);
+            setSearchTerm("");
+          }}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          ← Back to Competitions
+        </button>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
+              {selectedCompetition.image_url ? (
+                <img
+                  src={
+                    selectedCompetition.image_url.startsWith("http")
+                      ? selectedCompetition.image_url
+                      : `http://localhost:8000${selectedCompetition.image_url}`
+                  }
+                  alt={selectedCompetition.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <FiAward size={32} />
+              )}
+            </div>
+            <div>
+              <h1 className="text-4xl font-black text-white font-display tracking-tight">
+                {selectedCompetition.name}
+              </h1>
+              <p className="text-slate-400 font-medium font-body mt-1">
+                Select a season to view its roster.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setCurrentPlayer({
+                name: "",
+                team_id: "",
+                position: "ST" as any,
+                jersey_number: 10,
+              });
+              setSelectedCompetitionId(selectedCompetition.id);
+              setSelectedTournamentId("");
+              setShowModal(true);
+            }}
+            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+          >
+            <FiPlus /> New Player
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative group max-w-lg">
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Filter seasons..."
+            className="input pl-12 h-12 bg-slate-800/40"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Season Cards */}
+        {filteredSeasons.length === 0 ? (
+          <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
+            <FiCalendar className="mx-auto text-slate-600 mb-4" size={48} />
+            <p className="text-slate-500 font-medium">
+              No seasons found for this competition.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSeasons.map((season, i) => {
+              const playerCount = getTourPlayerCount(season.id);
+              const teamCount = teams.filter(
+                (t) => t.tournament_id === season.id,
+              ).length;
+              return (
+                <div
+                  key={season.id}
+                  onClick={() => {
+                    setSelectedTournament(season);
+                    setSearchTerm("");
+                    setFilterTeam("all");
+                  }}
+                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                    (i % 4) + 1
+                  } relative overflow-hidden cursor-pointer`}
+                >
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20 text-xs font-black uppercase tracking-widest">
+                        {season.year}
+                      </div>
+                      <div className="text-xs font-bold text-slate-500 capitalize">
+                        {season.type.replace("_", " ")}
+                      </div>
+                    </div>
+
+                    <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
+                      {season.name}
+                    </h3>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">
+                      <span className="bg-slate-800 px-2 py-1 rounded-md">
+                        {teamCount} Team{teamCount !== 1 ? "s" : ""}
+                      </span>
+                      <span className="bg-purple-600/10 text-purple-400 px-2 py-1 rounded-md border border-purple-600/20">
+                        {playerCount} Player{playerCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-1 w-full bg-purple-600/10 group-hover:bg-purple-600/40 transition-colors" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {renderPlayerModal()}
+
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setItemToDelete(null);
+          }}
+          onConfirm={handleDelete}
+          title="Delete Player"
+          message="Are you sure you want to delete this player? This action cannot be undone."
+          isLoading={isDeleting}
+        />
+      </div>
+    );
+  }
+
+  // ============ VIEW 3: PLAYER CARDS ============
+  const seasonTeams = teams.filter(
+    (t) => t.tournament_id === selectedTournament.id,
+  );
+  const seasonTeamIds = seasonTeams.map((t) => t.id);
+  const seasonPlayers = players.filter((p) =>
+    seasonTeamIds.includes(p.team_id),
+  );
+
+  const filteredPlayers = seasonPlayers.filter((player) => {
     const matchesSearch = player.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -120,14 +463,30 @@ export const PlayersPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <button
+        onClick={() => {
+          setSelectedTournament(null);
+          setSearchTerm("");
+          setFilterTeam("all");
+        }}
+        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+      >
+        ← Back to {selectedCompetition.name}
+      </button>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-white font-display tracking-tight">
-            Roster Management
-          </h1>
-          <p className="text-slate-400 font-medium font-body mt-1">
-            Add players, assign numbers, and track individual performance.
-          </p>
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-purple-500 border border-slate-700">
+            <FiCalendar size={32} />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black text-white font-display tracking-tight">
+              {selectedTournament.name}
+            </h1>
+            <p className="text-slate-400 font-medium font-body mt-1">
+              {selectedCompetition.name} • {selectedTournament.year}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => {
@@ -138,8 +497,8 @@ export const PlayersPage: React.FC = () => {
               position: "ST" as any,
               jersey_number: 10,
             });
-            setSelectedCompetitionId("");
-            setSelectedTournamentId("");
+            setSelectedCompetitionId(selectedCompetition.id);
+            setSelectedTournamentId(selectedTournament.id);
             setShowModal(true);
           }}
           className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -148,6 +507,7 @@ export const PlayersPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Search & Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="md:col-span-2">
           <div className="relative group">
@@ -170,7 +530,7 @@ export const PlayersPage: React.FC = () => {
               onChange={(e) => setFilterTeam(e.target.value)}
             >
               <option value="all">All Teams</option>
-              {teams.map((t) => (
+              {seasonTeams.map((t) => (
                 <option key={t.id} value={t.id.toString()}>
                   {t.name}
                 </option>
@@ -181,10 +541,10 @@ export const PlayersPage: React.FC = () => {
         <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
-              Active
+              Players
             </p>
             <p className="text-2xl font-black text-white font-display leading-none">
-              {players.length}
+              {seasonPlayers.length}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-500">
@@ -193,11 +553,14 @@ export const PlayersPage: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
+      {/* Player Cards */}
+      {filteredPlayers.length === 0 ? (
+        <div className="card p-12 text-center">
+          <FiActivity className="mx-auto text-slate-600 mb-4" size={48} />
+          <p className="text-slate-500 font-bold">No players found.</p>
+          <p className="text-slate-600 text-sm mt-1">
+            Try adjusting your filters or add a new player.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -238,22 +601,8 @@ export const PlayersPage: React.FC = () => {
                       onClick={() => {
                         setIsEditing(true);
                         setCurrentPlayer(player);
-                        // Find team -> tournament -> competition
-                        const team = teams.find((t) => t.id === player.team_id);
-                        if (team) {
-                          setSelectedTournamentId(team.tournament_id);
-                          const tournament = tournaments.find(
-                            (t) => t.id === team.tournament_id,
-                          );
-                          if (tournament && tournament.competition_id) {
-                            setSelectedCompetitionId(tournament.competition_id);
-                          } else {
-                            setSelectedCompetitionId("");
-                          }
-                        } else {
-                          setSelectedTournamentId("");
-                          setSelectedCompetitionId("");
-                        }
+                        setSelectedCompetitionId(selectedCompetition.id);
+                        setSelectedTournamentId(selectedTournament.id);
                         setShowModal(true);
                       }}
                       className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
@@ -316,254 +665,8 @@ export const PlayersPage: React.FC = () => {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
-            onClick={() => setShowModal(false)}
-          />
-          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
-            <div className="absolute inset-0 bg-purple-600/5 pointer-events-none" />
+      {renderPlayerModal()}
 
-            {/* Modal Header */}
-            <div className="p-6 md:p-8 shrink-0 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center">
-                  <FiPlus size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-white font-display tracking-tight">
-                    {isEditing ? "Modify Stats" : "Add Player"}
-                  </h2>
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
-                    Athlete registration
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-6 md:px-8 py-8 modal-content flex-1">
-              <form onSubmit={handleCreate} className="space-y-6">
-                <ImageUpload
-                  label="Profile Picture"
-                  value={currentPlayer.image_url}
-                  onChange={(url) =>
-                    setCurrentPlayer({ ...currentPlayer, image_url: url })
-                  }
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <label className="label">Full Name</label>
-                    <input
-                      required
-                      type="text"
-                      className="input h-12"
-                      value={currentPlayer.name || ""}
-                      onChange={(e) =>
-                        setCurrentPlayer({
-                          ...currentPlayer,
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="e.g. Kylian Mbappé"
-                    />
-                  </div>
-                  <div>
-                    <label className="label">League / Tournament</label>
-                    <select
-                      className="input h-12 appearance-none mb-4"
-                      value={selectedCompetitionId}
-                      onChange={(e) => {
-                        setSelectedCompetitionId(e.target.value);
-                        setSelectedTournamentId("");
-                        setCurrentPlayer({ ...currentPlayer, team_id: "" });
-                      }}
-                    >
-                      <option value="" disabled>
-                        Select a tournament
-                      </option>
-                      {competitions.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <label className="label">Season</label>
-                    <select
-                      className="input h-12 appearance-none mb-4"
-                      value={selectedTournamentId}
-                      onChange={(e) => {
-                        setSelectedTournamentId(e.target.value);
-                        setCurrentPlayer({ ...currentPlayer, team_id: "" });
-                      }}
-                      disabled={!selectedCompetitionId}
-                    >
-                      <option value="" disabled>
-                        {selectedCompetitionId
-                          ? "Select a season"
-                          : "Select a league first"}
-                      </option>
-                      {tournaments
-                        .filter(
-                          (t) => t.competition_id === selectedCompetitionId,
-                        )
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name} ({t.year})
-                          </option>
-                        ))}
-                    </select>
-
-                    <label className="label">Team</label>
-                    <select
-                      required
-                      className="input h-12 appearance-none"
-                      value={currentPlayer.team_id || ""}
-                      onChange={(e) =>
-                        setCurrentPlayer({
-                          ...currentPlayer,
-                          team_id: e.target.value,
-                        })
-                      }
-                      disabled={!selectedTournamentId}
-                    >
-                      <option value="" disabled>
-                        {selectedTournamentId
-                          ? "Select Team"
-                          : "Select a season first"}
-                      </option>
-                      {teams
-                        .filter((t) => t.tournament_id === selectedTournamentId)
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Squad Number</label>
-                    <input
-                      required
-                      type="number"
-                      className="input h-12"
-                      value={currentPlayer.jersey_number || ""}
-                      onChange={(e) =>
-                        setCurrentPlayer({
-                          ...currentPlayer,
-                          jersey_number: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="label">On-Field Position</label>
-                    <select
-                      className="input h-12 appearance-none"
-                      value={currentPlayer.position || "ST"}
-                      onChange={(e) =>
-                        setCurrentPlayer({
-                          ...currentPlayer,
-                          position: e.target.value as any,
-                        })
-                      }
-                    >
-                      <optgroup label="Core Skills">
-                        <option value="GK">Goalkeeper (GK)</option>
-                        <option value="CB">Center Back (CB)</option>
-                        <option value="CM">Central Mid (CM)</option>
-                        <option value="ST">Striker (ST)</option>
-                      </optgroup>
-                      <optgroup label="Wide / Support">
-                        <option value="LB">Left Back (LB)</option>
-                        <option value="RB">Right Back (RB)</option>
-                        <option value="LW">Left Wing (LW)</option>
-                        <option value="RW">Right Wing (RW)</option>
-                        <option value="CAM">Playmaker (CAM)</option>
-                      </optgroup>
-                    </select>
-                  </div>
-                </div>
-
-                {isEditing && (
-                  <div className="pt-6 border-t border-slate-700/50">
-                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
-                      Live Performance Stats
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
-                          Goals
-                        </label>
-                        <input
-                          type="number"
-                          className="input h-12 text-center text-lg font-black"
-                          value={currentPlayer.goals || 0}
-                          onChange={(e) =>
-                            setCurrentPlayer({
-                              ...currentPlayer,
-                              goals: parseInt(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
-                          Yellow
-                        </label>
-                        <input
-                          type="number"
-                          className="input h-12 text-center text-lg font-black text-yellow-500"
-                          value={currentPlayer.yellow_cards || 0}
-                          onChange={(e) =>
-                            setCurrentPlayer({
-                              ...currentPlayer,
-                              yellow_cards: parseInt(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
-                          Red
-                        </label>
-                        <input
-                          type="number"
-                          className="input h-12 text-center text-lg font-black text-red-500"
-                          value={currentPlayer.red_cards || 0}
-                          onChange={(e) =>
-                            setCurrentPlayer({
-                              ...currentPlayer,
-                              red_cards: parseInt(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-4 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="btn btn-secondary flex-1 h-12"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-12">
-                    {isEditing ? "Sync Data" : "Register"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteModal}
         onClose={() => {
@@ -577,4 +680,260 @@ export const PlayersPage: React.FC = () => {
       />
     </div>
   );
+
+  // ============ SHARED MODAL ============
+  function renderPlayerModal() {
+    if (!showModal) return null;
+
+    // Determine available tournaments based on selected competition in modal
+    const modalTournaments = selectedCompetitionId
+      ? tournaments.filter((t) => t.competition_id === selectedCompetitionId)
+      : [];
+
+    // Determine available teams based on selected tournament in modal
+    const modalTeams = selectedTournamentId
+      ? teams.filter((t) => t.tournament_id === selectedTournamentId)
+      : [];
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+          onClick={() => setShowModal(false)}
+        />
+        <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
+          <div className="absolute inset-0 bg-purple-600/5 pointer-events-none" />
+
+          {/* Modal Header */}
+          <div className="p-6 md:p-8 shrink-0 border-b border-white/5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-500 flex items-center justify-center">
+                <FiPlus size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-white font-display tracking-tight">
+                  {isEditing ? "Modify Stats" : "Add Player"}
+                </h2>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                  Athlete registration
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Body */}
+          <div className="px-6 md:px-8 py-8 modal-content flex-1">
+            <form onSubmit={handleCreate} className="space-y-6">
+              <ImageUpload
+                label="Profile Picture"
+                value={currentPlayer.image_url}
+                onChange={(url) =>
+                  setCurrentPlayer({ ...currentPlayer, image_url: url })
+                }
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="label">Full Name</label>
+                  <input
+                    required
+                    type="text"
+                    className="input h-12"
+                    value={currentPlayer.name || ""}
+                    onChange={(e) =>
+                      setCurrentPlayer({
+                        ...currentPlayer,
+                        name: e.target.value,
+                      })
+                    }
+                    placeholder="e.g. Kylian Mbappé"
+                  />
+                </div>
+                <div>
+                  <label className="label">League / Tournament</label>
+                  <select
+                    className="input h-12 appearance-none mb-4"
+                    value={selectedCompetitionId}
+                    onChange={(e) => {
+                      setSelectedCompetitionId(e.target.value);
+                      setSelectedTournamentId("");
+                      setCurrentPlayer({ ...currentPlayer, team_id: "" });
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a tournament
+                    </option>
+                    {competitions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="label">Season</label>
+                  <select
+                    className="input h-12 appearance-none mb-4"
+                    value={selectedTournamentId}
+                    onChange={(e) => {
+                      setSelectedTournamentId(e.target.value);
+                      setCurrentPlayer({ ...currentPlayer, team_id: "" });
+                    }}
+                    disabled={!selectedCompetitionId}
+                  >
+                    <option value="" disabled>
+                      {selectedCompetitionId
+                        ? "Select a season"
+                        : "Select a league first"}
+                    </option>
+                    {modalTournaments.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.year})
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="label">Team</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none"
+                    value={currentPlayer.team_id || ""}
+                    onChange={(e) =>
+                      setCurrentPlayer({
+                        ...currentPlayer,
+                        team_id: e.target.value,
+                      })
+                    }
+                    disabled={!selectedTournamentId}
+                  >
+                    <option value="" disabled>
+                      {selectedTournamentId
+                        ? "Select Team"
+                        : "Select a season first"}
+                    </option>
+                    {modalTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Squad Number</label>
+                  <input
+                    required
+                    type="number"
+                    className="input h-12"
+                    value={currentPlayer.jersey_number || ""}
+                    onChange={(e) =>
+                      setCurrentPlayer({
+                        ...currentPlayer,
+                        jersey_number: parseInt(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label">On-Field Position</label>
+                  <select
+                    className="input h-12 appearance-none"
+                    value={currentPlayer.position || "ST"}
+                    onChange={(e) =>
+                      setCurrentPlayer({
+                        ...currentPlayer,
+                        position: e.target.value as any,
+                      })
+                    }
+                  >
+                    <optgroup label="Core Skills">
+                      <option value="GK">Goalkeeper (GK)</option>
+                      <option value="CB">Center Back (CB)</option>
+                      <option value="CM">Central Mid (CM)</option>
+                      <option value="ST">Striker (ST)</option>
+                    </optgroup>
+                    <optgroup label="Wide / Support">
+                      <option value="LB">Left Back (LB)</option>
+                      <option value="RB">Right Back (RB)</option>
+                      <option value="LW">Left Wing (LW)</option>
+                      <option value="RW">Right Wing (RW)</option>
+                      <option value="CAM">Playmaker (CAM)</option>
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+
+              {isEditing && (
+                <div className="pt-6 border-t border-slate-700/50">
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
+                    Live Performance Stats
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
+                        Goals
+                      </label>
+                      <input
+                        type="number"
+                        className="input h-12 text-center text-lg font-black"
+                        value={currentPlayer.goals || 0}
+                        onChange={(e) =>
+                          setCurrentPlayer({
+                            ...currentPlayer,
+                            goals: parseInt(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
+                        Yellow
+                      </label>
+                      <input
+                        type="number"
+                        className="input h-12 text-center text-lg font-black text-yellow-500"
+                        value={currentPlayer.yellow_cards || 0}
+                        onChange={(e) =>
+                          setCurrentPlayer({
+                            ...currentPlayer,
+                            yellow_cards: parseInt(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
+                        Red
+                      </label>
+                      <input
+                        type="number"
+                        className="input h-12 text-center text-lg font-black text-red-500"
+                        value={currentPlayer.red_cards || 0}
+                        onChange={(e) =>
+                          setCurrentPlayer({
+                            ...currentPlayer,
+                            red_cards: parseInt(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-secondary flex-1 h-12"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary flex-1 h-12">
+                  {isEditing ? "Sync Data" : "Register"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 };
