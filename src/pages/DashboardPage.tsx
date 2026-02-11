@@ -7,9 +7,6 @@ import {
   FiTarget,
   FiPlus,
   FiActivity,
-  FiArrowRight,
-  FiCalendar,
-  FiBarChart2,
   FiZap,
   FiFileText,
   FiTrendingUp,
@@ -21,6 +18,7 @@ import { teamService } from "../services/teamService";
 import { playerService } from "../services/playerService";
 import { matchService } from "../services/matchService";
 import { newsService } from "../services/newsService";
+import { auditLogService, type AuditLog } from "../services/auditLogService";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import type { Match, News, Tournament, Team } from "../types";
 
@@ -38,6 +36,7 @@ export const DashboardPage: React.FC = () => {
   const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,22 +46,31 @@ export const DashboardPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [tournamentsData, teamsData, playersData, matchesData, newsData] =
-        await Promise.all([
-          tournamentService.getAll(),
-          teamService.getAll(),
-          playerService.getAll(),
-          matchService.getAll(),
-          newsService.getAll(),
-        ]);
+      const [
+        tournamentsData,
+        teamsData,
+        playersData,
+        matchesData,
+        newsData,
+        auditData,
+      ] = await Promise.all([
+        tournamentService.getAll(),
+        teamService.getAll(),
+        playerService.getAll(),
+        matchService.getAll(),
+        newsService.getAll(),
+        auditLogService.getLogs(6),
+      ]);
+
+      setAuditLogs(auditData);
 
       setAllMatches(matchesData);
       setTeams(teamsData);
-      setLiveMatches(matchesData.filter((m) => m.status === "live"));
+      setLiveMatches(matchesData.filter((m: Match) => m.status === "live"));
       setLatestNews(
         newsData
           .sort(
-            (a, b) =>
+            (a: News, b: News) =>
               new Date(b.created_at || "").getTime() -
               new Date(a.created_at || "").getTime(),
           )
@@ -88,7 +96,7 @@ export const DashboardPage: React.FC = () => {
 
   const calculateTournamentProgress = (tournamentId: string) => {
     const tournamentMatches = allMatches.filter(
-      (m) => m.tournament_id === tournamentId,
+      (m: Match) => m.tournament_id === tournamentId,
     );
     if (tournamentMatches.length === 0) return 0;
     const finishedMatches = tournamentMatches.filter(
@@ -439,33 +447,86 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Notifications */}
+          {/* Audit Log / Intelligence Feed */}
           <div className="card divide-y divide-white/5 bg-slate-900/40 border-white/5 overflow-hidden">
-            <div className="p-4 bg-white/2 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <FiZap size={10} /> Intelligence Feed
+            <div className="p-4 bg-white/2 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FiActivity size={10} className="text-blue-500" />{" "}
+                Administrative Trail
+              </div>
+              {auditLogs.length > 0 && (
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/10">
+                  Live
+                </span>
+              )}
             </div>
-            <div className="p-5 flex gap-4 hover:bg-white/2 transition-colors">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0 animate-pulse" />
-              <div>
-                <p className="text-xs font-black text-white uppercase tracking-tight">
-                  System Synchronized
-                </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Global databases updated securely.
+            {loading ? (
+              <div className="p-10 flex flex-col items-center justify-center gap-3">
+                <FiZap className="text-slate-700 animate-pulse" size={20} />
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                  Analyzing logs...
+                </span>
+              </div>
+            ) : auditLogs.length > 0 ? (
+              auditLogs.map((log) => {
+                const isDelete = log.action.includes("DELETE");
+                const isCreate =
+                  log.action.includes("CREATE") || log.action.includes("ADD");
+                const isUpdate =
+                  log.action.includes("UPDATE") || log.action.includes("SET");
+
+                return (
+                  <div
+                    key={log.id}
+                    className="p-5 flex gap-4 hover:bg-white/2 transition-all group"
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                        isDelete
+                          ? "bg-red-500"
+                          : isCreate
+                            ? "bg-emerald-500"
+                            : "bg-blue-500"
+                      } ${isCreate || isUpdate ? "animate-pulse" : ""}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p
+                          className={`text-xs font-black uppercase tracking-tight truncate ${
+                            isDelete ? "text-red-400" : "text-white"
+                          }`}
+                        >
+                          {log.action.replace("_", " ")}
+                        </p>
+                        <span className="text-[9px] font-bold text-slate-500 shrink-0">
+                          {new Date(log.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 line-clamp-1 group-hover:text-slate-400 transition-colors">
+                        {log.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="p-10 text-center">
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                  No activity recorded yet
                 </p>
               </div>
-            </div>
-            <div className="p-5 flex gap-4 hover:bg-white/2 transition-colors">
-              <div className="w-2 h-2 rounded-full bg-slate-600 mt-2 shrink-0" />
-              <div>
-                <p className="text-xs font-black text-white uppercase opacity-50 tracking-tight">
-                  Optimization Report
-                </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Asset pre-rendering complete.
-                </p>
-              </div>
-            </div>
+            )}
+            {auditLogs.length > 0 && (
+              <button
+                onClick={fetchStats}
+                className="w-full py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white hover:bg-white/2 transition-all flex items-center justify-center gap-2"
+              >
+                <FiZap size={10} /> Refresh Feed
+              </button>
+            )}
           </div>
         </div>
       </div>
