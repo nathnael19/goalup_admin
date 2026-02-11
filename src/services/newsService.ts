@@ -7,8 +7,16 @@ import type {
 } from "../types";
 
 export const newsService = {
-  getAll: async (category?: NewsCategory): Promise<News[]> => {
-    const params = category ? { category } : {};
+  getAll: async (
+    category?: NewsCategory,
+    team_id?: string,
+    player_id?: string,
+  ): Promise<News[]> => {
+    const params: any = {};
+    if (category) params.category = category;
+    if (team_id) params.team_id = team_id;
+    if (player_id) params.player_id = player_id;
+
     const response = await apiClient.get("/news/", { params });
     return response.data;
   },
