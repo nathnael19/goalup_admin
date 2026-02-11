@@ -12,6 +12,7 @@ import { MatchesPage } from "./pages/MatchesPage";
 import { StandingsPage } from "./pages/StandingsPage";
 import { TeamDetailPage } from "./pages/TeamDetailPage";
 import { MatchDetailPage } from "./pages/MatchDetailPage";
+import { NewsPage } from "./pages/NewsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ function App() {
               <Route path="matches" element={<MatchesPage />} />
               <Route path="matches/:id" element={<MatchDetailPage />} />
               <Route path="standings" element={<StandingsPage />} />
+              <Route path="news" element={<NewsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

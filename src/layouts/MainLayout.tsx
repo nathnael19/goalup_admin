@@ -10,6 +10,7 @@ import {
   FiUser,
   FiTarget,
   FiBarChart2,
+  FiFileText,
 } from "react-icons/fi";
 
 export const MainLayout: React.FC = () => {
@@ -27,6 +28,7 @@ export const MainLayout: React.FC = () => {
     { icon: FiUser, label: "Players", path: "/players" },
     { icon: FiTarget, label: "Matches", path: "/matches" },
     { icon: FiBarChart2, label: "Standings", path: "/standings" },
+    { icon: FiFileText, label: "News", path: "/news" },
   ];
 
   // Close mobile menu on route change

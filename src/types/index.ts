@@ -260,3 +260,41 @@ export interface CreateSubstitutionDto {
   player_out_id: string;
   minute: number;
 }
+
+// News Types
+export type NewsCategory = "transfer" | "injury" | "general" | "match_report";
+
+export interface News {
+  id: string;
+  title: string;
+  content: string;
+  category: NewsCategory;
+  image_url?: string;
+  team_id?: string;
+  player_id?: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  team?: Team;
+  player?: Player;
+}
+
+export interface CreateNewsDto {
+  title: string;
+  content: string;
+  category: NewsCategory;
+  image_url?: string;
+  team_id?: string;
+  player_id?: string;
+  is_published?: boolean;
+}
+
+export interface UpdateNewsDto {
+  title?: string;
+  content?: string;
+  category?: NewsCategory;
+  image_url?: string;
+  team_id?: string;
+  player_id?: string;
+  is_published?: boolean;
+}
