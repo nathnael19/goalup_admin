@@ -2,9 +2,11 @@ import { apiClient } from "./api";
 import type { Match, CreateMatchDto, UpdateMatchScoreDto } from "../types";
 
 export const matchService = {
-  async getAll(offset = 0, limit = 100): Promise<Match[]> {
+  async getAll(
+    params: { offset?: number; limit?: number; tournament_id?: string } = {},
+  ): Promise<Match[]> {
     const response = await apiClient.get<Match[]>("/matches/", {
-      params: { offset, limit },
+      params,
     });
     return response.data;
   },

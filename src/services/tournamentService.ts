@@ -43,4 +43,18 @@ export const tournamentService = {
   ): Promise<void> {
     await apiClient.post(`/tournaments/${id}/schedule`, data);
   },
+
+  async generateKnockout(
+    id: string,
+    data: {
+      start_date: string;
+      matches_per_day: number;
+      interval_days: number;
+      total_time: number;
+      stage_interval_days: number;
+      generate_third_place: boolean;
+    },
+  ): Promise<void> {
+    await apiClient.post(`/tournaments/${id}/generate-knockout`, data);
+  },
 };

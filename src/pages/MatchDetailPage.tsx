@@ -15,6 +15,7 @@ import {
   FiMinus,
   FiRepeat,
   FiAlertTriangle,
+  FiZap,
 } from "react-icons/fi";
 import { matchService } from "../services/matchService";
 import { goalService } from "../services/goalService";
@@ -41,6 +42,7 @@ export const MatchDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMatch, setEditedMatch] = useState<Partial<Match>>({});
+  const [otherLegMatch, setOtherLegMatch] = useState<Match | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [cards, setCards] = useState<CardEvent[]>([]);
   const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
@@ -136,6 +138,23 @@ export const MatchDetailPage: React.FC = () => {
         ]);
         setTeamADetail(a as TeamDetail);
         setTeamBDetail(b as TeamDetail);
+      }
+
+      // Fetch other leg if it's a 2-legged knockout
+      if (matchData.stage && matchData.tournament?.knockout_legs === 2) {
+        const allMatches = await matchService.getAll({
+          tournament_id: matchData.tournament_id,
+        });
+        const otherLeg = allMatches.find(
+          (m) =>
+            m.id !== matchId &&
+            m.stage === matchData.stage &&
+            ((m.team_a_id === matchData.team_a_id &&
+              m.team_b_id === matchData.team_b_id) ||
+              (m.team_a_id === matchData.team_b_id &&
+                m.team_b_id === matchData.team_a_id)),
+        );
+        if (otherLeg) setOtherLegMatch(otherLeg);
       }
     } catch (err) {
       console.error("Failed to fetch match details", err);
@@ -517,11 +536,14 @@ export const MatchDetailPage: React.FC = () => {
                 <span className="px-3 py-1 bg-blue-600/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
                   {match.tournament?.name || "Tournament Match"}
                 </span>
-                {match.match_day && (
-                  <span className="px-3 py-1 bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-white/10">
-                    Round {match.match_day}
+                {match.stage && (
+                  <span className="px-3 py-1 bg-amber-600/20 text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-amber-500/20">
+                    {match.stage}
                   </span>
                 )}
+                <span className="px-3 py-1 bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-white/10">
+                  Round {match.match_day}
+                </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-6 text-slate-400 text-xs font-bold justify-center md:justify-start opacity-70">
@@ -640,6 +662,22 @@ export const MatchDetailPage: React.FC = () => {
                   <span className="text-2xl md:text-4xl text-slate-800 font-black animate-pulse">
                     :
                   </span>
+                  {otherLegMatch && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest whitespace-nowrap">
+                        Agg:{" "}
+                        {match.score_a +
+                          (otherLegMatch.team_a_id === match.team_a_id
+                            ? otherLegMatch.score_a
+                            : otherLegMatch.score_b)}{" "}
+                        -{" "}
+                        {match.score_b +
+                          (otherLegMatch.team_b_id === match.team_b_id
+                            ? otherLegMatch.score_b
+                            : otherLegMatch.score_a)}
+                      </span>
+                    </div>
+                  )}
                   {(match.status === "live" || match.is_halftime) && (
                     <div className="px-3 py-1 bg-red-600/20 border border-red-500/30 rounded-lg animate-pulse">
                       <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
@@ -684,6 +722,12 @@ export const MatchDetailPage: React.FC = () => {
                         ? "Halftime"
                         : "Match in Progress"}
                   </span>
+                  {((match.penalty_score_a ?? 0) > 0 ||
+                    (match.penalty_score_b ?? 0) > 0) && (
+                    <span className="text-xs font-black text-amber-500 uppercase tracking-widest mt-2">
+                      ({match.penalty_score_a} - {match.penalty_score_b} Pens)
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -876,6 +920,50 @@ export const MatchDetailPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Penalty Shootout Controls (Knockout only) */}
+              {(match.status === "finished" || match.status === "live") &&
+                match.stage && (
+                  <div className="p-6 bg-amber-600/5 rounded-3xl border border-amber-500/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-amber-500 font-black text-xs uppercase tracking-widest">
+                        <FiZap /> Penalty Shootout
+                      </div>
+                      {isEditing && (
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            className="w-12 h-8 bg-slate-900 border border-white/10 rounded-lg text-center text-xs font-black"
+                            value={editedMatch.penalty_score_a || 0}
+                            onChange={(e) =>
+                              setEditedMatch({
+                                ...editedMatch,
+                                penalty_score_a: parseInt(e.target.value) || 0,
+                              })
+                            }
+                          />
+                          <span className="text-slate-500">-</span>
+                          <input
+                            type="number"
+                            className="w-12 h-8 bg-slate-900 border border-white/10 rounded-lg text-center text-xs font-black"
+                            value={editedMatch.penalty_score_b || 0}
+                            onChange={(e) =>
+                              setEditedMatch({
+                                ...editedMatch,
+                                penalty_score_b: parseInt(e.target.value) || 0,
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {!isEditing && (
+                      <div className="text-center text-lg font-black text-white">
+                        {match.penalty_score_a} - {match.penalty_score_b}
+                      </div>
+                    )}
+                  </div>
+                )}
 
               {/* Cards & Subs Row */}
               {match.status === "live" && (

@@ -52,6 +52,8 @@ export interface Tournament {
   image_url?: string;
   competition_id?: string;
   competition?: Competition;
+  knockout_legs: number;
+  has_third_place_match: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +64,8 @@ export interface CreateTournamentDto {
   type: string;
   image_url?: string;
   competition_id?: string;
+  knockout_legs?: number;
+  has_third_place_match?: boolean;
 }
 
 // Team Types
@@ -164,6 +168,10 @@ export interface Match {
   second_half_start?: string;
   finished_at?: string;
   match_day: number;
+  stage?: string;
+  penalty_score_a?: number;
+  penalty_score_b?: number;
+  is_extra_time?: boolean;
   goals_list?: Goal[];
   cards_list?: CardEvent[];
   lineups?: Lineup[];
@@ -234,6 +242,10 @@ export interface UpdateMatchScoreDto {
   second_half_start?: string;
   finished_at?: string;
   match_day?: number;
+  stage?: string;
+  penalty_score_a?: number;
+  penalty_score_b?: number;
+  is_extra_time?: boolean;
 }
 
 // Standings Types
