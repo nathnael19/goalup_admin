@@ -29,6 +29,7 @@ export const MatchesPage: React.FC = () => {
     useState<Competition | null>(null);
   const [selectedTournament, setSelectedTournament] =
     useState<Tournament | null>(null);
+  const [selectedRound, setSelectedRound] = useState<number | "all">("all");
 
   const [showModal, setShowModal] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Partial<Match>>({});
@@ -407,6 +408,7 @@ export const MatchesPage: React.FC = () => {
                     setSelectedTournament(season);
                     setSearchTerm("");
                     setFilter("all");
+                    setSelectedRound("all");
                   }}
                   className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${(i % 4) + 1} relative overflow-hidden cursor-pointer`}
                 >
@@ -442,8 +444,20 @@ export const MatchesPage: React.FC = () => {
   const filteredMatches = matches.filter((m) => {
     const isThisSeason = m.tournament_id === selectedTournament.id;
     const statusMatch = filter === "all" ? true : m.status === filter;
-    return isThisSeason && statusMatch;
+    const roundMatch =
+      selectedRound === "all" ? true : m.match_day === selectedRound;
+    return isThisSeason && statusMatch && roundMatch;
   });
+
+  // Unique rounds for filtering
+  const availableRounds = Array.from(
+    new Set(
+      matches
+        .filter((m) => m.tournament_id === selectedTournament.id)
+        .map((m) => m.match_day)
+        .filter((r) => r !== undefined && r !== null),
+    ),
+  ).sort((a, b) => (a as number) - (b as number)) as number[];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -512,123 +526,188 @@ export const MatchesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner w-fit">
-        {["all", "scheduled", "live", "finished"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f as any)}
-            className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 capitalize ${
-              filter === f
-                ? f === "live"
-                  ? "bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                  : "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner w-fit">
+          {["all", "scheduled", "live", "finished"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f as any)}
+              className={`px-5 py-2.5 font-bold rounded-xl text-xs transition-all duration-300 capitalize ${
+                filter === f
+                  ? f === "live"
+                    ? "bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                    : "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Round Filter */}
+        {availableRounds.length > 0 && (
+          <div className="flex items-center gap-3 p-1.5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-inner w-fit ml-auto">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-3 pr-1">
+              Round
+            </span>
+            <select
+              value={selectedRound}
+              onChange={(e) =>
+                setSelectedRound(
+                  e.target.value === "all" ? "all" : parseInt(e.target.value),
+                )
+              }
+              className="bg-transparent text-white text-xs font-bold border-none focus:ring-0 cursor-pointer pr-8"
+            >
+              <option value="all" className="bg-slate-900">
+                All Rounds
+              </option>
+              {availableRounds.map((r) => (
+                <option key={r} value={r} className="bg-slate-900">
+                  Round {r}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Matches Grid */}
-      <div className="grid grid-cols-1 gap-6">
-        {filteredMatches.length === 0 ? (
+      <div className="space-y-12">
+        {availableRounds
+          .filter((r) => selectedRound === "all" || r === selectedRound)
+          .map((round) => {
+            const roundMatches = filteredMatches.filter(
+              (m) => m.match_day === round,
+            );
+            if (roundMatches.length === 0) return null;
+
+            return (
+              <div key={round} className="space-y-4">
+                <div className="flex items-center gap-4 px-2">
+                  <h2 className="text-sm font-black text-white uppercase tracking-[0.3em]">
+                    Match Day {round}
+                  </h2>
+                  <div className="h-px flex-1 bg-slate-800/50" />
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {roundMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("button")) return;
+                        navigate(`/matches/${match.id}`);
+                      }}
+                      className={`card card-hover group relative overflow-hidden cursor-pointer`}
+                    >
+                      <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
+                        {/* Meta Info */}
+                        <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
+                              <FiCalendar
+                                className="text-slate-500"
+                                size={14}
+                              />
+                              <span>
+                                {new Date(match.start_time).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  },
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
+                              <FiClock className="text-slate-500" size={14} />
+                              <span>
+                                {new Date(match.start_time).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="hidden lg:block">
+                            {getStatusBadge(match, tick)}
+                          </div>
+                        </div>
+
+                        {/* Scoreboard */}
+                        <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
+                          <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
+                            <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
+                              <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                              <span className="relative z-10">
+                                {teams
+                                  .find((t) => t.id === match.team_a_id)
+                                  ?.name.charAt(0)}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                              {
+                                teams.find((t) => t.id === match.team_a_id)
+                                  ?.name
+                              }
+                            </h4>
+                          </div>
+
+                          <div className="flex flex-col items-center gap-6">
+                            <div className="flex items-center gap-6 md:gap-10">
+                              <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
+                                {match.score_a}
+                              </span>
+                              <span className="text-slate-700 font-black text-lg">
+                                :
+                              </span>
+                              <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
+                                {match.score_b}
+                              </span>
+                            </div>
+                            <div className="lg:hidden">
+                              {getStatusBadge(match, tick)}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
+                            <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
+                              <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                              <span className="relative z-10">
+                                {teams
+                                  .find((t) => t.id === match.team_b_id)
+                                  ?.name.charAt(0)}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
+                              {
+                                teams.find((t) => t.id === match.team_b_id)
+                                  ?.name
+                              }
+                            </h4>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute top-0 left-0 w-2 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+        {filteredMatches.length === 0 && (
           <div className="card p-12 text-center">
             <FiClock className="mx-auto text-slate-600 mb-4" size={48} />
             <p className="text-slate-500 font-medium">
               No {filter !== "all" ? filter : ""} matches found this season.
             </p>
           </div>
-        ) : (
-          filteredMatches.map((match, i) => (
-            <div
-              key={match.id}
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest("button")) return;
-                navigate(`/matches/${match.id}`);
-              }}
-              className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${(i % 4) + 1} relative overflow-hidden cursor-pointer`}
-            >
-              <div className="p-4 md:p-6 flex flex-col lg:flex-row items-center gap-8 text-white relative z-10">
-                {/* Meta Info */}
-                <div className="w-full lg:w-56 flex flex-row lg:flex-col items-center lg:items-start justify-between lg:justify-center gap-4 border-b lg:border-b-0 lg:border-r border-slate-800/50 pb-6 lg:pb-0 lg:pr-10">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
-                      <FiCalendar className="text-slate-500" size={14} />
-                      <span>
-                        {new Date(match.start_time).toLocaleDateString(
-                          undefined,
-                          { month: "short", day: "numeric", year: "numeric" },
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-slate-300 font-bold text-sm">
-                      <FiClock className="text-slate-500" size={14} />
-                      <span>
-                        {new Date(match.start_time).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hidden lg:block">
-                    {getStatusBadge(match, tick)}
-                  </div>
-                </div>
-
-                {/* Scoreboard */}
-                <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
-                  <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                      <span className="relative z-10">
-                        {teams
-                          .find((t) => t.id === match.team_a_id)
-                          ?.name.charAt(0)}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
-                      {teams.find((t) => t.id === match.team_a_id)?.name}
-                    </h4>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="flex items-center gap-6 md:gap-10">
-                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.score_a}
-                      </span>
-                      <span className="text-slate-700 font-black text-lg">
-                        :
-                      </span>
-                      <span className="text-3xl md:text-5xl font-black text-white font-display tracking-tighter tabular-nums">
-                        {match.score_b}
-                      </span>
-                    </div>
-                    <div className="lg:hidden">
-                      {getStatusBadge(match, tick)}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
-                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
-                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                      <span className="relative z-10">
-                        {teams
-                          .find((t) => t.id === match.team_b_id)
-                          ?.name.charAt(0)}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
-                      {teams.find((t) => t.id === match.team_b_id)?.name}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />
-            </div>
-          ))
         )}
       </div>
 

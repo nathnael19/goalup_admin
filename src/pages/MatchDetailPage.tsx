@@ -508,6 +508,7 @@ export const MatchDetailPage: React.FC = () => {
             <div className="text-center md:text-left">
               <h2 className="text-blue-500 font-black uppercase tracking-[0.2em] text-sm mb-2">
                 {match.tournament?.name || "Tournament Match"}
+                {match.match_day && ` • Round ${match.match_day}`}
               </h2>
               <div className="flex items-center gap-4 text-slate-400 text-sm font-bold justify-center md:justify-start">
                 <span className="flex items-center gap-2">

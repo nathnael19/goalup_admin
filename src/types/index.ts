@@ -163,6 +163,7 @@ export interface Match {
   first_half_start?: string;
   second_half_start?: string;
   finished_at?: string;
+  match_day: number;
   goals_list?: Goal[];
   cards_list?: CardEvent[];
   lineups?: Lineup[];
@@ -232,6 +233,7 @@ export interface UpdateMatchScoreDto {
   first_half_start?: string;
   second_half_start?: string;
   finished_at?: string;
+  match_day?: number;
 }
 
 // Standings Types
