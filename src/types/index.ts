@@ -71,6 +71,7 @@ export interface Team {
   tournament_id: string;
   logo_url?: string;
   color?: string;
+  stadium?: string;
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +81,7 @@ export interface CreateTeamDto {
   tournament_id: string;
   logo_url?: string;
   color?: string;
+  stadium?: string;
 }
 
 export interface TeamRoster {
@@ -158,6 +160,9 @@ export interface Match {
   additional_time_second_half?: number;
   total_time?: number;
   is_halftime?: boolean;
+  first_half_start?: string;
+  second_half_start?: string;
+  finished_at?: string;
   goals_list?: Goal[];
   cards_list?: CardEvent[];
 }
@@ -220,6 +225,9 @@ export interface UpdateMatchScoreDto {
   additional_time_second_half?: number;
   total_time?: number;
   is_halftime?: boolean;
+  first_half_start?: string;
+  second_half_start?: string;
+  finished_at?: string;
 }
 
 // Standings Types

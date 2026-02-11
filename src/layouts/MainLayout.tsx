@@ -143,7 +143,7 @@ export const MainLayout: React.FC = () => {
         {/* User Section */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/40">
           <div className="flex items-center gap-3 mb-4 p-2 rounded-xl bg-slate-800/30">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shrink-0">
               {user?.full_name?.charAt(0) || "A"}
             </div>
             <div className={`flex-1 min-w-0 ${!sidebarOpen && "lg:hidden"}`}>

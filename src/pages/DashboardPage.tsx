@@ -197,10 +197,11 @@ export const DashboardPage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
                       {teams
                         .find((t) => t.id === match.team_a_id)
-                        ?.name.charAt(0)}
+                        ?.name.charAt(0) || "?"}
                     </div>
                     <span className="text-xs font-black truncate w-full text-center">
-                      {teams.find((t) => t.id === match.team_a_id)?.name}
+                      {teams.find((t) => t.id === match.team_a_id)?.name ||
+                        "Unknown"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg">
@@ -216,10 +217,11 @@ export const DashboardPage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
                       {teams
                         .find((t) => t.id === match.team_b_id)
-                        ?.name.charAt(0)}
+                        ?.name.charAt(0) || "?"}
                     </div>
                     <span className="text-xs font-black truncate w-full text-center">
-                      {teams.find((t) => t.id === match.team_b_id)?.name}
+                      {teams.find((t) => t.id === match.team_b_id)?.name ||
+                        "Unknown"}
                     </span>
                   </div>
                 </div>

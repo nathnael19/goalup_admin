@@ -7,7 +7,6 @@ import {
   FiUsers,
   FiSearch,
   FiAward,
-  FiFilter,
   FiActivity,
   FiCalendar,
 } from "react-icons/fi";
@@ -639,6 +638,18 @@ export const TeamsPage: React.FC = () => {
                     setCurrentTeam({ ...currentTeam, name: e.target.value })
                   }
                   placeholder="e.g. Red Warriors FC"
+                />
+              </div>
+              <div>
+                <label className="label">Home Stadium</label>
+                <input
+                  type="text"
+                  className="input h-12"
+                  value={currentTeam.stadium || ""}
+                  onChange={(e) =>
+                    setCurrentTeam({ ...currentTeam, stadium: e.target.value })
+                  }
+                  placeholder="e.g. Old Trafford"
                 />
               </div>
               <div>

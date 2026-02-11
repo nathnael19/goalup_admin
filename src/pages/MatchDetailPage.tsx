@@ -161,14 +161,26 @@ export const MatchDetailPage: React.FC = () => {
   const handleStartMatch = async () => {
     if (!match) return;
     try {
-      const updateData: Partial<Match> = { status: "live" };
-      if (match.status !== "live") {
-        updateData.start_time = new Date().toISOString();
-      }
-      await matchService.update(match.id, updateData);
+      await matchService.update(match.id, {
+        status: "live",
+        first_half_start: new Date().toISOString(),
+      });
       await fetchMatch(match.id);
     } catch (err) {
       console.error("Failed to start match", err);
+    }
+  };
+
+  const handleStartSecondHalf = async () => {
+    if (!match) return;
+    try {
+      await matchService.update(match.id, {
+        is_halftime: false,
+        second_half_start: new Date().toISOString(),
+      });
+      await fetchMatch(match.id);
+    } catch (err) {
+      console.error("Failed to start second half", err);
     }
   };
 
@@ -186,20 +198,31 @@ export const MatchDetailPage: React.FC = () => {
     if (m.status !== "live") return null;
     if (m.is_halftime) return "HT";
 
-    const startTimeStr =
-      m.start_time.includes("Z") || m.start_time.includes("+")
-        ? m.start_time
-        : `${m.start_time}Z`;
-    const start = new Date(startTimeStr).getTime();
+    // Second Half
+    if (m.second_half_start) {
+      const start = new Date(m.second_half_start).getTime();
+      const now = new Date().getTime();
+      const diffInMinutes = Math.floor((now - start) / 60000);
+      return `${Math.min(90 + (m.additional_time_second_half || 0), 45 + diffInMinutes + 1)}'`;
+    }
+
+    // First Half
+    if (m.first_half_start) {
+      const start = new Date(m.first_half_start).getTime();
+      const now = new Date().getTime();
+      const diffInMinutes = Math.floor((now - start) / 60000);
+      return `${Math.min(45 + (m.additional_time_first_half || 0), diffInMinutes + 1)}'`;
+    }
+
+    return "1'";
+  };
+
+  const isMatchLocked = (m: Match) => {
+    if (m.status !== "finished" || !m.finished_at) return false;
+    const finishTime = new Date(m.finished_at).getTime();
     const now = new Date().getTime();
-    const diffInMinutes = Math.floor((now - start) / 60000);
-
-    if (diffInMinutes < 0) return "1'";
-
-    const totalTime = m.total_time || 90;
-    if (diffInMinutes >= totalTime) return `${totalTime}'`;
-
-    return `${diffInMinutes + 1}'`;
+    const oneHour = 60 * 60 * 1000;
+    return now - finishTime > oneHour;
   };
 
   const updateScore = (team: "a" | "b", delta: number) => {
@@ -390,12 +413,14 @@ export const MatchDetailPage: React.FC = () => {
               <button
                 onClick={() => setIsEditing(true)}
                 className="btn btn-secondary"
+                disabled={isMatchLocked(match)}
               >
                 <FiEdit2 className="mr-2" /> Edit
               </button>
               <button
                 onClick={handleDelete}
                 className="btn btn-secondary text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                disabled={isMatchLocked(match)}
               >
                 <FiTrash2 className="mr-2" /> Delete
               </button>
@@ -438,6 +463,15 @@ export const MatchDetailPage: React.FC = () => {
                   <FiClock className="text-blue-400" />
                   <span>{match.total_time || 90} Min Game</span>
                 </span>
+                {match.team_a?.stadium && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-slate-700" />
+                    <span className="flex items-center gap-2">
+                      <FiMapPin className="text-emerald-400" />
+                      <span>{match.team_a.stadium}</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <div>{getStatusBadge(match, tick)}</div>
@@ -599,20 +633,25 @@ export const MatchDetailPage: React.FC = () => {
                       setShowGoalModal(true);
                     }}
                     className="btn btn-secondary flex-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                    disabled={isMatchLocked(match)}
                   >
                     <FiPlus className="mr-2" /> Goal {match.team_b?.name}
                   </button>
                 </div>
                 <button
-                  onClick={toggleHalftime}
-                  className={`btn w-full ${match.is_halftime ? "btn-primary bg-amber-600 hover:bg-amber-500" : "btn-secondary"}`}
+                  onClick={
+                    match.is_halftime ? handleStartSecondHalf : toggleHalftime
+                  }
+                  className={`btn w-full ${match.is_halftime ? "btn-primary bg-emerald-600 hover:bg-emerald-500" : "btn-secondary"}`}
+                  disabled={isMatchLocked(match)}
                 >
                   <FiClock className="mr-2" />{" "}
-                  {match.is_halftime ? "End Half-Time" : "Set Half-Time (HT)"}
+                  {match.is_halftime ? "Start 2nd Half" : "Set Half-Time (HT)"}
                 </button>
                 <button
                   onClick={handleFinishMatch}
                   className="btn btn-primary w-full bg-green-600 hover:bg-green-500"
+                  disabled={isMatchLocked(match)}
                 >
                   <FiCheckCircle className="mr-2" /> Finish Match
                 </button>
@@ -636,6 +675,7 @@ export const MatchDetailPage: React.FC = () => {
                         setShowCardModal(true);
                       }}
                       className="btn btn-secondary border-amber-500/20 text-amber-500 hover:bg-amber-500/10 text-[10px] py-2 h-auto"
+                      disabled={isMatchLocked(match)}
                     >
                       <div className="w-2 h-3 bg-amber-500 rounded-xs mr-2" />{" "}
                       {match.team_a?.name.split(" ")[0]}
@@ -654,6 +694,7 @@ export const MatchDetailPage: React.FC = () => {
                         setShowCardModal(true);
                       }}
                       className="btn btn-secondary border-amber-500/20 text-amber-500 hover:bg-amber-500/10 text-[10px] py-2 h-auto"
+                      disabled={isMatchLocked(match)}
                     >
                       <div className="w-2 h-3 bg-amber-500 rounded-xs mr-2" />{" "}
                       {match.team_b?.name.split(" ")[0]}
@@ -672,6 +713,7 @@ export const MatchDetailPage: React.FC = () => {
                         setShowCardModal(true);
                       }}
                       className="btn btn-secondary border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] py-2 h-auto"
+                      disabled={isMatchLocked(match)}
                     >
                       <div className="w-2 h-3 bg-red-600 rounded-xs mr-2" />{" "}
                       {match.team_a?.name.split(" ")[0]}
@@ -690,6 +732,7 @@ export const MatchDetailPage: React.FC = () => {
                         setShowCardModal(true);
                       }}
                       className="btn btn-secondary border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] py-2 h-auto"
+                      disabled={isMatchLocked(match)}
                     >
                       <div className="w-2 h-3 bg-red-600 rounded-xs mr-2" />{" "}
                       {match.team_b?.name.split(" ")[0]}
@@ -716,6 +759,7 @@ export const MatchDetailPage: React.FC = () => {
                           setShowSubModal(true);
                         }}
                         className="btn btn-secondary border-blue-500/20 text-blue-500 hover:bg-blue-500/10 text-[10px] py-2 h-auto"
+                        disabled={isMatchLocked(match)}
                       >
                         <FiRepeat className="mr-2" />{" "}
                         {match.team_a?.name.split(" ")[0]}
@@ -735,6 +779,7 @@ export const MatchDetailPage: React.FC = () => {
                           setShowSubModal(true);
                         }}
                         className="btn btn-secondary border-blue-500/20 text-blue-500 hover:bg-blue-500/10 text-[10px] py-2 h-auto"
+                        disabled={isMatchLocked(match)}
                       >
                         <FiRepeat className="mr-2" />{" "}
                         {match.team_b?.name.split(" ")[0]}
@@ -852,7 +897,16 @@ export const MatchDetailPage: React.FC = () => {
             <FiMapPin className="text-blue-500" /> Venue Information
           </h3>
           <p className="text-slate-400">
-            Venue information is not yet available for this match.
+            {match.team_a?.stadium ? (
+              <span className="flex items-center gap-2">
+                Hosted at{" "}
+                <span className="text-white font-bold">
+                  {match.team_a.stadium}
+                </span>
+              </span>
+            ) : (
+              "Venue information is not yet available for this match."
+            )}
           </p>
         </div>
         <div className="card p-6">
@@ -971,7 +1025,8 @@ export const MatchDetailPage: React.FC = () => {
                               handleDeleteCard(event.id);
                             else handleDeleteSubstitution(event.id);
                           }}
-                          className="p-2 text-slate-600 hover:text-red-400 transition-colors"
+                          className="p-2 text-slate-600 hover:text-red-400 transition-colors disabled:opacity-30"
+                          disabled={isMatchLocked(match)}
                         >
                           <FiTrash2 size={14} />
                         </button>
