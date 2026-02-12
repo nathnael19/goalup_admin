@@ -219,6 +219,7 @@ export interface Match {
   lineups?: Lineup[];
   formation_a: string;
   formation_b: string;
+  referee_id?: string;
 }
 
 export type CardType = "yellow" | "red";
@@ -349,6 +350,7 @@ export interface News {
   updated_at: string;
   team?: Team;
   player?: Player;
+  author_id?: string;
 }
 
 export interface CreateNewsDto {

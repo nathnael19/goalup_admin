@@ -14,16 +14,20 @@ import { competitionService } from "../services/competitionService";
 import { matchService } from "../services/matchService";
 import { ImageUpload } from "../components/ImageUpload";
 import { KnockoutBracket } from "../components/KnockoutBracket";
-import type {
-  Tournament,
-  CreateTournamentDto,
-  Competition,
-  Match,
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import {
+  type Tournament,
+  type CreateTournamentDto,
+  type Competition,
+  type Match,
+  UserRoles,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TournamentsPage: React.FC = () => {
+  const { user } = useAuth();
   // "Tournaments" in UI = Competitions in Backend
   // "Seasons" in UI = Tournaments in Backend
 
@@ -192,15 +196,18 @@ export const TournamentsPage: React.FC = () => {
               Your main leagues and cup competitions.
             </p>
           </div>
-          <button
-            onClick={() => {
-              setNewTournament({ name: "", description: "", image_url: "" });
-              setShowTournamentModal(true);
-            }}
-            className="btn btn-primary h-12"
-          >
-            <FiPlus /> New Tournament
-          </button>
+          {(user?.role === UserRoles.SUPER_ADMIN ||
+            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+            <button
+              onClick={() => {
+                setNewTournament({ name: "", description: "", image_url: "" });
+                setShowTournamentModal(true);
+              }}
+              className="btn btn-primary h-12"
+            >
+              <FiPlus /> New Tournament
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -252,15 +259,18 @@ export const TournamentsPage: React.FC = () => {
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <div className="flex gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          confirmDelete(tournament.id, "tournament"); // Using 'tournament' to delete Competition as per TournamentsPage logic
-                        }}
-                        className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
+                      {(user?.role === UserRoles.SUPER_ADMIN ||
+                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmDelete(tournament.id, "tournament"); // Using 'tournament' to delete Competition as per TournamentsPage logic
+                          }}
+                          className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div
@@ -418,28 +428,34 @@ export const TournamentsPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            {activeSeason.type === "knockout" && seasonMatches.length === 0 && (
-              <button
-                onClick={async () => {
-                  try {
-                    await tournamentService.generateKnockout(activeSeason.id, {
-                      start_date: new Date().toISOString(),
-                      matches_per_day: 2,
-                      interval_days: 1,
-                      total_time: 90,
-                      stage_interval_days: 7,
-                      generate_third_place: false,
-                    });
-                    fetchSeasonMatches(activeSeason.id);
-                  } catch (err) {
-                    console.error("Failed to generate bracket", err);
-                  }
-                }}
-                className="btn btn-primary h-12 gap-2"
-              >
-                <FiZap /> Generate Bracket
-              </button>
-            )}
+            {activeSeason.type === "knockout" &&
+              seasonMatches.length === 0 &&
+              (user?.role === UserRoles.SUPER_ADMIN ||
+                user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await tournamentService.generateKnockout(
+                        activeSeason.id,
+                        {
+                          start_date: new Date().toISOString(),
+                          matches_per_day: 2,
+                          interval_days: 1,
+                          total_time: 90,
+                          stage_interval_days: 7,
+                          generate_third_place: false,
+                        },
+                      );
+                      fetchSeasonMatches(activeSeason.id);
+                    } catch (err) {
+                      console.error("Failed to generate bracket", err);
+                    }
+                  }}
+                  className="btn btn-primary h-12 gap-2"
+                >
+                  <FiZap /> Generate Bracket
+                </button>
+              )}
           </div>
 
           <div className="grid grid-cols-1 gap-8">
@@ -511,21 +527,24 @@ export const TournamentsPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setCurrentSeason({
-                  name: "",
-                  year: new Date().getFullYear(),
-                  type: "league",
-                  competition_id: selectedTournament.id,
-                });
-                setShowSeasonModal(true);
-              }}
-              className="btn btn-primary h-12"
-            >
-              <FiPlus /> New Season
-            </button>
+            {(user?.role === UserRoles.SUPER_ADMIN ||
+              user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setCurrentSeason({
+                    name: "",
+                    year: new Date().getFullYear(),
+                    type: "league",
+                    competition_id: selectedTournament.id,
+                  });
+                  setShowSeasonModal(true);
+                }}
+                className="btn btn-primary h-12"
+              >
+                <FiPlus /> New Season
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -560,22 +579,27 @@ export const TournamentsPage: React.FC = () => {
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex gap-1.5">
-                      <button
-                        onClick={() => {
-                          setIsEditing(true);
-                          setCurrentSeason(season);
-                          setShowSeasonModal(true);
-                        }}
-                        className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                      >
-                        <FiEdit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => confirmDelete(season.id, "season")}
-                        className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
+                      {(user?.role === UserRoles.SUPER_ADMIN ||
+                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setIsEditing(true);
+                              setCurrentSeason(season);
+                              setShowSeasonModal(true);
+                            }}
+                            className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => confirmDelete(season.id, "season")}
+                            className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

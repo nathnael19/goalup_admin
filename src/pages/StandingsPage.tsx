@@ -10,9 +10,12 @@ import { standingService } from "../services/standingService";
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import type { Tournament, Competition, GroupedStanding } from "../types";
+import { UserRoles } from "../types";
+import { useAuth } from "../context/AuthContext";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const StandingsPage: React.FC = () => {
+  const { user } = useAuth();
   const [groupedStandings, setGroupedStandings] = useState<GroupedStanding[]>(
     [],
   );
@@ -293,18 +296,21 @@ export const StandingsPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => handleRecalculate(selectedTournament.id)}
-          disabled={recalculating === selectedTournament.id}
-          className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
-        >
-          <FiRefreshCw
-            className={
-              recalculating === selectedTournament.id ? "animate-spin" : ""
-            }
-          />
-          Sync Standings
-        </button>
+        {(user?.role === UserRoles.SUPER_ADMIN ||
+          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          <button
+            onClick={() => handleRecalculate(selectedTournament.id)}
+            disabled={recalculating === selectedTournament.id}
+            className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
+          >
+            <FiRefreshCw
+              className={
+                recalculating === selectedTournament.id ? "animate-spin" : ""
+              }
+            />
+            Sync Standings
+          </button>
+        )}
       </div>
 
       {!standingGroup || standingGroup.teams.length === 0 ? (

@@ -24,7 +24,18 @@ export const MainLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const menuItems = [
-    { icon: FiHome, label: "Dashboard", path: "/" },
+    {
+      icon: FiHome,
+      label: "Dashboard",
+      path: "/",
+      roles: [
+        UserRoles.SUPER_ADMIN,
+        UserRoles.TOURNAMENT_ADMIN,
+        UserRoles.COACH,
+        UserRoles.REFEREE,
+        UserRoles.NEWS_REPORTER,
+      ],
+    },
     {
       icon: FiAward,
       label: "Tournaments",
@@ -58,7 +69,17 @@ export const MainLayout: React.FC = () => {
         UserRoles.REFEREE,
       ],
     },
-    { icon: FiBarChart2, label: "Standings", path: "/standings" },
+    {
+      icon: FiBarChart2,
+      label: "Standings",
+      path: "/standings",
+      roles: [
+        UserRoles.SUPER_ADMIN,
+        UserRoles.TOURNAMENT_ADMIN,
+        UserRoles.COACH,
+        UserRoles.REFEREE,
+      ],
+    },
     {
       icon: FiFileText,
       label: "News",

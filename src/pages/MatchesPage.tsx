@@ -5,6 +5,7 @@ import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   type Match,
   type Team,
@@ -12,11 +13,13 @@ import {
   type Competition,
   type UpdateMatchScoreDto,
   type MatchStatus,
+  UserRoles,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { Toast } from "../components/Toast";
 
 export const MatchesPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -493,37 +496,40 @@ export const MatchesPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => {
-              setMode("create");
-              setCurrentMatch({
-                status: "scheduled" as MatchStatus,
-                tournament_id: selectedTournament.id,
-                total_time: 90,
-              });
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus className="mr-2" /> Schedule Match
-          </button>
-          <button
-            onClick={() => {
-              setShowAutoScheduleModal(true);
-              setScheduleConfig({
-                tournament_id: selectedTournament.id,
-                start_date: "",
-                matches_per_day: 1,
-                interval_days: 1,
-                total_time: 90,
-              });
-            }}
-            className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
-          >
-            <FiCalendar className="mr-2" /> Auto Fixtures
-          </button>
-        </div>
+        {(user?.role === UserRoles.SUPER_ADMIN ||
+          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                setMode("create");
+                setCurrentMatch({
+                  status: "scheduled" as MatchStatus,
+                  tournament_id: selectedTournament.id,
+                  total_time: 90,
+                });
+                setShowModal(true);
+              }}
+              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+            >
+              <FiPlus className="mr-2" /> Schedule Match
+            </button>
+            <button
+              onClick={() => {
+                setShowAutoScheduleModal(true);
+                setScheduleConfig({
+                  tournament_id: selectedTournament.id,
+                  start_date: "",
+                  matches_per_day: 1,
+                  interval_days: 1,
+                  total_time: 90,
+                });
+              }}
+              className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
+            >
+              <FiCalendar className="mr-2" /> Auto Fixtures
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
