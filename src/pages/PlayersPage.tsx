@@ -14,6 +14,8 @@ import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { ImageUpload } from "../components/ImageUpload";
+import { useAuth } from "../context/AuthContext";
+import { UserRoles } from "../types";
 import type {
   Player,
   CreatePlayerDto,
@@ -25,6 +27,7 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const PlayersPage: React.FC = () => {
+  const { user } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -874,6 +877,7 @@ export const PlayersPage: React.FC = () => {
                         type="number"
                         className="input h-12 text-center text-lg font-black"
                         value={currentPlayer.goals || 0}
+                        disabled={user?.role === UserRoles.COACH}
                         onChange={(e) =>
                           setCurrentPlayer({
                             ...currentPlayer,
@@ -890,6 +894,7 @@ export const PlayersPage: React.FC = () => {
                         type="number"
                         className="input h-12 text-center text-lg font-black text-yellow-500"
                         value={currentPlayer.yellow_cards || 0}
+                        disabled={user?.role === UserRoles.COACH}
                         onChange={(e) =>
                           setCurrentPlayer({
                             ...currentPlayer,
@@ -906,6 +911,7 @@ export const PlayersPage: React.FC = () => {
                         type="number"
                         className="input h-12 text-center text-lg font-black text-red-500"
                         value={currentPlayer.red_cards || 0}
+                        disabled={user?.role === UserRoles.COACH}
                         onChange={(e) =>
                           setCurrentPlayer({
                             ...currentPlayer,
