@@ -23,13 +23,9 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { useAuth } from "../context/AuthContext";
 import { UserRoles } from "../types";
 import type { Match, News, Tournament, Team, Player } from "../types";
-import { useAuth } from "../context/AuthContext";
-import { UserRoles } from "../types";
-import type { Match, News, Tournament, Team, Player } from "../types";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { user } = useAuth();
   const [stats, setStats] = useState({
     tournaments: 0,
@@ -37,12 +33,6 @@ export const DashboardPage: React.FC = () => {
     players: 0,
     matches: 0,
     liveMatchesCount: 0,
-    myTeamPlayers: 0,
-    myTeamMatches: 0,
-    myTeamGoals: 0,
-    assignedMatches: 0,
-    myArticles: 0,
-    totalNews: 0,
     myTeamPlayers: 0,
     myTeamMatches: 0,
     myTeamGoals: 0,
@@ -57,7 +47,6 @@ export const DashboardPage: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [myTeam, setMyTeam] = useState<Team | null>(null);
 
   useEffect(() => {
@@ -84,7 +73,6 @@ export const DashboardPage: React.FC = () => {
       ]);
 
       setAuditLogs(auditData);
-
       setAllMatches(matchesData);
       setTeams(teamsData);
       setLiveMatches(matchesData.filter((m: Match) => m.status === "live"));
@@ -93,26 +81,19 @@ export const DashboardPage: React.FC = () => {
         (a: News, b: News) =>
           new Date(b.created_at || "").getTime() -
           new Date(a.created_at || "").getTime(),
-
-      const sortedNews = [...newsData].sort(
-        (a: News, b: News) =>
-          new Date(b.created_at || "").getTime() -
-          new Date(a.created_at || "").getTime(),
       );
-      setLatestNews(sortedNews.slice(0, 4));
       setLatestNews(sortedNews.slice(0, 4));
 
       // Active tournaments (simply taking first 2 for spotlight)
       setActiveTournaments(tournamentsData.slice(0, 2));
 
       // Role-specific data resolution
-      let myTeamContext: Team | null = null;
       let coachPlayerCount = 0;
       let coachMatchCount = 0;
       let coachGoals = 0;
 
       if (user?.role === UserRoles.COACH && user.team_id) {
-        myTeamContext =
+        const myTeamContext =
           teamsData.find(
             (t: Team) => t.id.toString() === user.team_id?.toString(),
           ) || null;
@@ -133,55 +114,12 @@ export const DashboardPage: React.FC = () => {
             m.team_b_id.toString() === user.team_id?.toString(),
         ).length;
       }
-      // Role-specific data resolution
-      let myTeamContext: Team | null = null;
-      let coachPlayerCount = 0;
-      let coachMatchCount = 0;
-      let coachGoals = 0;
 
-      if (user?.role === UserRoles.COACH && user.team_id) {
-        myTeamContext =
-          teamsData.find(
-            (t: Team) => t.id.toString() === user.team_id?.toString(),
-          ) || null;
-        setMyTeam(myTeamContext);
-
-        const myPlayers = playersData.filter(
-          (p: Player) => p.team_id.toString() === user.team_id?.toString(),
-        );
-        coachPlayerCount = myPlayers.length;
-        coachGoals = myPlayers.reduce(
-          (acc: number, p: Player) => acc + (p.goals || 0),
-          0,
-        );
-
-        coachMatchCount = matchesData.filter(
-          (m: Match) =>
-            m.team_a_id.toString() === user.team_id?.toString() ||
-            m.team_b_id.toString() === user.team_id?.toString(),
-        ).length;
-      }
       setStats({
         tournaments: tournamentsData.length,
         teams: teamsData.length,
         players: playersData.length,
         matches: matchesData.length,
-        liveMatchesCount: matchesData.filter((m: Match) => m.status === "live")
-          .length,
-        myTeamPlayers: coachPlayerCount,
-        myTeamMatches: coachMatchCount,
-        myTeamGoals: coachGoals,
-        assignedMatches:
-          user?.role === UserRoles.REFEREE
-            ? matchesData.filter(
-                (m: Match) => m.referee_id?.toString() === user.id?.toString(),
-              ).length
-            : 0,
-        myArticles:
-          user?.role === UserRoles.NEWS_REPORTER
-            ? newsData.filter((n: News) => n.author_id === user.id).length
-            : 0,
-        totalNews: newsData.length,
         liveMatchesCount: matchesData.filter((m: Match) => m.status === "live")
           .length,
         myTeamPlayers: coachPlayerCount,
@@ -215,6 +153,14 @@ export const DashboardPage: React.FC = () => {
       (m) => m.status === "finished",
     ).length;
     return Math.round((finishedMatches / tournamentMatches.length) * 100);
+  };
+
+  const dashboardLabel = () => {
+    if (user?.role === UserRoles.SUPER_ADMIN) return "League Command";
+    if (user?.role === UserRoles.TOURNAMENT_ADMIN) return "Tournament Control";
+    if (user?.role === UserRoles.COACH) return "Team HQ";
+    if (user?.role === UserRoles.REFEREE) return "Official's Lounge";
+    return "Member Dashboard";
   };
 
   const getStatCards = () => {
@@ -259,6 +205,7 @@ export const DashboardPage: React.FC = () => {
         },
       ];
     }
+
     if (user?.role === UserRoles.REFEREE) {
       return [
         {
@@ -301,6 +248,7 @@ export const DashboardPage: React.FC = () => {
       ];
     }
 
+    // Default for Admin / Others
     return [
       {
         label: "Tournaments",
@@ -337,14 +285,6 @@ export const DashboardPage: React.FC = () => {
     ];
   };
 
-  const dashboardLabel = () => {
-    if (user?.role === UserRoles.SUPER_ADMIN) return "League Command";
-    if (user?.role === UserRoles.TOURNAMENT_ADMIN) return "Tournament Control";
-    if (user?.role === UserRoles.COACH) return "Team HQ";
-    if (user?.role === UserRoles.REFEREE) return "Official's Lounge";
-    return "Member Dashboard";
-  };
-
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Welcome Header */}
@@ -352,16 +292,10 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h1 className="text-4xl font-black text-white tracking-tight font-display mb-2">
             {dashboardLabel()}{" "}
-            {dashboardLabel()}{" "}
             <span className="text-blue-500 underline decoration-blue-500/30 underline-offset-8">
-              {user?.role === UserRoles.COACH ? myTeam?.name : "Overview"}
               {user?.role === UserRoles.COACH ? myTeam?.name : "Overview"}
             </span>
           </h1>
-          <p className="text-slate-400 font-medium font-body mt-1">
-            {user?.role === UserRoles.COACH
-              ? `Manage your squad and track team performance.`
-              : `A snapshot of your ${user?.role === UserRoles.REFEREE ? "officiating schedule" : "football ecosystem performance"}.`}
           <p className="text-slate-400 font-medium font-body mt-1">
             {user?.role === UserRoles.COACH
               ? `Manage your squad and track team performance.`
@@ -372,11 +306,7 @@ export const DashboardPage: React.FC = () => {
           <div className="hidden md:flex flex-col items-end mr-4">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
               Role Access
-              Role Access
             </span>
-            <span className="text-xs font-bold text-blue-500 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              {user?.role?.replace("_", " ") || "Member"}
             <span className="text-xs font-bold text-blue-500 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
               {user?.role?.replace("_", " ") || "Member"}
@@ -391,81 +321,17 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Live Match Pulse - COOL SURPRISE #1 */}
-      {!loading && liveMatches.length > 0 && (
-        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="p-1.5 rounded-lg bg-red-600/10 text-red-500">
-              <FiActivity size={16} className="animate-pulse" />
-            </div>
-            <h2 className="text-sm font-black text-white uppercase tracking-[0.2em]">
-              Match Pulse
-            </h2>
-            <div className="h-px flex-1 bg-linear-to-r from-red-500/20 to-transparent" />
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-            {liveMatches.map((match) => (
-              <div
-                key={match.id}
-                onClick={() => navigate(`/matches/${match.id}`)}
-                className="flex-none w-72 card card-hover p-4 bg-linear-to-br from-slate-900/60 to-slate-800/40 border-red-500/20 border-l-2 border-l-red-500 cursor-pointer group"
-              >
-                <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <span className="text-red-500 flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />{" "}
-                    Live
-                  </span>
-                  <span>{match.total_time}'</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-col items-center gap-1 flex-1">
-                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
-                      {teams
-                        .find((t) => t.id === match.team_a_id)
-                        ?.name.charAt(0) || "?"}
-                    </div>
-                    <span className="text-xs font-black truncate w-full text-center">
-                      {teams.find((t) => t.id === match.team_a_id)?.name ||
-                        "Unknown"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg">
-                    <span className="text-xl font-black text-white">
-                      {match.score_a}
-                    </span>
-                    <span className="text-slate-600">-</span>
-                    <span className="text-xl font-black text-white">
-                      {match.score_b}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 flex-1">
-                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-black">
-                      {teams
-                        .find((t) => t.id === match.team_b_id)
-                        ?.name.charAt(0) || "?"}
-                    </div>
-                    <span className="text-xs font-black truncate w-full text-center">
-                      {teams.find((t) => t.id === match.team_b_id)?.name ||
-                        "Unknown"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Live Match Pulse for Home / Global View */}
+      {/* (We consolidated this into the right column Spotlight but kept the Pulse scroll for Admins) */}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
           : getStatCards().map((stat, i) => (
-          : getStatCards().map((stat, i) => (
               <div
                 key={i}
-                className={`card card-hover hover:border-${stat.text.split("-")[1]}-500/30 transition-all animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
-                className={`card card-hover hover:border-${stat.text.split("-")[1]}-500/30 transition-all animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
+                className={`card card-hover transition-all animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -495,7 +361,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8">
-        {/* Left Column: News Highlights - COOL SURPRISE #2 */}
+        {/* Left Column: News Highlights */}
         <div className="xl:col-span-8 space-y-8">
           <div className="flex items-center justify-between bg-white/2 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
             <h2 className="text-xl font-black text-white font-display flex items-center gap-3">
@@ -766,7 +632,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Live Pulse - Global overview for Admins and Coaches */}
+          {/* Live Pulse - Restricted to authorized roles */}
           {(user?.role === UserRoles.SUPER_ADMIN ||
             user?.role === UserRoles.TOURNAMENT_ADMIN ||
             user?.role === UserRoles.COACH) && (
@@ -958,7 +824,7 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </Link>
               <Link
-                to={user?.role === UserRoles.NEWS_REPORTER ? "/news" : "/news"}
+                to="/news"
                 className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-indigo-600/10 hover:border-indigo-500/30 transition-all group text-center flex flex-col items-center gap-3"
               >
                 <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -1000,35 +866,6 @@ export const DashboardPage: React.FC = () => {
                     log.action.includes("CREATE") || log.action.includes("ADD");
                   const isUpdate =
                     log.action.includes("UPDATE") || log.action.includes("SET");
-          {/* Audit Log / Intelligence Feed - Restricted to Admin */}
-          {(user?.role === UserRoles.SUPER_ADMIN ||
-            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-            <div className="card divide-y divide-white/5 bg-slate-900/40 border-white/5 overflow-hidden">
-              <div className="p-4 bg-white/2 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <FiActivity size={10} className="text-blue-500" />{" "}
-                  Administrative Trail
-                </div>
-                {auditLogs.length > 0 && (
-                  <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/10">
-                    Live
-                  </span>
-                )}
-              </div>
-              {loading ? (
-                <div className="p-10 flex flex-col items-center justify-center gap-3">
-                  <FiZap className="text-slate-700 animate-pulse" size={20} />
-                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    Analyzing logs...
-                  </span>
-                </div>
-              ) : auditLogs.length > 0 ? (
-                auditLogs.map((log) => {
-                  const isDelete = log.action.includes("DELETE");
-                  const isCreate =
-                    log.action.includes("CREATE") || log.action.includes("ADD");
-                  const isUpdate =
-                    log.action.includes("UPDATE") || log.action.includes("SET");
 
                   return (
                     <div
@@ -1047,63 +884,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
                           <p
-                            className={`text-xs font-black uppercase tracking-tight truncate ${
-                              isDelete ? "text-red-400" : "text-white"
-                            }`}
-                          >
-                            {log.action.replace("_", " ")}
-                          </p>
-                          <span className="text-[9px] font-bold text-slate-500 shrink-0">
-                            {new Date(log.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 line-clamp-1 group-hover:text-slate-400 transition-colors">
-                          {log.description}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-10 text-center">
-                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                    No activity recorded yet
-                  </p>
-                </div>
-              )}
-              {auditLogs.length > 0 && (
-                <button
-                  onClick={fetchStats}
-                  className="w-full py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white hover:bg-white/2 transition-all flex items-center justify-center gap-2"
-                >
-                  <FiZap size={10} /> Refresh Feed
-                </button>
-              )}
-            </div>
-          )}
-                  return (
-                    <div
-                      key={log.id}
-                      className="p-5 flex gap-4 hover:bg-white/2 transition-all group"
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                          isDelete
-                            ? "bg-red-500"
-                            : isCreate
-                              ? "bg-emerald-500"
-                              : "bg-blue-500"
-                        } ${isCreate || isUpdate ? "animate-pulse" : ""}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <p
-                            className={`text-xs font-black uppercase tracking-tight truncate ${
-                              isDelete ? "text-red-400" : "text-white"
-                            }`}
+                            className={`text-xs font-black uppercase tracking-tight truncate ${isDelete ? "text-red-400" : "text-white"}`}
                           >
                             {log.action.replace("_", " ")}
                           </p>
