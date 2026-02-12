@@ -41,14 +41,118 @@ function App() {
               }
             >
               <Route index element={<DashboardPage />} />
-              <Route path="tournaments" element={<TournamentsPage />} />
-              <Route path="teams" element={<TeamsPage />} />
-              <Route path="teams/:id" element={<TeamDetailPage />} />
-              <Route path="players" element={<PlayersPage />} />
-              <Route path="matches" element={<MatchesPage />} />
-              <Route path="matches/:id" element={<MatchDetailPage />} />
-              <Route path="standings" element={<StandingsPage />} />
-              <Route path="news" element={<NewsPage />} />
+              <Route
+                path="tournaments"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                    ]}
+                  >
+                    <TournamentsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="teams"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                    ]}
+                  >
+                    <TeamsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="teams/:id"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                      UserRoles.COACH,
+                    ]}
+                  >
+                    <TeamDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="players"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                      UserRoles.COACH,
+                    ]}
+                  >
+                    <PlayersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="matches"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                      UserRoles.COACH,
+                      UserRoles.REFEREE,
+                    ]}
+                  >
+                    <MatchesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="matches/:id"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                      UserRoles.COACH,
+                      UserRoles.REFEREE,
+                    ]}
+                  >
+                    <MatchDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="standings"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.TOURNAMENT_ADMIN,
+                      UserRoles.COACH,
+                      UserRoles.REFEREE,
+                    ]}
+                  >
+                    <StandingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="news"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[
+                      UserRoles.SUPER_ADMIN,
+                      UserRoles.NEWS_REPORTER,
+                    ]}
+                  >
+                    <NewsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="users"
                 element={

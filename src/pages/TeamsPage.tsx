@@ -15,10 +15,13 @@ import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { ImageUpload } from "../components/ImageUpload";
 import type { Team, CreateTeamDto, Tournament, Competition } from "../types";
+import { UserRoles } from "../types";
+import { useAuth } from "../context/AuthContext";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
 export const TeamsPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -136,17 +139,20 @@ export const TeamsPage: React.FC = () => {
               Select a competition to manage its registered clubs.
             </p>
           </div>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              setCurrentTeam({ name: "", tournament_id: "" });
-              setModalCompetitionId("");
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus /> Add Team
-          </button>
+          {(user?.role === UserRoles.SUPER_ADMIN ||
+            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setCurrentTeam({ name: "", tournament_id: "" });
+                setModalCompetitionId("");
+                setShowModal(true);
+              }}
+              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+            >
+              <FiPlus /> Add Team
+            </button>
+          )}
         </div>
 
         {/* Search & Stats */}
@@ -309,17 +315,20 @@ export const TeamsPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              setCurrentTeam({ name: "", tournament_id: "" });
-              setModalCompetitionId(selectedCompetition.id);
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus /> Add Team
-          </button>
+          {(user?.role === UserRoles.SUPER_ADMIN ||
+            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setCurrentTeam({ name: "", tournament_id: "" });
+                setModalCompetitionId(selectedCompetition.id);
+                setShowModal(true);
+              }}
+              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+            >
+              <FiPlus /> Add Team
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -435,20 +444,23 @@ export const TeamsPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            setCurrentTeam({
-              name: "",
-              tournament_id: selectedTournament.id,
-            });
-            setModalCompetitionId(selectedCompetition.id);
-            setShowModal(true);
-          }}
-          className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-        >
-          <FiPlus /> Add Team
-        </button>
+        {(user?.role === UserRoles.SUPER_ADMIN ||
+          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setCurrentTeam({
+                name: "",
+                tournament_id: selectedTournament.id,
+              });
+              setModalCompetitionId(selectedCompetition.id);
+              setShowModal(true);
+            }}
+            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+          >
+            <FiPlus /> Add Team
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -556,23 +568,28 @@ export const TeamsPage: React.FC = () => {
                         >
                           <FiActivity size={16} />
                         </button>
-                        <button
-                          onClick={() => {
-                            setIsEditing(true);
-                            setCurrentTeam(team);
-                            setModalCompetitionId(selectedCompetition.id);
-                            setShowModal(true);
-                          }}
-                          className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(team.id)}
-                          className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        {(user?.role === UserRoles.SUPER_ADMIN ||
+                          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setIsEditing(true);
+                                setCurrentTeam(team);
+                                setModalCompetitionId(selectedCompetition.id);
+                                setShowModal(true);
+                              }}
+                              className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                            >
+                              <FiEdit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => confirmDelete(team.id)}
+                              className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
