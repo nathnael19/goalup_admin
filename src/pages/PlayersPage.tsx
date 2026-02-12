@@ -4,7 +4,6 @@ import {
   FiEdit2,
   FiTrash2,
   FiSearch,
-  FiShield,
   FiActivity,
   FiAward,
   FiCalendar,
@@ -49,7 +48,7 @@ export const PlayersPage: React.FC = () => {
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterTeam, setFilterTeam] = useState<string>("all");
+  const [filterPosition, setFilterPosition] = useState<string>("all");
 
   // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -140,6 +139,25 @@ export const PlayersPage: React.FC = () => {
     return players.filter((p) => teamIds.includes(p.team_id)).length;
   };
 
+  // Helper: get coach's team context
+  const getCoachTeamContext = () => {
+    if (user?.role !== UserRoles.COACH || !user.team_id) return null;
+    const coachTeamId = user.team_id.toString();
+    const team = teams.find((t) => t.id.toString() === coachTeamId);
+    if (!team) return null;
+
+    const tour = tournaments.find(
+      (t) => t.id.toString() === team.tournament_id.toString(),
+    );
+    if (!tour) return null;
+
+    return {
+      competitionId: (tour.competition_id || "").toString(),
+      tournamentId: tour.id.toString(),
+      teamId: coachTeamId,
+    };
+  };
+
   // ============ VIEW 1: COMPETITION CARDS ============
   if (!selectedCompetition) {
     const filteredComps = competitions.filter((c) =>
@@ -160,14 +178,15 @@ export const PlayersPage: React.FC = () => {
           <button
             onClick={() => {
               setIsEditing(false);
+              const context = getCoachTeamContext();
               setCurrentPlayer({
                 name: "",
-                team_id: "",
+                team_id: context?.teamId || "",
                 position: "ST" as any,
                 jersey_number: 10,
               });
-              setSelectedCompetitionId("");
-              setSelectedTournamentId("");
+              setSelectedCompetitionId(context?.competitionId || "");
+              setSelectedTournamentId(context?.tournamentId || "");
               setShowModal(true);
             }}
             className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -345,14 +364,17 @@ export const PlayersPage: React.FC = () => {
           <button
             onClick={() => {
               setIsEditing(false);
+              const context = getCoachTeamContext();
               setCurrentPlayer({
                 name: "",
-                team_id: "",
+                team_id: context?.teamId || "",
                 position: "ST" as any,
                 jersey_number: 10,
               });
-              setSelectedCompetitionId(selectedCompetition.id);
-              setSelectedTournamentId("");
+              setSelectedCompetitionId(
+                context?.competitionId || selectedCompetition.id,
+              );
+              setSelectedTournamentId(context?.tournamentId || "");
               setShowModal(true);
             }}
             className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -394,7 +416,7 @@ export const PlayersPage: React.FC = () => {
                   onClick={() => {
                     setSelectedTournament(season);
                     setSearchTerm("");
-                    setFilterTeam("all");
+                    setFilterPosition("all");
                   }}
                   className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
                     (i % 4) + 1
@@ -460,8 +482,19 @@ export const PlayersPage: React.FC = () => {
     const matchesSearch = player.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesFilter = filterTeam === "all" || player.team_id === filterTeam;
-    return matchesSearch && matchesFilter;
+
+    if (filterPosition === "all") return matchesSearch;
+
+    const pos = (player.position || "").toLowerCase();
+    if (filterPosition === "GK") return matchesSearch && pos === "gk";
+    if (filterPosition === "DF")
+      return matchesSearch && ["cb", "rb", "lb"].includes(pos);
+    if (filterPosition === "MF")
+      return matchesSearch && ["cm", "cdm", "cam"].includes(pos);
+    if (filterPosition === "FW")
+      return matchesSearch && ["st", "lw", "rw"].includes(pos);
+
+    return matchesSearch;
   });
 
   return (
@@ -470,7 +503,7 @@ export const PlayersPage: React.FC = () => {
         onClick={() => {
           setSelectedTournament(null);
           setSearchTerm("");
-          setFilterTeam("all");
+          setFilterPosition("all");
         }}
         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
       >
@@ -494,14 +527,19 @@ export const PlayersPage: React.FC = () => {
         <button
           onClick={() => {
             setIsEditing(false);
+            const context = getCoachTeamContext();
             setCurrentPlayer({
               name: "",
-              team_id: "",
+              team_id: context?.teamId || "",
               position: "ST" as any,
               jersey_number: 10,
             });
-            setSelectedCompetitionId(selectedCompetition.id);
-            setSelectedTournamentId(selectedTournament.id);
+            setSelectedCompetitionId(
+              context?.competitionId || selectedCompetition.id,
+            );
+            setSelectedTournamentId(
+              context?.tournamentId || selectedTournament.id,
+            );
             setShowModal(true);
           }}
           className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -526,18 +564,17 @@ export const PlayersPage: React.FC = () => {
         </div>
         <div>
           <div className="relative">
-            <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <FiActivity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
             <select
               className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800"
-              value={filterTeam}
-              onChange={(e) => setFilterTeam(e.target.value)}
+              value={filterPosition}
+              onChange={(e) => setFilterPosition(e.target.value)}
             >
-              <option value="all">All Teams</option>
-              {seasonTeams.map((t) => (
-                <option key={t.id} value={t.id.toString()}>
-                  {t.name}
-                </option>
-              ))}
+              <option value="all">All Positions</option>
+              <option value="GK">Goalkeepers</option>
+              <option value="DF">Defenders</option>
+              <option value="MF">Midfielders</option>
+              <option value="FW">Forwards</option>
             </select>
           </div>
         </div>
@@ -547,7 +584,7 @@ export const PlayersPage: React.FC = () => {
               Players
             </p>
             <p className="text-2xl font-black text-white font-display leading-none">
-              {seasonPlayers.length}
+              {filteredPlayers.length} / {seasonPlayers.length}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-500">
@@ -751,74 +788,92 @@ export const PlayersPage: React.FC = () => {
                     placeholder="e.g. Kylian Mbappé"
                   />
                 </div>
-                <div>
-                  <label className="label">League / Tournament</label>
-                  <select
-                    className="input h-12 appearance-none mb-4"
-                    value={selectedCompetitionId}
-                    onChange={(e) => {
-                      setSelectedCompetitionId(e.target.value);
-                      setSelectedTournamentId("");
-                      setCurrentPlayer({ ...currentPlayer, team_id: "" });
-                    }}
-                  >
-                    <option value="" disabled>
-                      Select a tournament
-                    </option>
-                    {competitions.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                {user?.role !== UserRoles.COACH && (
+                  <>
+                    <div className="md:col-span-2 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">League / Tournament</label>
+                          <select
+                            className="input h-12 appearance-none"
+                            value={selectedCompetitionId}
+                            onChange={(e) => {
+                              setSelectedCompetitionId(e.target.value);
+                              setSelectedTournamentId("");
+                              setCurrentPlayer({
+                                ...currentPlayer,
+                                team_id: "",
+                              });
+                            }}
+                          >
+                            <option value="" disabled>
+                              Select a tournament
+                            </option>
+                            {competitions.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                  <label className="label">Season</label>
-                  <select
-                    className="input h-12 appearance-none mb-4"
-                    value={selectedTournamentId}
-                    onChange={(e) => {
-                      setSelectedTournamentId(e.target.value);
-                      setCurrentPlayer({ ...currentPlayer, team_id: "" });
-                    }}
-                    disabled={!selectedCompetitionId}
-                  >
-                    <option value="" disabled>
-                      {selectedCompetitionId
-                        ? "Select a season"
-                        : "Select a league first"}
-                    </option>
-                    {modalTournaments.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.year})
-                      </option>
-                    ))}
-                  </select>
+                        <div>
+                          <label className="label">Season</label>
+                          <select
+                            className="input h-12 appearance-none"
+                            value={selectedTournamentId}
+                            onChange={(e) => {
+                              setSelectedTournamentId(e.target.value);
+                              setCurrentPlayer({
+                                ...currentPlayer,
+                                team_id: "",
+                              });
+                            }}
+                            disabled={!selectedCompetitionId}
+                          >
+                            <option value="" disabled>
+                              {selectedCompetitionId
+                                ? "Select a season"
+                                : "Select a league first"}
+                            </option>
+                            {modalTournaments.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} ({t.year})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
-                  <label className="label">Team</label>
-                  <select
-                    required
-                    className="input h-12 appearance-none"
-                    value={currentPlayer.team_id || ""}
-                    onChange={(e) =>
-                      setCurrentPlayer({
-                        ...currentPlayer,
-                        team_id: e.target.value,
-                      })
-                    }
-                    disabled={!selectedTournamentId}
-                  >
-                    <option value="" disabled>
-                      {selectedTournamentId
-                        ? "Select Team"
-                        : "Select a season first"}
-                    </option>
-                    {modalTeams.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      <div>
+                        <label className="label">Team</label>
+                        <select
+                          required
+                          className="input h-12 appearance-none"
+                          value={currentPlayer.team_id || ""}
+                          onChange={(e) =>
+                            setCurrentPlayer({
+                              ...currentPlayer,
+                              team_id: e.target.value,
+                            })
+                          }
+                          disabled={!selectedTournamentId}
+                        >
+                          <option value="" disabled>
+                            {selectedTournamentId
+                              ? "Select Team"
+                              : "Select a season first"}
+                          </option>
+                          {modalTeams.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div>
                   <label className="label">Squad Number</label>
                   <input

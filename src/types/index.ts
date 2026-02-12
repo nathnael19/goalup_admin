@@ -168,6 +168,9 @@ export interface Player {
 }
 
 export interface CreatePlayerDto {
+  name: string;
+  team_id: string;
+  jersey_number: number;
   position: PlayerPosition;
   image_url?: string;
 }

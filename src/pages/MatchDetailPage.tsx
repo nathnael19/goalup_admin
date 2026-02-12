@@ -35,7 +35,6 @@ import type {
   Substitution,
   CreateGoalDto,
   MatchLineupDto,
-  Lineup,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
@@ -237,8 +236,13 @@ export const MatchDetailPage: React.FC = () => {
     teamKey: "A" | "B",
   ) => {
     const isCoach = user?.role === UserRoles.COACH;
-    const isOwnTeam = user?.team_id === teamId;
-    const canEdit = !isCoach || isOwnTeam;
+    const isOwnTeam = user && user.team_id?.toString() === teamId?.toString();
+    const canEdit =
+      user &&
+      (user.role === UserRoles.SUPER_ADMIN ||
+        user.role === UserRoles.TOURNAMENT_ADMIN ||
+        user.role === UserRoles.REFEREE ||
+        (isCoach && isOwnTeam));
 
     return rows.map((row, idx) => (
       <div
@@ -528,7 +532,10 @@ export const MatchDetailPage: React.FC = () => {
 
       const formations: { formation_a?: string; formation_b?: string } = {};
 
-      if (user?.role !== UserRoles.COACH || user.team_id === match.team_a_id) {
+      if (
+        user?.role !== UserRoles.COACH ||
+        user.team_id?.toString() === match.team_a_id?.toString()
+      ) {
         const starterPlayersA = teamADetail.roster.goalkeepers
           .concat(
             teamADetail.roster.defenders,
@@ -568,7 +575,10 @@ export const MatchDetailPage: React.FC = () => {
         payload.push(...starterPlayersA, ...benchPlayersA);
       }
 
-      if (user?.role !== UserRoles.COACH || user.team_id === match.team_b_id) {
+      if (
+        user?.role !== UserRoles.COACH ||
+        user.team_id?.toString() === match.team_b_id?.toString()
+      ) {
         const starterPlayersB = teamBDetail.roster.goalkeepers
           .concat(
             teamBDetail.roster.defenders,
@@ -1774,8 +1784,11 @@ export const MatchDetailPage: React.FC = () => {
               },
             ].map((cfg, i) => (
               <div key={i} className="space-y-6">
-                {(user?.role !== UserRoles.COACH ||
-                  user.team_id === cfg.team?.id) && (
+                {(user?.role === UserRoles.SUPER_ADMIN ||
+                  user?.role === UserRoles.TOURNAMENT_ADMIN ||
+                  user?.role === UserRoles.REFEREE ||
+                  (user?.role === UserRoles.COACH &&
+                    user.team_id?.toString() === cfg.team?.id?.toString())) && (
                   <>
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-4">
