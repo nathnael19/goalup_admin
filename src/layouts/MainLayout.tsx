@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { UserRoles } from "../types";
 import {
   FiLogOut,
   FiMenu,
@@ -11,6 +12,7 @@ import {
   FiTarget,
   FiBarChart2,
   FiFileText,
+  FiSettings,
 } from "react-icons/fi";
 
 export const MainLayout: React.FC = () => {
@@ -23,13 +25,60 @@ export const MainLayout: React.FC = () => {
 
   const menuItems = [
     { icon: FiHome, label: "Dashboard", path: "/" },
-    { icon: FiAward, label: "Tournaments", path: "/tournaments" },
-    { icon: FiUsers, label: "Teams", path: "/teams" },
-    { icon: FiUser, label: "Players", path: "/players" },
-    { icon: FiTarget, label: "Matches", path: "/matches" },
+    {
+      icon: FiAward,
+      label: "Tournaments",
+      path: "/tournaments",
+      roles: [UserRoles.SUPER_ADMIN, UserRoles.TOURNAMENT_ADMIN],
+    },
+    {
+      icon: FiUsers,
+      label: "Teams",
+      path: "/teams",
+      roles: [UserRoles.SUPER_ADMIN, UserRoles.TOURNAMENT_ADMIN],
+    },
+    {
+      icon: FiUser,
+      label: "Players",
+      path: "/players",
+      roles: [
+        UserRoles.SUPER_ADMIN,
+        UserRoles.TOURNAMENT_ADMIN,
+        UserRoles.COACH,
+      ],
+    },
+    {
+      icon: FiTarget,
+      label: "Matches",
+      path: "/matches",
+      roles: [
+        UserRoles.SUPER_ADMIN,
+        UserRoles.TOURNAMENT_ADMIN,
+        UserRoles.COACH,
+        UserRoles.REFEREE,
+      ],
+    },
     { icon: FiBarChart2, label: "Standings", path: "/standings" },
-    { icon: FiFileText, label: "News", path: "/news" },
+    {
+      icon: FiFileText,
+      label: "News",
+      path: "/news",
+      roles: [UserRoles.SUPER_ADMIN, UserRoles.NEWS_REPORTER],
+    },
+    {
+      icon: FiSettings,
+      label: "Users",
+      path: "/users",
+      roles: [UserRoles.SUPER_ADMIN],
+    },
   ];
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!item.roles) return true;
+    if (!user) return false;
+    if (user.is_superuser || user.role === UserRoles.SUPER_ADMIN) return true;
+    return item.roles.includes(user.role);
+  });
 
   // Close mobile menu on route change
   React.useEffect(() => {
@@ -112,7 +161,7 @@ export const MainLayout: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 mt-16 lg:mt-0 space-y-1.5 overflow-y-auto custom-scrollbar">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -151,7 +200,7 @@ export const MainLayout: React.FC = () => {
                 {user?.full_name}
               </p>
               <p className="text-[10px] text-slate-500 truncate uppercase font-bold tracking-widest">
-                {user?.is_superuser ? "Super Admin" : "Editor"}
+                {user?.role?.replace("_", " ") || "Admin"}
               </p>
             </div>
           </div>

@@ -19,12 +19,51 @@ export interface AuthTokens {
   token_type: string;
 }
 
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "TOURNAMENT_ADMIN"
+  | "NEWS_REPORTER"
+  | "COACH"
+  | "REFEREE"
+  | "VIEWER";
+
+export const UserRoles = {
+  SUPER_ADMIN: "SUPER_ADMIN" as UserRole,
+  TOURNAMENT_ADMIN: "TOURNAMENT_ADMIN" as UserRole,
+  NEWS_REPORTER: "NEWS_REPORTER" as UserRole,
+  COACH: "COACH" as UserRole,
+  REFEREE: "REFEREE" as UserRole,
+  VIEWER: "VIEWER" as UserRole,
+};
+
 export interface User {
-  id: string;
+  id: string; // Backend uses int for ID in users.py but auth/me returns string? I'll use string to be safe as it matches existing code.
   email: string;
   full_name: string;
   is_active: boolean;
   is_superuser: boolean;
+  role: UserRole;
+  team_id?: string;
+  tournament_id?: string;
+}
+
+export interface UserCreateDto {
+  email: string;
+  full_name: string;
+  password: string;
+  role: UserRole;
+  team_id?: string;
+  tournament_id?: string;
+}
+
+export interface UserUpdateDto {
+  email?: string;
+  full_name?: string;
+  password?: string;
+  role?: UserRole;
+  is_active?: boolean;
+  team_id?: string;
+  tournament_id?: string;
 }
 
 // Competition Types

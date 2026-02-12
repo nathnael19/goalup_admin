@@ -13,6 +13,8 @@ import { StandingsPage } from "./pages/StandingsPage";
 import { TeamDetailPage } from "./pages/TeamDetailPage";
 import { MatchDetailPage } from "./pages/MatchDetailPage";
 import { NewsPage } from "./pages/NewsPage";
+import { UsersPage } from "./pages/UsersPage";
+import { UserRoles } from "./types";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +49,14 @@ function App() {
               <Route path="matches/:id" element={<MatchDetailPage />} />
               <Route path="standings" element={<StandingsPage />} />
               <Route path="news" element={<NewsPage />} />
+              <Route
+                path="users"
+                element={
+                  <ProtectedRoute allowedRoles={[UserRoles.SUPER_ADMIN]}>
+                    <UsersPage />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
