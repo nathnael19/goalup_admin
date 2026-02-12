@@ -154,7 +154,7 @@ export const TournamentsPage: React.FC = () => {
       if (deleteType === "season") {
         await tournamentService.delete(itemToDelete);
       } else {
-        console.warn("Delete competition not fully implemented in service yet");
+        await competitionService.delete(itemToDelete);
       }
       fetchData();
       setShowDeleteModal(false);
@@ -246,12 +246,27 @@ export const TournamentsPage: React.FC = () => {
               return (
                 <div
                   key={tournament.id}
-                  onClick={() => setSelectedTournament(tournament)}
                   className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
                     (i % 4) + 1
                   } relative overflow-hidden cursor-pointer`}
                 >
-                  <div className="p-8">
+                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmDelete(tournament.id, "tournament"); // Using 'tournament' to delete Competition as per TournamentsPage logic
+                        }}
+                        className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className="p-8"
+                    onClick={() => setSelectedTournament(tournament)}
+                  >
                     <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
                       {tournament.image_url ? (
                         <img
@@ -281,6 +296,19 @@ export const TournamentsPage: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setItemToDelete(null);
+          }}
+          onConfirm={handleDelete}
+          title="Delete Tournament"
+          message="Are you sure you want to delete this tournament? All seasons and data within it will be permanently removed."
+          isLoading={isDeleting}
+        />
 
         {/* Create Tournament Modal */}
         {showTournamentModal && (

@@ -263,7 +263,6 @@ export const TeamsPage: React.FC = () => {
     );
   }
 
-  // ============ VIEW 2: SEASON CARDS ============
   if (!selectedTournament) {
     const compSeasons = tournaments.filter(
       (t) => t.competition_id === selectedCompetition.id,
