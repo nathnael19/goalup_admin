@@ -214,6 +214,8 @@ export interface Match {
   goals_list?: Goal[];
   cards_list?: CardEvent[];
   lineups?: Lineup[];
+  formation_a: string;
+  formation_b: string;
 }
 
 export type CardType = "yellow" | "red";
@@ -285,6 +287,8 @@ export interface UpdateMatchScoreDto {
   penalty_score_a?: number;
   penalty_score_b?: number;
   is_extra_time?: boolean;
+  formation_a?: string;
+  formation_b?: string;
 }
 
 // Standings Types
@@ -372,6 +376,7 @@ export interface Lineup {
   player_id: string;
   is_starting: boolean;
   player?: Player;
+  slot_index?: number;
 }
 
 export interface MatchLineupDto {
@@ -379,4 +384,5 @@ export interface MatchLineupDto {
   team_id: string;
   player_id: string;
   is_starting: boolean;
+  slot_index?: number;
 }

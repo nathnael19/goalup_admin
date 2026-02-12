@@ -35,6 +35,7 @@ import type {
   Substitution,
   CreateGoalDto,
   MatchLineupDto,
+  Lineup,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 
@@ -42,7 +43,14 @@ export const MatchDetailPage: React.FC = () => {
   const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [viewTeam, setViewTeam] = useState<"A" | "B">("A");
   const [match, setMatch] = useState<Match | null>(null);
+
+  useEffect(() => {
+    if (user?.role === UserRoles.COACH && user.team_id === match?.team_b_id) {
+      setViewTeam("B");
+    }
+  }, [user, match]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMatch, setEditedMatch] = useState<Partial<Match>>({});
@@ -86,18 +94,218 @@ export const MatchDetailPage: React.FC = () => {
     minute: 1,
   });
 
-  const [selectedLineupA, setSelectedLineupA] = useState<string[]>([]);
-  const [selectedLineupB, setSelectedLineupB] = useState<string[]>([]);
+  const [selectedLineupA, setSelectedLineupA] = useState<
+    Record<number, string>
+  >({});
+  const [selectedLineupB, setSelectedLineupB] = useState<
+    Record<number, string>
+  >({});
   const [selectedBenchA, setSelectedBenchA] = useState<string[]>([]);
   const [selectedBenchB, setSelectedBenchB] = useState<string[]>([]);
+  const [formationA, setFormationA] = useState("4-3-3");
+  const [formationB, setFormationB] = useState("4-3-3");
+  const [slotModal, setSlotModal] = useState<{
+    teamId: string;
+    position: string;
+    teamKey: "A" | "B";
+    replaceId?: string;
+    slot_index: number;
+  } | null>(null);
   const [savingLineups, setSavingLineups] = useState(false);
   const [showLineupErrorModal, setShowLineupErrorModal] = useState(false);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   const [tick, setTick] = useState(0);
 
   const getImageUrl = (url?: string) => {
     if (!url) return undefined;
     if (url.startsWith("http")) return url;
     return `${SERVER_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const getFormationRows = (formation: string, players: any[]) => {
+    // Define rows: [count, categoryLabel]
+    let layout: [number, string][] = [];
+    if (formation === "4-3-3")
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [3, "mid"],
+        [3, "fwd"],
+      ];
+    else if (formation === "4-4-2")
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [4, "mid"],
+        [2, "fwd"],
+      ];
+    else if (formation === "4-2-3-1")
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [2, "mid"],
+        [3, "mid"],
+        [1, "fwd"],
+      ];
+    else if (formation === "4-3-2-1")
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [3, "mid"],
+        [2, "mid"],
+        [1, "fwd"],
+      ];
+    else if (formation === "3-5-2")
+      layout = [
+        [1, "gk"],
+        [3, "def"],
+        [5, "mid"],
+        [2, "fwd"],
+      ];
+    else if (formation === "5-3-2")
+      layout = [
+        [1, "gk"],
+        [5, "def"],
+        [3, "mid"],
+        [2, "fwd"],
+      ];
+    else if (formation === "4-5-1")
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [5, "mid"],
+        [1, "fwd"],
+      ];
+    else
+      layout = [
+        [1, "gk"],
+        [4, "def"],
+        [3, "mid"],
+        [3, "fwd"],
+      ];
+
+    // Map of slot_index -> player_id for the given players (starting XI)
+    const poolMap: Record<number, string> = {};
+    players.forEach((p) => {
+      // @ts-ignore - slot_index exists on backend model
+      if (p.slot_index !== null && p.slot_index !== undefined) {
+        // @ts-ignore
+        poolMap[p.slot_index] = p.id;
+      }
+    });
+
+    const result: {
+      player: any | null;
+      category: string;
+      slot_index: number;
+    }[][] = [];
+    let currentSlotIndex = 0;
+
+    layout.forEach(([count, category]) => {
+      const row: {
+        player: any | null;
+        category: string;
+        slot_index: number;
+      }[] = [];
+
+      for (let i = 0; i < count; i++) {
+        const slotIdx = currentSlotIndex++;
+        const p = players.find((player) => player.id === poolMap[slotIdx]);
+        row.push({ player: p || null, category, slot_index: slotIdx });
+      }
+      result.push(row);
+    });
+
+    return result;
+  };
+
+  const renderTacticalRows = (
+    rows: { player: any | null; category: string; slot_index: number }[][],
+    color: "red" | "blue",
+    teamId: string,
+    teamKey: "A" | "B",
+  ) => {
+    const isCoach = user?.role === UserRoles.COACH;
+    const isOwnTeam = user?.team_id === teamId;
+    const canEdit = !isCoach || isOwnTeam;
+
+    return rows.map((row, idx) => (
+      <div
+        key={idx}
+        className="flex justify-around items-center w-full px-2"
+        style={{
+          minHeight: "64px",
+        }}
+      >
+        {row.map((slot, sIdx) => {
+          const p = slot.player;
+          return (
+            <div
+              key={sIdx}
+              className={`flex flex-col items-center gap-2 ${canEdit ? "cursor-pointer group/slot" : "cursor-default"}`}
+              onClick={() =>
+                canEdit &&
+                setSlotModal({
+                  teamId,
+                  position: slot.category,
+                  teamKey,
+                  replaceId: p?.id,
+                  slot_index: slot.slot_index,
+                })
+              }
+            >
+              <div
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                  p
+                    ? color === "red"
+                      ? "bg-red-500 border-white/40"
+                      : "bg-blue-600 border-white/40"
+                    : "bg-white/5 border-dashed border-white/20 hover:border-white/40 hover:bg-white/10 hover:scale-110 active:scale-95"
+                } ${!p && canEdit ? "animate-pulse ring-4 ring-blue-500/20" : ""}`}
+              >
+                {p ? (
+                  p.image_url ? (
+                    <img
+                      src={getImageUrl(p.image_url)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-black text-white">
+                      {p.jersey_number || (p.position === "gk" ? "GK" : "")}
+                    </span>
+                  )
+                ) : (
+                  <FiPlus
+                    className={`transition-colors duration-300 ${canEdit ? "text-blue-400 group-hover/slot:text-white" : "text-white/20"}`}
+                    size={20}
+                  />
+                )}
+              </div>
+              <span
+                className={`text-[6px] sm:text-[7px] font-black uppercase whitespace-nowrap px-1.5 py-0.5 rounded-xs transition-all ${
+                  p
+                    ? "text-white bg-black/40"
+                    : "text-white/20 bg-transparent group-hover/slot:text-white/60"
+                }`}
+              >
+                {p ? p.name.split(" ").pop() : slot.category}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    ));
   };
 
   useEffect(() => {
@@ -129,16 +337,25 @@ export const MatchDetailPage: React.FC = () => {
       setSubstitutions(subData);
 
       if (matchData.lineups) {
-        setSelectedLineupA(
-          matchData.lineups
-            .filter((l) => l.team_id === matchData.team_a_id && l.is_starting)
-            .map((l) => l.player_id),
-        );
-        setSelectedLineupB(
-          matchData.lineups
-            .filter((l) => l.team_id === matchData.team_b_id && l.is_starting)
-            .map((l) => l.player_id),
-        );
+        const lineupA: Record<number, string> = {};
+        const lineupB: Record<number, string> = {};
+
+        matchData.lineups
+          .filter((l) => l.is_starting)
+          .forEach((l) => {
+            if (l.team_id === matchData.team_a_id) {
+              if (l.slot_index !== null && l.slot_index !== undefined) {
+                lineupA[l.slot_index] = l.player_id;
+              }
+            } else if (l.team_id === matchData.team_b_id) {
+              if (l.slot_index !== null && l.slot_index !== undefined) {
+                lineupB[l.slot_index] = l.player_id;
+              }
+            }
+          });
+
+        setSelectedLineupA(lineupA);
+        setSelectedLineupB(lineupB);
         setSelectedBenchA(
           matchData.lineups
             .filter((l) => l.team_id === matchData.team_a_id && !l.is_starting)
@@ -159,6 +376,8 @@ export const MatchDetailPage: React.FC = () => {
         ]);
         setTeamADetail(a as TeamDetail);
         setTeamBDetail(b as TeamDetail);
+        if (matchData.formation_a) setFormationA(matchData.formation_a);
+        if (matchData.formation_b) setFormationB(matchData.formation_b);
       }
 
       // Fetch other leg if it's a 2-legged knockout
@@ -221,7 +440,9 @@ export const MatchDetailPage: React.FC = () => {
     if (!match) return;
 
     // Lineup validation
-    if (selectedLineupA.length < 11 || selectedLineupB.length < 11) {
+    const startersA = Object.values(selectedLineupA).length;
+    const startersB = Object.values(selectedLineupB).length;
+    if (startersA < 11 || startersB < 11) {
       setShowLineupErrorModal(true);
       return;
     }
@@ -305,51 +526,101 @@ export const MatchDetailPage: React.FC = () => {
       setSavingLineups(true);
       const payload: MatchLineupDto[] = [];
 
+      const formations: { formation_a?: string; formation_b?: string } = {};
+
       if (user?.role !== UserRoles.COACH || user.team_id === match.team_a_id) {
-        const lineupA: MatchLineupDto[] = teamADetail.roster.goalkeepers
+        const starterPlayersA = teamADetail.roster.goalkeepers
           .concat(
             teamADetail.roster.defenders,
             teamADetail.roster.midfielders,
             teamADetail.roster.forwards,
           )
-          .filter(
-            (p) =>
-              selectedLineupA.includes(p.id) || selectedBenchA.includes(p.id),
+          .filter((p) => Object.values(selectedLineupA).includes(p.id))
+          .map((p) => {
+            // Find which slot this player belongs to
+            const slotIdx = Object.keys(selectedLineupA).find(
+              (key) => selectedLineupA[parseInt(key)] === p.id,
+            );
+            return {
+              match_id: match.id,
+              team_id: match.team_a_id,
+              player_id: p.id,
+              is_starting: true,
+              slot_index: slotIdx ? parseInt(slotIdx) : undefined,
+            };
+          });
+
+        const benchPlayersA = teamADetail.roster.goalkeepers
+          .concat(
+            teamADetail.roster.defenders,
+            teamADetail.roster.midfielders,
+            teamADetail.roster.forwards,
           )
+          .filter((p) => selectedBenchA.includes(p.id))
           .map((p) => ({
             match_id: match.id,
             team_id: match.team_a_id,
             player_id: p.id,
-            is_starting: selectedLineupA.includes(p.id),
+            is_starting: false,
           }));
-        payload.push(...lineupA);
+
+        formations.formation_a = formationA;
+        payload.push(...starterPlayersA, ...benchPlayersA);
       }
 
       if (user?.role !== UserRoles.COACH || user.team_id === match.team_b_id) {
-        const lineupB: MatchLineupDto[] = teamBDetail.roster.goalkeepers
+        const starterPlayersB = teamBDetail.roster.goalkeepers
           .concat(
             teamBDetail.roster.defenders,
             teamBDetail.roster.midfielders,
             teamBDetail.roster.forwards,
           )
-          .filter(
-            (p) =>
-              selectedLineupB.includes(p.id) || selectedBenchB.includes(p.id),
+          .filter((p) => Object.values(selectedLineupB).includes(p.id))
+          .map((p) => {
+            const slotIdx = Object.keys(selectedLineupB).find(
+              (key) => selectedLineupB[parseInt(key)] === p.id,
+            );
+            return {
+              match_id: match.id,
+              team_id: match.team_b_id,
+              player_id: p.id,
+              is_starting: true,
+              slot_index: slotIdx ? parseInt(slotIdx) : undefined,
+            };
+          });
+
+        const benchPlayersB = teamBDetail.roster.goalkeepers
+          .concat(
+            teamBDetail.roster.defenders,
+            teamBDetail.roster.midfielders,
+            teamBDetail.roster.forwards,
           )
+          .filter((p) => selectedBenchB.includes(p.id))
           .map((p) => ({
             match_id: match.id,
             team_id: match.team_b_id,
             player_id: p.id,
-            is_starting: selectedLineupB.includes(p.id),
+            is_starting: false,
           }));
-        payload.push(...lineupB);
+
+        formations.formation_b = formationB;
+        payload.push(...starterPlayersB, ...benchPlayersB);
       }
 
-      await lineupService.setLineups(match.id, payload);
+      // Save lineups AND formations in a single call
+      await lineupService.setLineups(match.id, payload, formations);
+
       await fetchMatch(match.id);
-      alert("Lineups saved successfully!");
+      setToast({
+        type: "success",
+        message: "Match adjustments saved successfully",
+      });
     } catch (err) {
       console.error("Failed to save lineups", err);
+      setToast({
+        type: "error",
+        message: "Failed to save match adjustments",
+      });
     } finally {
       setSavingLineups(false);
     }
@@ -1362,7 +1633,32 @@ export const MatchDetailPage: React.FC = () => {
                 : "Starting XI Distribution"}
             </p>
           </div>
+
           <div className="flex items-center gap-3">
+            {/* Team Selector */}
+            <div className="bg-slate-950 p-1 rounded-xl flex items-center border border-white/10">
+              <button
+                onClick={() => setViewTeam("A")}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  viewTeam === "A"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "text-slate-500 hover:text-white"
+                }`}
+              >
+                {match?.team_a?.name || "Home"}
+              </button>
+              <button
+                onClick={() => setViewTeam("B")}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  viewTeam === "B"
+                    ? "bg-red-600 text-white shadow-lg"
+                    : "text-slate-500 hover:text-white"
+                }`}
+              >
+                {match?.team_b?.name || "Away"}
+              </button>
+            </div>
+
             <button
               onClick={handleSaveLineups}
               disabled={savingLineups || isMatchLocked(match!)}
@@ -1380,7 +1676,7 @@ export const MatchDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Pitch Visualization */}
-          <div className="relative aspect-2/3 md:aspect-2/3 lg:aspect-2/3 bg-emerald-900/20 rounded-4xl border-4 border-white/5 overflow-hidden group shadow-2xl">
+          <div className="relative min-h-[850px] lg:min-h-0 lg:aspect-3/4 bg-emerald-900/20 rounded-4xl border-4 border-white/5 overflow-hidden group shadow-2xl">
             {/* The Field */}
             <div className="absolute inset-0">
               {/* Grass Pattern */}
@@ -1402,319 +1698,49 @@ export const MatchDetailPage: React.FC = () => {
             </div>
 
             {/* Players Overlay */}
-            <div className="absolute inset-0 p-8 flex flex-col">
-              {/* Away Team (Top Half Only) */}
-              <div className="flex-1 flex flex-col justify-between pb-8">
-                {/* GK */}
-                <div className="flex justify-center">
-                  {selectedLineupB
-                    .map((pid) =>
-                      [
-                        ...(teamBDetail?.roster.goalkeepers || []),
-                        ...(teamBDetail?.roster.defenders || []),
-                        ...(teamBDetail?.roster.midfielders || []),
-                        ...(teamBDetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) => p?.position === "gk")
-                    .slice(0, 1)
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-red-600 border-2 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xs font-black text-white">
-                              {p?.jersey_number || "GK"}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[7px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-2 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* DEF */}
-                <div className="flex justify-around px-2">
-                  {selectedLineupB
-                    .map((pid) =>
-                      [
-                        ...(teamBDetail?.roster.goalkeepers || []),
-                        ...(teamBDetail?.roster.defenders || []),
-                        ...(teamBDetail?.roster.midfielders || []),
-                        ...(teamBDetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["cb", "lb", "rb", "def"].includes(p?.position || ""),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-red-500 border-2 border-white/20 shadow-lg flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[6px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-1.5 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* MID */}
-                <div className="flex justify-around px-8">
-                  {selectedLineupB
-                    .map((pid) =>
-                      [
-                        ...(teamBDetail?.roster.goalkeepers || []),
-                        ...(teamBDetail?.roster.defenders || []),
-                        ...(teamBDetail?.roster.midfielders || []),
-                        ...(teamBDetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["mid", "cm", "cdm", "cam", "lm", "rm"].includes(
-                        p?.position || "",
-                      ),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-red-500/80 border-2 border-white/20 shadow-lg flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[6px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-1.5 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* FWD */}
-                <div className="flex justify-center gap-6">
-                  {selectedLineupB
-                    .map((pid) =>
-                      [
-                        ...(teamBDetail?.roster.goalkeepers || []),
-                        ...(teamBDetail?.roster.defenders || []),
-                        ...(teamBDetail?.roster.midfielders || []),
-                        ...(teamBDetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["fwd", "st", "lw", "rw", "cf"].includes(
-                        p?.position || "",
-                      ),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-red-400 border-2 border-white/40 shadow-xl flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[11px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[7px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-2 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
+            <div className="absolute inset-0 p-4 py-8 flex flex-col-reverse justify-between">
+              {(() => {
+                const isTeamA = viewTeam === "A";
+                const currentFormation = isTeamA ? formationA : formationB;
+                const activeTeamId = isTeamA
+                  ? match.team_a_id
+                  : match.team_b_id;
+                const activeColor = isTeamA ? "blue" : "red";
+                const activeLineup = isTeamA
+                  ? selectedLineupA
+                  : selectedLineupB;
+                const activeDetail = isTeamA ? teamADetail : teamBDetail;
 
-              {/* Home Team (Bottom Half Only) */}
-              <div className="flex-1 flex flex-col-reverse justify-between pt-8">
-                {/* GK */}
-                <div className="flex justify-center">
-                  {selectedLineupA
-                    .map((pid) =>
-                      [
-                        ...(teamADetail?.roster.goalkeepers || []),
-                        ...(teamADetail?.roster.defenders || []),
-                        ...(teamADetail?.roster.midfielders || []),
-                        ...(teamADetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) => p?.position === "gk")
-                    .slice(0, 1)
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-blue-600 border-2 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xs font-black text-white">
-                              {p?.jersey_number || "GK"}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[7px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-2 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* DEF */}
-                <div className="flex justify-around px-2">
-                  {selectedLineupA
-                    .map((pid) =>
-                      [
-                        ...(teamADetail?.roster.goalkeepers || []),
-                        ...(teamADetail?.roster.defenders || []),
-                        ...(teamADetail?.roster.midfielders || []),
-                        ...(teamADetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["cb", "lb", "rb", "def"].includes(p?.position || ""),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-blue-500 border-2 border-white/20 shadow-lg flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={getImageUrl(p.image_url)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[6px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-1.5 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* MID */}
-                <div className="flex justify-around px-8">
-                  {selectedLineupA
-                    .map((pid) =>
-                      [
-                        ...(teamADetail?.roster.goalkeepers || []),
-                        ...(teamADetail?.roster.defenders || []),
-                        ...(teamADetail?.roster.midfielders || []),
-                        ...(teamADetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["mid", "cm", "cdm", "cam", "lm", "rm"].includes(
-                        p?.position || "",
-                      ),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-blue-500/80 border-2 border-white/20 shadow-lg flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={p.image_url}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[6px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-1.5 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                {/* FWD */}
-                <div className="flex justify-center gap-6">
-                  {selectedLineupA
-                    .map((pid) =>
-                      [
-                        ...(teamADetail?.roster.goalkeepers || []),
-                        ...(teamADetail?.roster.defenders || []),
-                        ...(teamADetail?.roster.midfielders || []),
-                        ...(teamADetail?.roster.forwards || []),
-                      ].find((p) => p.id === pid),
-                    )
-                    .filter((p) =>
-                      ["fwd", "st", "lw", "rw", "cf"].includes(
-                        p?.position || "",
-                      ),
-                    )
-                    .map((p) => (
-                      <div
-                        key={p?.id}
-                        className="flex flex-col items-center gap-1.5"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-blue-400 border-2 border-white/40 shadow-xl flex items-center justify-center overflow-hidden">
-                          {p?.image_url ? (
-                            <img
-                              src={p.image_url}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[11px] font-black text-white">
-                              {p?.jersey_number}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[7px] font-black text-white uppercase whitespace-nowrap bg-black/40 px-2 py-0.5 rounded-xs">
-                          {p?.name.split(" ").pop()}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
+                // Flatten roster for lookup
+                const roster = activeDetail
+                  ? [
+                      ...activeDetail.roster.goalkeepers,
+                      ...activeDetail.roster.defenders,
+                      ...activeDetail.roster.midfielders,
+                      ...activeDetail.roster.forwards,
+                    ]
+                  : [];
+
+                const rows = getFormationRows(
+                  currentFormation,
+                  Object.entries(activeLineup)
+                    .map(([slotIdx, pid]) => {
+                      const p = roster.find((player) => player.id === pid);
+                      return p ? { ...p, slot_index: parseInt(slotIdx) } : null;
+                    })
+                    .filter(Boolean),
+                );
+
+                return renderTacticalRows(
+                  rows,
+                  activeColor,
+                  activeTeamId,
+                  isTeamA ? "A" : "B",
+                );
+              })()}
             </div>
 
-            <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
+            <div className="absolute inset-0 pointer-events-none bg-linear-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
               <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
                 Live Tactical Visualization
               </p>
@@ -1732,6 +1758,8 @@ export const MatchDetailPage: React.FC = () => {
                 setBench: setSelectedBenchA,
                 detail: teamADetail,
                 color: "blue",
+                formation: formationA,
+                setFormation: setFormationA,
               },
               {
                 team: match.team_b,
@@ -1741,6 +1769,8 @@ export const MatchDetailPage: React.FC = () => {
                 setBench: setSelectedBenchB,
                 detail: teamBDetail,
                 color: "red",
+                formation: formationB,
+                setFormation: setFormationB,
               },
             ].map((cfg, i) => (
               <div key={i} className="space-y-6">
@@ -1765,95 +1795,26 @@ export const MatchDetailPage: React.FC = () => {
                           {cfg.team?.name} XI
                         </h4>
                       </div>
-                      <span
-                        className={`text-[10px] font-extra-black uppercase tracking-widest px-3 py-1 rounded-lg ${cfg.selected.length >= 11 ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-600/10 text-amber-500 border border-amber-500/20"}`}
-                      >
-                        {cfg.selected.length}/11 Selected
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: "GK", key: "goalkeepers" },
-                        { label: "DEF", key: "defenders" },
-                        { label: "MID", key: "midfielders" },
-                        { label: "FWD", key: "forwards" },
-                      ].map((pos) => (
-                        <div
-                          key={pos.key}
-                          className="p-4 rounded-3xl bg-white/2 border border-white/5 space-y-3"
+                      <div className="flex items-center gap-4">
+                        <select
+                          className="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider outline-hidden cursor-pointer hover:border-blue-500/50 transition-all"
+                          value={cfg.formation}
+                          onChange={(e) => cfg.setFormation(e.target.value)}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                              {pos.label}
-                            </span>
-                          </div>
-                          <select
-                            className="w-full bg-transparent text-xs font-bold text-white outline-hidden cursor-pointer hover:text-blue-400 transition-colors"
-                            onChange={(e) => {
-                              const player = cfg.detail?.roster[
-                                pos.key as keyof typeof cfg.detail.roster
-                              ].find((p) => p.id === e.target.value);
-                              if (player)
-                                cfg.setSelected([...cfg.selected, player.id]);
-                              e.target.value = "";
-                            }}
-                          >
-                            <option value="" className="bg-slate-900">
-                              Add Player...
-                            </option>
-                            {cfg.detail?.roster[
-                              pos.key as keyof typeof cfg.detail.roster
-                            ]
-                              .filter(
-                                (p) =>
-                                  !cfg.selected.includes(p.id) &&
-                                  !cfg.bench.includes(p.id),
-                              )
-                              .map((p) => (
-                                <option
-                                  key={p.id}
-                                  value={p.id}
-                                  className="bg-slate-900"
-                                >
-                                  #{p.jersey_number} {p.name}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Selected Pills */}
-                    <div className="flex flex-wrap gap-2">
-                      {cfg.selected.map((pid) => {
-                        const p = [
-                          ...(cfg.detail?.roster.goalkeepers || []),
-                          ...(cfg.detail?.roster.defenders || []),
-                          ...(cfg.detail?.roster.midfielders || []),
-                          ...(cfg.detail?.roster.forwards || []),
-                        ].find((player) => player.id === pid);
-                        return (
-                          <div
-                            key={pid}
-                            className="flex items-center gap-2 pl-3 pr-2 py-1.5 bg-slate-800 border border-white/5 rounded-xl hover:border-red-500/50 transition-all cursor-default shadow-lg group"
-                          >
-                            <span className="text-xs font-black text-white">
-                              {p?.name.split(" ").pop()}
-                            </span>
-                            <button
-                              onClick={() =>
-                                cfg.setSelected(
-                                  cfg.selected.filter((id) => id !== pid),
-                                )
-                              }
-                              className="w-5 h-5 rounded-lg bg-red-600/10 text-red-500 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors"
-                            >
-                              <FiX size={12} />
-                            </button>
-                          </div>
-                        );
-                      })}
+                          <option value="4-3-3">4-3-3</option>
+                          <option value="4-4-2">4-4-2</option>
+                          <option value="4-2-3-1">4-2-3-1</option>
+                          <option value="4-3-2-1">4-3-2-1</option>
+                          <option value="3-5-2">3-5-2</option>
+                          <option value="5-3-2">5-3-2</option>
+                          <option value="4-5-1">4-5-1</option>
+                        </select>
+                        <span
+                          className={`text-[10px] font-extra-black uppercase tracking-widest px-3 py-1 rounded-lg ${Object.values(cfg.selected).length >= 11 ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-600/10 text-amber-500 border border-amber-500/20"}`}
+                        >
+                          {Object.values(cfg.selected).length}/11 Selected
+                        </span>
+                      </div>
                     </div>
 
                     {/* Bench Selection */}
@@ -1897,7 +1858,7 @@ export const MatchDetailPage: React.FC = () => {
                             ]
                               .filter(
                                 (p) =>
-                                  !cfg.selected.includes(p.id) &&
+                                  !Object.values(cfg.selected).includes(p.id) &&
                                   !cfg.bench.includes(p.id),
                               )
                               .map((p) => (
@@ -2465,9 +2426,9 @@ export const MatchDetailPage: React.FC = () => {
                       {match?.team_a?.name}
                     </p>
                     <p
-                      className={`text-2xl font-black ${selectedLineupA.length < 11 ? "text-red-500" : "text-emerald-500"}`}
+                      className={`text-2xl font-black ${Object.values(selectedLineupA).length < 11 ? "text-red-500" : "text-emerald-500"}`}
                     >
-                      {selectedLineupA.length}
+                      {Object.values(selectedLineupA).length}
                     </p>
                   </div>
                 </div>
@@ -2487,9 +2448,9 @@ export const MatchDetailPage: React.FC = () => {
                       {match?.team_b?.name}
                     </p>
                     <p
-                      className={`text-2xl font-black ${selectedLineupB.length < 11 ? "text-red-500" : "text-emerald-500"}`}
+                      className={`text-2xl font-black ${Object.values(selectedLineupB).length < 11 ? "text-red-500" : "text-emerald-500"}`}
                     >
-                      {selectedLineupB.length}
+                      {Object.values(selectedLineupB).length}
                     </p>
                   </div>
                 </div>
@@ -2500,6 +2461,189 @@ export const MatchDetailPage: React.FC = () => {
                 className="btn btn-primary w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20"
               >
                 Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top-Right Toast Notification */}
+      {toast && (
+        <div className="fixed top-8 right-8 z-100 animate-in slide-in-from-right-10 fade-in duration-500">
+          <div
+            className={`flex items-center gap-4 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl ${
+              toast.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/10"
+                : "bg-red-500/10 border-red-500/20 text-red-400 shadow-red-500/10"
+            }`}
+          >
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                toast.type === "success" ? "bg-emerald-500/20" : "bg-red-500/20"
+              }`}
+            >
+              {toast.type === "success" ? (
+                <FiCheckCircle size={20} />
+              ) : (
+                <FiAlertTriangle size={20} />
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-0.5">
+                {toast.type === "success" ? "System Message" : "Action Failed"}
+              </p>
+              <p className="text-sm font-bold tracking-tight text-white">
+                {toast.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-4 w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              <FiX size={16} className="text-white/40" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {slotModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-slate-950 border border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+              <div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
+                  Select {slotModal.position === "gk" ? "Goalkeeper" : ""}
+                  {slotModal.position === "def" ? "Defender" : ""}
+                  {slotModal.position === "mid" ? "Midfielder" : ""}
+                  {slotModal.position === "fwd" ? "Forward" : ""}
+                </h3>
+                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-2">
+                  {slotModal.teamKey === "A"
+                    ? match.team_a?.name
+                    : match.team_b?.name}{" "}
+                  Roster
+                </p>
+              </div>
+              <button
+                onClick={() => setSlotModal(null)}
+                className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-red-600 transition-all active:scale-95"
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-3">
+              {(() => {
+                const detail =
+                  slotModal.teamKey === "A" ? teamADetail : teamBDetail;
+                if (!detail) return null;
+
+                const rosterKey =
+                  slotModal.position === "gk"
+                    ? "goalkeepers"
+                    : slotModal.position === "def"
+                      ? "defenders"
+                      : slotModal.position === "mid"
+                        ? "midfielders"
+                        : "forwards";
+
+                const playerPool = detail.roster[rosterKey] || [];
+                const availablePlayers = playerPool.filter((p) => {
+                  const selected =
+                    slotModal.teamKey === "A"
+                      ? selectedLineupA
+                      : selectedLineupB;
+                  const bench =
+                    slotModal.teamKey === "A" ? selectedBenchA : selectedBenchB;
+                  return (
+                    !Object.values(selected).includes(p.id) &&
+                    !bench.includes(p.id)
+                  );
+                });
+
+                if (availablePlayers.length === 0) {
+                  return (
+                    <div className="py-12 text-center space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+                        <FiUsers className="text-slate-600" size={32} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        No available players for this position
+                      </p>
+                    </div>
+                  );
+                }
+
+                return availablePlayers.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      const currentLineup =
+                        slotModal.teamKey === "A"
+                          ? selectedLineupA
+                          : selectedLineupB;
+
+                      const newLineup = { ...currentLineup };
+
+                      // Remove player from any other slot first (to prevent duplicates)
+                      Object.keys(newLineup).forEach((key) => {
+                        if (newLineup[parseInt(key)] === p.id) {
+                          delete newLineup[parseInt(key)];
+                        }
+                      });
+
+                      // Assign to the specific slot
+                      newLineup[slotModal.slot_index] = p.id;
+
+                      if (slotModal.teamKey === "A") {
+                        setSelectedLineupA(newLineup);
+                      } else {
+                        setSelectedLineupB(newLineup);
+                      }
+                      setSlotModal(null);
+                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-blue-600/20 hover:border-blue-500/40 transition-all text-left group active:scale-[0.98]"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/10 overflow-hidden shadow-inner group-hover:border-blue-500/50 transition-colors">
+                      {p.image_url ? (
+                        <img
+                          src={getImageUrl(p.image_url)}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-black text-white">
+                          #{p.jersey_number}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-black text-white uppercase tracking-tight group-hover:text-blue-400 transition-colors">
+                        {p.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          #{p.jersey_number}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-slate-700" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          {p.position}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                      <FiPlus size={18} />
+                    </div>
+                  </button>
+                ));
+              })()}
+            </div>
+
+            <div className="p-6 bg-slate-900/30 border-t border-white/5">
+              <button
+                onClick={() => setSlotModal(null)}
+                className="w-full py-4 rounded-2xl bg-slate-800 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>
