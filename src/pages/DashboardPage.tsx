@@ -23,9 +23,13 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { useAuth } from "../context/AuthContext";
 import { UserRoles } from "../types";
 import type { Match, News, Tournament, Team, Player } from "../types";
+import { useAuth } from "../context/AuthContext";
+import { UserRoles } from "../types";
+import type { Match, News, Tournament, Team, Player } from "../types";
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { user } = useAuth();
   const [stats, setStats] = useState({
     tournaments: 0,
@@ -33,6 +37,12 @@ export const DashboardPage: React.FC = () => {
     players: 0,
     matches: 0,
     liveMatchesCount: 0,
+    myTeamPlayers: 0,
+    myTeamMatches: 0,
+    myTeamGoals: 0,
+    assignedMatches: 0,
+    myArticles: 0,
+    totalNews: 0,
     myTeamPlayers: 0,
     myTeamMatches: 0,
     myTeamGoals: 0,
@@ -47,6 +57,7 @@ export const DashboardPage: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [myTeam, setMyTeam] = useState<Team | null>(null);
 
   useEffect(() => {
@@ -82,7 +93,13 @@ export const DashboardPage: React.FC = () => {
         (a: News, b: News) =>
           new Date(b.created_at || "").getTime() -
           new Date(a.created_at || "").getTime(),
+
+      const sortedNews = [...newsData].sort(
+        (a: News, b: News) =>
+          new Date(b.created_at || "").getTime() -
+          new Date(a.created_at || "").getTime(),
       );
+      setLatestNews(sortedNews.slice(0, 4));
       setLatestNews(sortedNews.slice(0, 4));
 
       // Active tournaments (simply taking first 2 for spotlight)
@@ -116,11 +133,55 @@ export const DashboardPage: React.FC = () => {
             m.team_b_id.toString() === user.team_id?.toString(),
         ).length;
       }
+      // Role-specific data resolution
+      let myTeamContext: Team | null = null;
+      let coachPlayerCount = 0;
+      let coachMatchCount = 0;
+      let coachGoals = 0;
+
+      if (user?.role === UserRoles.COACH && user.team_id) {
+        myTeamContext =
+          teamsData.find(
+            (t: Team) => t.id.toString() === user.team_id?.toString(),
+          ) || null;
+        setMyTeam(myTeamContext);
+
+        const myPlayers = playersData.filter(
+          (p: Player) => p.team_id.toString() === user.team_id?.toString(),
+        );
+        coachPlayerCount = myPlayers.length;
+        coachGoals = myPlayers.reduce(
+          (acc: number, p: Player) => acc + (p.goals || 0),
+          0,
+        );
+
+        coachMatchCount = matchesData.filter(
+          (m: Match) =>
+            m.team_a_id.toString() === user.team_id?.toString() ||
+            m.team_b_id.toString() === user.team_id?.toString(),
+        ).length;
+      }
       setStats({
         tournaments: tournamentsData.length,
         teams: teamsData.length,
         players: playersData.length,
         matches: matchesData.length,
+        liveMatchesCount: matchesData.filter((m: Match) => m.status === "live")
+          .length,
+        myTeamPlayers: coachPlayerCount,
+        myTeamMatches: coachMatchCount,
+        myTeamGoals: coachGoals,
+        assignedMatches:
+          user?.role === UserRoles.REFEREE
+            ? matchesData.filter(
+                (m: Match) => m.referee_id?.toString() === user.id?.toString(),
+              ).length
+            : 0,
+        myArticles:
+          user?.role === UserRoles.NEWS_REPORTER
+            ? newsData.filter((n: News) => n.author_id === user.id).length
+            : 0,
+        totalNews: newsData.length,
         liveMatchesCount: matchesData.filter((m: Match) => m.status === "live")
           .length,
         myTeamPlayers: coachPlayerCount,
@@ -291,10 +352,16 @@ export const DashboardPage: React.FC = () => {
         <div>
           <h1 className="text-4xl font-black text-white tracking-tight font-display mb-2">
             {dashboardLabel()}{" "}
+            {dashboardLabel()}{" "}
             <span className="text-blue-500 underline decoration-blue-500/30 underline-offset-8">
+              {user?.role === UserRoles.COACH ? myTeam?.name : "Overview"}
               {user?.role === UserRoles.COACH ? myTeam?.name : "Overview"}
             </span>
           </h1>
+          <p className="text-slate-400 font-medium font-body mt-1">
+            {user?.role === UserRoles.COACH
+              ? `Manage your squad and track team performance.`
+              : `A snapshot of your ${user?.role === UserRoles.REFEREE ? "officiating schedule" : "football ecosystem performance"}.`}
           <p className="text-slate-400 font-medium font-body mt-1">
             {user?.role === UserRoles.COACH
               ? `Manage your squad and track team performance.`
@@ -305,7 +372,11 @@ export const DashboardPage: React.FC = () => {
           <div className="hidden md:flex flex-col items-end mr-4">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
               Role Access
+              Role Access
             </span>
+            <span className="text-xs font-bold text-blue-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              {user?.role?.replace("_", " ") || "Member"}
             <span className="text-xs font-bold text-blue-500 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
               {user?.role?.replace("_", " ") || "Member"}
@@ -390,8 +461,10 @@ export const DashboardPage: React.FC = () => {
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
           : getStatCards().map((stat, i) => (
+          : getStatCards().map((stat, i) => (
               <div
                 key={i}
+                className={`card card-hover hover:border-${stat.text.split("-")[1]}-500/30 transition-all animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
                 className={`card card-hover hover:border-${stat.text.split("-")[1]}-500/30 transition-all animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${i + 1}`}
               >
                 <div className="p-6">
@@ -885,7 +958,7 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </Link>
               <Link
-                to="/news"
+                to={user?.role === UserRoles.NEWS_REPORTER ? "/news" : "/news"}
                 className="p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-indigo-600/10 hover:border-indigo-500/30 transition-all group text-center flex flex-col items-center gap-3"
               >
                 <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -927,7 +1000,90 @@ export const DashboardPage: React.FC = () => {
                     log.action.includes("CREATE") || log.action.includes("ADD");
                   const isUpdate =
                     log.action.includes("UPDATE") || log.action.includes("SET");
+          {/* Audit Log / Intelligence Feed - Restricted to Admin */}
+          {(user?.role === UserRoles.SUPER_ADMIN ||
+            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+            <div className="card divide-y divide-white/5 bg-slate-900/40 border-white/5 overflow-hidden">
+              <div className="p-4 bg-white/2 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <FiActivity size={10} className="text-blue-500" />{" "}
+                  Administrative Trail
+                </div>
+                {auditLogs.length > 0 && (
+                  <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/10">
+                    Live
+                  </span>
+                )}
+              </div>
+              {loading ? (
+                <div className="p-10 flex flex-col items-center justify-center gap-3">
+                  <FiZap className="text-slate-700 animate-pulse" size={20} />
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    Analyzing logs...
+                  </span>
+                </div>
+              ) : auditLogs.length > 0 ? (
+                auditLogs.map((log) => {
+                  const isDelete = log.action.includes("DELETE");
+                  const isCreate =
+                    log.action.includes("CREATE") || log.action.includes("ADD");
+                  const isUpdate =
+                    log.action.includes("UPDATE") || log.action.includes("SET");
 
+                  return (
+                    <div
+                      key={log.id}
+                      className="p-5 flex gap-4 hover:bg-white/2 transition-all group"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                          isDelete
+                            ? "bg-red-500"
+                            : isCreate
+                              ? "bg-emerald-500"
+                              : "bg-blue-500"
+                        } ${isCreate || isUpdate ? "animate-pulse" : ""}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p
+                            className={`text-xs font-black uppercase tracking-tight truncate ${
+                              isDelete ? "text-red-400" : "text-white"
+                            }`}
+                          >
+                            {log.action.replace("_", " ")}
+                          </p>
+                          <span className="text-[9px] font-bold text-slate-500 shrink-0">
+                            {new Date(log.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 line-clamp-1 group-hover:text-slate-400 transition-colors">
+                          {log.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-10 text-center">
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                    No activity recorded yet
+                  </p>
+                </div>
+              )}
+              {auditLogs.length > 0 && (
+                <button
+                  onClick={fetchStats}
+                  className="w-full py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white hover:bg-white/2 transition-all flex items-center justify-center gap-2"
+                >
+                  <FiZap size={10} /> Refresh Feed
+                </button>
+              )}
+            </div>
+          )}
                   return (
                     <div
                       key={log.id}
