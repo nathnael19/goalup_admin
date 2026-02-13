@@ -30,6 +30,10 @@ export const MatchesPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const canManageMatches =
+    user?.role === UserRoles.SUPER_ADMIN ||
+    user?.role === UserRoles.TOURNAMENT_ADMIN;
+
   // Queries
   const { data: matches = [], isLoading: loadingMatches } = useMatches();
   const { data: teams = [], isLoading: loadingTeams } = useTeams();
@@ -37,14 +41,15 @@ export const MatchesPage: React.FC = () => {
     useTournaments();
   const { data: competitions = [], isLoading: loadingCompetitions } =
     useCompetitions();
-  const { data: referees = [], isLoading: loadingReferees } = useReferees();
+  const { data: referees = [], isLoading: loadingReferees } =
+    useReferees(canManageMatches);
 
   const loading =
     loadingMatches ||
     loadingTeams ||
     loadingTournaments ||
     loadingCompetitions ||
-    loadingReferees;
+    (canManageMatches ? loadingReferees : false);
 
   // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
