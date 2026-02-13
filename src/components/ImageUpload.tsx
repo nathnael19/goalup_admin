@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { FiX, FiImage } from "react-icons/fi";
-import { apiClient } from "../services/api";
+import { apiClient, SERVER_URL } from "../services/api";
 
 interface ImageUploadProps {
   value?: string;
@@ -51,8 +51,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const getFullUrl = (url: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    return `${baseUrl}${url}`;
+    return `${SERVER_URL}${url}`;
   };
 
   return (

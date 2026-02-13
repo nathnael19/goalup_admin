@@ -83,8 +83,11 @@ export const TeamsPage: React.FC = () => {
       setShowModal(false);
       fetchData();
       setCurrentTeam({});
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save team", err);
+      alert(
+        `Failed to save team: ${err.response?.data?.detail || err.message}`,
+      );
     }
   };
 
@@ -625,9 +628,9 @@ export const TeamsPage: React.FC = () => {
           className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
           onClick={() => setShowModal(false)}
         />
-        <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+        <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-[0_32px_128px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[90vh] flex flex-col">
           <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
-          <div className="p-8">
+          <div className="p-8 overflow-y-auto custom-scrollbar">
             <div className="flex items-center gap-4 mb-8">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-500 flex items-center justify-center">
                 <FiPlus size={24} />
