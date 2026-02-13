@@ -199,7 +199,7 @@ export const PlayersPage: React.FC = () => {
     if (!team) return null;
 
     const tour = tournaments.find(
-      (t) => t.id.toString() === team.tournament_id.toString(),
+      (t) => t.id.toString() === team.tournament_id?.toString(),
     );
     if (!tour) return null;
 
@@ -776,7 +776,7 @@ export const PlayersPage: React.FC = () => {
                     <span
                       className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${getPositionBadge(player.position)}`}
                     >
-                      {player.position}
+                      {player.position || "N/A"}
                     </span>
                     <span className="text-xs font-bold text-slate-400">
                       • {teams.find((t) => t.id === player.team_id)?.name}
