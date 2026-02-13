@@ -78,9 +78,10 @@ export const useMatchDetail = (id: string) => {
 
 import { userService } from "../services/userService";
 
-export const useReferees = () => {
+export const useReferees = (enabled: boolean = true) => {
   return useQuery({
     queryKey: queryKeys.referees,
     queryFn: () => userService.getReferees(),
+    enabled,
   });
 };
