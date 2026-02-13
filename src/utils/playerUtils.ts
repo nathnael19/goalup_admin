@@ -1,5 +1,5 @@
-export const getPositionBadge = (pos: string) => {
-  const p = pos.toUpperCase();
+export const getPositionBadge = (pos?: string | null) => {
+  const p = (pos || "").toUpperCase();
   switch (p) {
     case "GK":
       return "bg-blue-600/10 text-blue-400 border-blue-600/20";
