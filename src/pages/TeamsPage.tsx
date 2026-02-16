@@ -19,6 +19,7 @@ import { UserRoles } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { getFullImageUrl } from "../utils/url";
 
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
@@ -221,11 +222,7 @@ export const TeamsPage: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
                       {comp.image_url ? (
                         <img
-                          src={
-                            comp.image_url.startsWith("http")
-                              ? comp.image_url
-                              : `http://localhost:8000${comp.image_url}`
-                          }
+                          src={getFullImageUrl(comp.image_url)}
                           alt={comp.name}
                           className="w-full h-full object-cover"
                         />
@@ -297,11 +294,7 @@ export const TeamsPage: React.FC = () => {
             <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
               {selectedCompetition.image_url ? (
                 <img
-                  src={
-                    selectedCompetition.image_url.startsWith("http")
-                      ? selectedCompetition.image_url
-                      : `http://localhost:8000${selectedCompetition.image_url}`
-                  }
+                  src={getFullImageUrl(selectedCompetition.image_url)}
                   alt={selectedCompetition.name}
                   className="w-full h-full object-cover"
                 />
@@ -535,11 +528,7 @@ export const TeamsPage: React.FC = () => {
                           <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
                           {team.logo_url ? (
                             <img
-                              src={
-                                team.logo_url.startsWith("http")
-                                  ? team.logo_url
-                                  : `http://localhost:8000${team.logo_url}`
-                              }
+                              src={getFullImageUrl(team.logo_url)}
                               alt={team.name}
                               className="w-full h-full object-cover relative z-10"
                             />

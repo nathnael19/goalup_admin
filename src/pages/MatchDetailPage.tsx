@@ -25,7 +25,7 @@ import { cardService } from "../services/cardService";
 import { substitutionService } from "../services/substitutionService";
 import { teamService } from "../services/teamService";
 import { lineupService } from "../services/lineupService";
-import { SERVER_URL } from "../services/api";
+import { getFullImageUrl } from "../utils/url";
 import type {
   Match,
   Goal,
@@ -125,12 +125,6 @@ export const MatchDetailPage: React.FC = () => {
   }, [toast]);
 
   const [tick, setTick] = useState(0);
-
-  const getImageUrl = (url?: string) => {
-    if (!url) return undefined;
-    if (url.startsWith("http")) return url;
-    return `${SERVER_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
 
   const getFormationRows = (formation: string, players: any[]) => {
     // Define rows: [count, categoryLabel]
@@ -281,7 +275,7 @@ export const MatchDetailPage: React.FC = () => {
                 {p ? (
                   p.image_url ? (
                     <img
-                      src={getImageUrl(p.image_url)}
+                      src={getFullImageUrl(p.image_url)}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1795,7 +1789,7 @@ export const MatchDetailPage: React.FC = () => {
                         <div className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 overflow-hidden p-1 flex items-center justify-center">
                           {cfg.team?.logo_url ? (
                             <img
-                              src={getImageUrl(cfg.team.logo_url)}
+                              src={getFullImageUrl(cfg.team.logo_url)}
                               className="w-full h-full object-contain"
                             />
                           ) : (
@@ -2620,7 +2614,7 @@ export const MatchDetailPage: React.FC = () => {
                     <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/10 overflow-hidden shadow-inner group-hover:border-blue-500/50 transition-colors">
                       {p.image_url ? (
                         <img
-                          src={getImageUrl(p.image_url)}
+                          src={getFullImageUrl(p.image_url)}
                           className="w-full h-full object-cover"
                         />
                       ) : (

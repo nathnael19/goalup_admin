@@ -15,6 +15,7 @@ import { teamService } from "../services/teamService";
 import { playerService } from "../services/playerService";
 import type { News, NewsCategory, CreateNewsDto, Team, Player } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { getFullImageUrl } from "../utils/url";
 
 const CATEGORY_CONFIG: Record<
   NewsCategory,
@@ -224,11 +225,7 @@ export const NewsPage: React.FC = () => {
           >
             {news[0].image_url ? (
               <img
-                src={
-                  news[0].image_url.startsWith("http")
-                    ? news[0].image_url
-                    : `http://localhost:8000${news[0].image_url}`
-                }
+                src={getFullImageUrl(news[0].image_url)}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
                 alt={news[0].title}
               />
@@ -359,11 +356,7 @@ export const NewsPage: React.FC = () => {
                   <div className="aspect-video w-full overflow-hidden relative">
                     {article.image_url ? (
                       <img
-                        src={
-                          article.image_url.startsWith("http")
-                            ? article.image_url
-                            : `http://localhost:8000${article.image_url}`
-                        }
+                        src={getFullImageUrl(article.image_url)}
                         alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100"
                       />
@@ -414,7 +407,7 @@ export const NewsPage: React.FC = () => {
                           >
                             {article.team.logo_url ? (
                               <img
-                                src={article.team.logo_url}
+                                src={getFullImageUrl(article.team.logo_url)}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -429,7 +422,7 @@ export const NewsPage: React.FC = () => {
                           >
                             {article.player.image_url ? (
                               <img
-                                src={article.player.image_url}
+                                src={getFullImageUrl(article.player.image_url)}
                                 className="w-full h-full object-cover"
                               />
                             ) : (

@@ -20,6 +20,7 @@ import { matchService } from "../services/matchService";
 import { newsService } from "../services/newsService";
 import { auditLogService, type AuditLog } from "../services/auditLogService";
 import { CardSkeleton } from "../components/LoadingSkeleton";
+import { getFullImageUrl } from "../utils/url";
 import { useAuth } from "../context/AuthContext";
 import { UserRoles } from "../types";
 import type { Match, News, Tournament, Team, Player } from "../types";
@@ -44,7 +45,6 @@ export const DashboardPage: React.FC = () => {
   const [latestNews, setLatestNews] = useState<News[]>([]);
   const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
   const [allMatches, setAllMatches] = useState<Match[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [myTeam, setMyTeam] = useState<Team | null>(null);
@@ -74,7 +74,6 @@ export const DashboardPage: React.FC = () => {
 
       setAuditLogs(auditData);
       setAllMatches(matchesData);
-      setTeams(teamsData);
       setLiveMatches(matchesData.filter((m: Match) => m.status === "live"));
 
       const sortedNews = [...newsData].sort(
@@ -387,11 +386,7 @@ export const DashboardPage: React.FC = () => {
                   <div className="aspect-video w-full overflow-hidden relative">
                     {article.image_url ? (
                       <img
-                        src={
-                          article.image_url.startsWith("http")
-                            ? article.image_url
-                            : `http://localhost:8000${article.image_url}`
-                        }
+                        src={getFullImageUrl(article.image_url)}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-60"
                         alt={article.title}
                       />

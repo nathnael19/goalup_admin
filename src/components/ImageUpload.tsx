@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { FiX, FiImage } from "react-icons/fi";
-import { apiClient, SERVER_URL } from "../services/api";
+import { apiClient } from "../services/api";
+import { getFullImageUrl } from "../utils/url";
 
 interface ImageUploadProps {
   value?: string;
@@ -13,6 +14,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   onChange,
   label,
 }) => {
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,7 +33,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         },
       });
 
-      onChange(response.data.url);
+      // response.data.url is a temporary signed URL for preview
+      // response.data.path is the raw path to store in the database
+      setPreviewUrl(response.data.url);
+      onChange(response.data.path);
     } catch (err) {
       console.error("Upload failed", err);
       alert("Failed to upload image. Please try again.");
@@ -42,17 +47,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const removeImage = () => {
     onChange("");
+    setPreviewUrl("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  // Convert relative backend URL to absolute if needed
-  const getFullUrl = (url: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${SERVER_URL}${url}`;
-  };
+  const currentImageUrl = previewUrl || getFullImageUrl(value);
 
   return (
     <div className="space-y-2">
@@ -72,7 +73,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         {value ? (
           <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner group">
             <img
-              src={getFullUrl(value)}
+              src={currentImageUrl}
               alt="Preview"
               className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
             />

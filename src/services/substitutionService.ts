@@ -1,7 +1,8 @@
 import axios from "axios";
 import type { Substitution, CreateSubstitutionDto } from "../types";
+import { API_BASE_URL } from "./api";
 
-const API_URL = "http://localhost:8000/api/v1";
+const API_URL = API_BASE_URL;
 
 export const substitutionService = {
   getByMatchId: async (matchId: string): Promise<Substitution[]> => {

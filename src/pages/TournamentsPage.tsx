@@ -13,8 +13,8 @@ import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { matchService } from "../services/matchService";
 import { ImageUpload } from "../components/ImageUpload";
+import { getFullImageUrl } from "../utils/url";
 import { KnockoutBracket } from "../components/KnockoutBracket";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   type Tournament,
@@ -58,6 +58,9 @@ export const TournamentsPage: React.FC = () => {
   const [currentSeason, setCurrentSeason] = useState<Partial<Tournament>>({});
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingTournamentId, setEditingTournamentId] = useState<string | null>(
+    null,
+  );
 
   // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -116,12 +119,18 @@ export const TournamentsPage: React.FC = () => {
   const handleCreateTournament = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await competitionService.create(newTournament);
+      if (isEditing && editingTournamentId) {
+        await competitionService.update(editingTournamentId, newTournament);
+      } else {
+        await competitionService.create(newTournament);
+      }
       setShowTournamentModal(false);
+      setIsEditing(false);
+      setEditingTournamentId(null);
       setNewTournament({ name: "", description: "", image_url: "" });
       fetchData();
     } catch (err) {
-      console.error("Failed to create tournament", err);
+      console.error("Failed to save tournament", err);
     }
   };
 
@@ -200,6 +209,8 @@ export const TournamentsPage: React.FC = () => {
             user?.role === UserRoles.TOURNAMENT_ADMIN) && (
             <button
               onClick={() => {
+                setIsEditing(false);
+                setEditingTournamentId(null);
                 setNewTournament({ name: "", description: "", image_url: "" });
                 setShowTournamentModal(true);
               }}
@@ -261,15 +272,33 @@ export const TournamentsPage: React.FC = () => {
                     <div className="flex gap-1.5">
                       {(user?.role === UserRoles.SUPER_ADMIN ||
                         user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete(tournament.id, "tournament"); // Using 'tournament' to delete Competition as per TournamentsPage logic
-                          }}
-                          className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                        >
-                          <FiTrash2 size={14} />
-                        </button>
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsEditing(true);
+                              setEditingTournamentId(tournament.id);
+                              setNewTournament({
+                                name: tournament.name,
+                                description: tournament.description || "",
+                                image_url: tournament.image_url || "",
+                              });
+                              setShowTournamentModal(true);
+                            }}
+                            className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(tournament.id, "tournament"); // Using 'tournament' to delete Competition as per TournamentsPage logic
+                            }}
+                            className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -280,7 +309,7 @@ export const TournamentsPage: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-slate-900/50 flex items-center justify-center text-blue-400 mb-6 border border-slate-700/50 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
                       {tournament.image_url ? (
                         <img
-                          src={tournament.image_url}
+                          src={getFullImageUrl(tournament.image_url)}
                           alt={tournament.name}
                           className="w-full h-full object-cover"
                         />
@@ -322,7 +351,7 @@ export const TournamentsPage: React.FC = () => {
 
         {/* Create Tournament Modal */}
         {showTournamentModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
             <div
               className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
               onClick={() => setShowTournamentModal(false)}
@@ -385,7 +414,7 @@ export const TournamentsPage: React.FC = () => {
                       type="submit"
                       className="btn btn-primary flex-1 h-12"
                     >
-                      Create
+                      {isEditing ? "Update" : "Create"}
                     </button>
                   </div>
                 </form>
@@ -507,12 +536,12 @@ export const TournamentsPage: React.FC = () => {
         <>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700">
+              <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
                 {selectedTournament.image_url ? (
                   <img
-                    src={selectedTournament.image_url}
+                    src={getFullImageUrl(selectedTournament.image_url)}
                     alt={selectedTournament.name}
-                    className="w-full h-full object-cover rounded-2xl"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <FiAward size={32} />
@@ -713,17 +742,6 @@ export const TournamentsPage: React.FC = () => {
                     </select>
                   </div>
                 </div>
-
-                <ImageUpload
-                  label="Season Poster (Optional)"
-                  value={currentSeason.image_url}
-                  onChange={(url) =>
-                    setCurrentSeason({
-                      ...currentSeason,
-                      image_url: url,
-                    })
-                  }
-                />
 
                 <div className="flex gap-3 pt-6">
                   <button

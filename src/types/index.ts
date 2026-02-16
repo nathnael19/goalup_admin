@@ -88,7 +88,6 @@ export interface Tournament {
   name: string;
   year: number;
   type: string;
-  image_url?: string;
   competition_id?: string;
   competition?: Competition;
   knockout_legs: number;
@@ -101,7 +100,6 @@ export interface CreateTournamentDto {
   name: string;
   year: number;
   type: string;
-  image_url?: string;
   competition_id?: string;
   knockout_legs?: number;
   has_third_place_match?: boolean;
