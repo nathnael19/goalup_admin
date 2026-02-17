@@ -7,6 +7,7 @@ import {
   FiActivity,
   FiAward,
   FiCalendar,
+  FiUsers,
 } from "react-icons/fi";
 import { playerService } from "../services/playerService";
 import { teamService } from "../services/teamService";
@@ -50,6 +51,7 @@ export const PlayersPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPosition, setFilterPosition] = useState<string>("all");
+  const [filterTeamId, setFilterTeamId] = useState<string>("all");
 
   // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -476,18 +478,20 @@ export const PlayersPage: React.FC = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
 
-    if (filterPosition === "all") return matchesSearch;
+    const matchesTeam =
+      filterTeamId === "all" || player.team_id.toString() === filterTeamId;
+
+    if (!matchesSearch || !matchesTeam) return false;
+
+    if (filterPosition === "all") return true;
 
     const pos = (player.position || "").toLowerCase();
-    if (filterPosition === "GK") return matchesSearch && pos === "gk";
-    if (filterPosition === "DF")
-      return matchesSearch && ["cb", "rb", "lb"].includes(pos);
-    if (filterPosition === "MF")
-      return matchesSearch && ["cm", "cdm", "cam"].includes(pos);
-    if (filterPosition === "FW")
-      return matchesSearch && ["st", "lw", "rw"].includes(pos);
+    if (filterPosition === "GK") return pos === "gk";
+    if (filterPosition === "DF") return ["cb", "rb", "lb"].includes(pos);
+    if (filterPosition === "MF") return ["cm", "cdm", "cam"].includes(pos);
+    if (filterPosition === "FW") return ["st", "lw", "rw"].includes(pos);
 
-    return matchesSearch;
+    return true;
   });
 
   return (
@@ -497,6 +501,7 @@ export const PlayersPage: React.FC = () => {
           setSelectedTournament(null);
           setSearchTerm("");
           setFilterPosition("all");
+          setFilterTeamId("all");
         }}
         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
       >
@@ -542,7 +547,7 @@ export const PlayersPage: React.FC = () => {
       </div>
 
       {/* Search & Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="md:col-span-2">
           <div className="relative group">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
@@ -555,33 +560,46 @@ export const PlayersPage: React.FC = () => {
             />
           </div>
         </div>
-        <div>
-          <div className="relative">
-            <FiActivity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-            <select
-              className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800"
-              value={filterPosition}
-              onChange={(e) => setFilterPosition(e.target.value)}
-            >
-              <option value="all">All Positions</option>
-              <option value="GK">Goalkeepers</option>
-              <option value="DF">Defenders</option>
-              <option value="MF">Midfielders</option>
-              <option value="FW">Forwards</option>
-            </select>
-          </div>
+        <div className="relative">
+          <FiActivity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <select
+            className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800 w-full"
+            value={filterPosition}
+            onChange={(e) => setFilterPosition(e.target.value)}
+          >
+            <option value="all">All Positions</option>
+            <option value="GK">Goalkeepers</option>
+            <option value="DF">Defenders</option>
+            <option value="MF">Midfielders</option>
+            <option value="FW">Forwards</option>
+          </select>
         </div>
-        <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10">
+        <div className="relative">
+          <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <select
+            className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800 w-full"
+            value={filterTeamId}
+            onChange={(e) => setFilterTeamId(e.target.value)}
+          >
+            <option value="all">All Teams</option>
+            {seasonTeams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10 h-12">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 leading-tight">
               Players
             </p>
-            <p className="text-2xl font-black text-white font-display leading-none">
+            <p className="text-xl font-black text-white font-display leading-tight">
               {filteredPlayers.length} / {seasonPlayers.length}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-500">
-            <FiActivity size={20} />
+          <div className="w-8 h-8 rounded-lg bg-purple-600/10 flex items-center justify-center text-purple-500">
+            <FiActivity size={16} />
           </div>
         </div>
       </div>
