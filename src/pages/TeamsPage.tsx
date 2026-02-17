@@ -8,7 +8,6 @@ import {
   FiSearch,
   FiAward,
   FiActivity,
-  FiCalendar,
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
@@ -32,14 +31,12 @@ export const TeamsPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentTeam, setCurrentTeam] = useState<Partial<Team>>({});
 
-  // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
     useState<Competition | null>(null);
-  const [selectedTournament, setSelectedTournament] =
-    useState<Tournament | null>(null);
 
   // For modal selection
   const [modalCompetitionId, setModalCompetitionId] = useState<string>("");
+  const [filterSeasonId, setFilterSeasonId] = useState<string>("");
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -69,6 +66,23 @@ export const TeamsPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedCompetition) {
+      const compSeasons = tournaments.filter(
+        (t) => t.competition_id === selectedCompetition.id,
+      );
+      if (compSeasons.length > 0) {
+        // Default to latest season by year
+        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+        setFilterSeasonId(latest.id);
+      } else {
+        setFilterSeasonId("");
+      }
+    } else {
+      setFilterSeasonId("");
+    }
+  }, [selectedCompetition, tournaments]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,11 +133,6 @@ export const TeamsPage: React.FC = () => {
       .filter((t) => t.competition_id === compId)
       .map((t) => t.id);
     return teams.filter((t) => tourIds.includes(t.tournament_id)).length;
-  };
-
-  // Helper: get team count for a tournament
-  const getTourTeamCount = (tourId: string) => {
-    return teams.filter((t) => t.tournament_id === tourId).length;
   };
 
   // ============ VIEW 1: COMPETITION CARDS ============
@@ -269,54 +278,82 @@ export const TeamsPage: React.FC = () => {
     );
   }
 
-  if (!selectedTournament) {
-    const compSeasons = tournaments.filter(
-      (t) => t.competition_id === selectedCompetition.id,
-    );
-    const filteredSeasons = compSeasons.filter((s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+  // ============ VIEW 2: COMPETITION DASHBOARD (TEAMS) ============
+  const compSeasons = tournaments.filter(
+    (t) => t.competition_id === selectedCompetition.id,
+  );
 
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <button
-          onClick={() => {
-            setSelectedCompetition(null);
-            setSearchTerm("");
-          }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          ← Back to Competitions
-        </button>
+  const currentFilterSeason = tournaments.find((s) => s.id === filterSeasonId);
+  const seasonTeams = teams.filter((t) => t.tournament_id === filterSeasonId);
+  const filteredTeams = seasonTeams.filter((team) =>
+    team.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
-              {selectedCompetition.image_url ? (
-                <img
-                  src={getFullImageUrl(selectedCompetition.image_url)}
-                  alt={selectedCompetition.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <FiAward size={32} />
-              )}
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-white font-display tracking-tight">
-                {selectedCompetition.name}
-              </h1>
-              <p className="text-slate-400 font-medium font-body mt-1">
-                Select a season to manage its teams.
-              </p>
-            </div>
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <button
+        onClick={() => {
+          setSelectedCompetition(null);
+          setFilterSeasonId("");
+          setSearchTerm("");
+        }}
+        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+      >
+        ← Back to Competitions
+      </button>
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
+            {selectedCompetition.image_url ? (
+              <img
+                src={getFullImageUrl(selectedCompetition.image_url)}
+                alt={selectedCompetition.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <FiAward size={32} />
+            )}
           </div>
+          <div>
+            <h1 className="text-4xl font-black text-white font-display tracking-tight">
+              {selectedCompetition.name}
+            </h1>
+            <p className="text-slate-400 font-medium font-body mt-1">
+              Manage clubs and list registrations for this competition.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          {compSeasons.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                Teams for:
+              </span>
+              <select
+                className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
+                value={filterSeasonId}
+                onChange={(e) => setFilterSeasonId(e.target.value)}
+              >
+                {compSeasons
+                  .sort((a, b) => b.year - a.year)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.year})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
           {(user?.role === UserRoles.SUPER_ADMIN ||
             user?.role === UserRoles.TOURNAMENT_ADMIN) && (
             <button
               onClick={() => {
                 setIsEditing(false);
-                setCurrentTeam({ name: "", tournament_id: "" });
+                setCurrentTeam({
+                  name: "",
+                  tournament_id: filterSeasonId || "",
+                });
                 setModalCompetitionId(selectedCompetition.id);
                 setShowModal(true);
               }}
@@ -326,269 +363,151 @@ export const TeamsPage: React.FC = () => {
             </button>
           )}
         </div>
-
-        {/* Search */}
-        <div className="relative group max-w-lg">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Filter seasons..."
-            className="input pl-12 h-12 bg-slate-800/40"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Season Cards */}
-        {filteredSeasons.length === 0 ? (
-          <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
-            <FiCalendar className="mx-auto text-slate-600 mb-4" size={48} />
-            <p className="text-slate-500 font-medium">
-              No seasons found for this competition.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSeasons.map((season, i) => {
-              const teamCount = getTourTeamCount(season.id);
-              return (
-                <div
-                  key={season.id}
-                  onClick={() => {
-                    setSelectedTournament(season);
-                    setSearchTerm("");
-                  }}
-                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
-                    (i % 4) + 1
-                  } relative overflow-hidden cursor-pointer`}
-                >
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20 text-xs font-black uppercase tracking-widest">
-                        {season.year}
-                      </div>
-                      <div className="text-xs font-bold text-slate-500 capitalize">
-                        {season.type.replace("_", " ")}
-                      </div>
-                    </div>
-
-                    <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
-                      {season.name}
-                    </h3>
-
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">
-                      <span className="bg-indigo-600/10 text-indigo-400 px-2 py-1 rounded-md border border-indigo-600/20">
-                        {teamCount} Team{teamCount !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1 w-full bg-indigo-600/10 group-hover:bg-indigo-600/40 transition-colors" />
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {renderTeamModal()}
-
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={() => {
-            setShowDeleteModal(false);
-            setItemToDelete(null);
-          }}
-          onConfirm={handleDelete}
-          title="Delete Team"
-          message="Are you sure you want to delete this team? This action cannot be undone."
-          isLoading={isDeleting}
-        />
-      </div>
-    );
-  }
-
-  // ============ VIEW 3: TEAMS TABLE ============
-  const seasonTeams = teams.filter(
-    (t) => t.tournament_id === selectedTournament.id,
-  );
-  const filteredTeams = seasonTeams.filter((team) =>
-    team.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <button
-        onClick={() => {
-          setSelectedTournament(null);
-          setSearchTerm("");
-        }}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-      >
-        ← Back to {selectedCompetition.name}
-      </button>
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-indigo-500 border border-slate-700">
-            <FiUsers size={32} />
-          </div>
-          <div>
-            <h1 className="text-4xl font-black text-white font-display tracking-tight">
-              {selectedTournament.name}
-            </h1>
-            <p className="text-slate-400 font-medium font-body mt-1">
-              Teams registered for the {selectedTournament.year} season.
-            </p>
-          </div>
-        </div>
-        {(user?.role === UserRoles.SUPER_ADMIN ||
-          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              setCurrentTeam({
-                name: "",
-                tournament_id: selectedTournament.id,
-              });
-              setModalCompetitionId(selectedCompetition.id);
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus /> Add Team
-          </button>
-        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="md:col-span-3">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div className="xl:col-span-3 space-y-8">
+          {/* Search Box */}
           <div className="relative group">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Filter by name..."
-              className="input pl-12 h-12 bg-slate-800/40 border-slate-800"
+              placeholder={`Search ${currentFilterSeason?.name || "teams"}...`}
+              className="input pl-12 h-14 bg-slate-800/40"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </div>
-        <div className="card flex items-center justify-between p-4 px-6 border-slate-800 bg-slate-800/20">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
-              Registered
-            </p>
-            <p className="text-2xl font-black text-white font-display leading-none">
-              {seasonTeams.length}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-500">
-            <FiUsers size={20} />
-          </div>
-        </div>
-      </div>
 
-      <div className="card overflow-hidden border-white/10 animate-in fade-in slide-in-from-bottom-6 duration-700">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-900/50 border-b border-slate-800">
-                <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest">
-                  Team Profile
-                </th>
-                <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest">
-                  ID
-                </th>
-                <th className="px-6 py-5 text-xs font-black text-slate-500 uppercase tracking-widest text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {filteredTeams.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={3}
-                    className="px-6 py-10 text-center text-slate-500 font-medium"
-                  >
-                    No teams found.
-                  </td>
-                </tr>
-              ) : (
-                filteredTeams.map((team) => (
-                  <tr
-                    key={team.id}
-                    className="hover:bg-slate-800/20 transition-colors group"
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="w-14 h-14 rounded-2xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-blue-500 font-black text-lg shadow-2xl group-hover:scale-110 transition-transform cursor-pointer overflow-hidden relative"
-                          onClick={() => navigate(`/teams/${team.id}`)}
-                        >
-                          <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                          {team.logo_url ? (
-                            <img
-                              src={getFullImageUrl(team.logo_url)}
-                              alt={team.name}
-                              className="w-full h-full object-cover relative z-10"
-                            />
-                          ) : (
-                            <span className="relative z-10">
-                              {team.name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className="cursor-pointer"
-                          onClick={() => navigate(`/teams/${team.id}`)}
-                        >
-                          <span className="block font-bold text-white tracking-tight hover:text-blue-400 transition-colors">
-                            {team.name}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 uppercase tracking-tighter text-slate-500 text-xs font-mono">
-                      {team.id.toString().slice(0, 12)}...
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => navigate(`/teams/${team.id}`)}
-                          className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                          title="View Dashboard"
-                        >
-                          <FiActivity size={16} />
-                        </button>
-                        {(user?.role === UserRoles.SUPER_ADMIN ||
-                          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setIsEditing(true);
-                                setCurrentTeam(team);
-                                setModalCompetitionId(selectedCompetition.id);
-                                setShowModal(true);
-                              }}
-                              className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => confirmDelete(team.id)}
-                              className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredTeams.length === 0 ? (
+              <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
+                <p className="text-slate-500 font-medium">
+                  {filterSeasonId
+                    ? "No teams found for this season."
+                    : "Please select/create a season first."}
+                </p>
+              </div>
+            ) : (
+              filteredTeams.map((team, i) => (
+                <div
+                  key={team.id}
+                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                    (i % 4) + 1
+                  } relative overflow-hidden`}
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => navigate(`/teams/${team.id}`)}
+                        className="p-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                        title="View Dashboard"
+                      >
+                        <FiActivity size={14} />
+                      </button>
+                      {(user?.role === UserRoles.SUPER_ADMIN ||
+                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setIsEditing(true);
+                              setCurrentTeam(team);
+                              setModalCompetitionId(selectedCompetition.id);
+                              setShowModal(true);
+                            }}
+                            className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => confirmDelete(team.id)}
+                            className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-8 flex items-center gap-6 relative">
+                    <div
+                      className="w-20 h-20 rounded-2xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-blue-500 font-black text-2xl shadow-2xl group-hover:scale-110 transition-transform cursor-pointer overflow-hidden relative shrink-0"
+                      onClick={() => navigate(`/teams/${team.id}`)}
+                    >
+                      <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
+                      {team.logo_url ? (
+                        <img
+                          src={getFullImageUrl(team.logo_url)}
+                          alt={team.name}
+                          className="w-full h-full object-cover relative z-10"
+                        />
+                      ) : (
+                        <span className="relative z-10">
+                          {team.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className="text-xl font-black text-white mb-1 font-display tracking-tight truncate cursor-pointer hover:text-blue-400 transition-colors"
+                        onClick={() => navigate(`/teams/${team.id}`)}
+                      >
+                        {team.name}
+                      </h3>
+                      {team.stadium && (
+                        <p className="text-slate-500 text-sm font-medium truncate flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+                          {team.stadium}
+                        </p>
+                      )}
+                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-3 font-mono">
+                        ID: {team.id.toString().slice(0, 12)}...
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-1 w-full bg-blue-600/10 group-hover:bg-blue-600/40 transition-colors" />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="card p-6 border-blue-500/10 bg-blue-600/5">
+            <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-3">
+              Competition Summary
+            </h4>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-400 font-medium">
+                  Total Seasons
+                </span>
+                <span className="text-lg font-black text-white">
+                  {compSeasons.length}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-400 font-medium">
+                  Active Teams
+                </span>
+                <span className="text-lg font-black text-white">
+                  {getCompTeamCount(selectedCompetition.id)}
+                </span>
+              </div>
+              {filterSeasonId && (
+                <div className="pt-4 border-t border-blue-500/10 flex justify-between items-center">
+                  <span className="text-sm text-slate-400 font-medium">
+                    Teams in Season
+                  </span>
+                  <span className="text-lg font-black text-blue-400">
+                    {seasonTeams.length}
+                  </span>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
 
