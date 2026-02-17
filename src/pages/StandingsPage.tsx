@@ -1,29 +1,18 @@
 import React, { useState, useEffect } from "react";
-import {
-  FiAward,
-  FiRefreshCw,
-  FiSearch,
-  FiTrendingUp,
-  FiCalendar,
-} from "react-icons/fi";
-import { standingService } from "../services/standingService";
+import { FiAward, FiSearch, FiCalendar } from "react-icons/fi";
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
-import type { Tournament, Competition, GroupedStanding } from "../types";
-import { UserRoles } from "../types";
+import { SeasonStandings } from "../components/match/SeasonStandings";
+import type { Tournament, Competition } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { getFullImageUrl } from "../utils/url";
 
 export const StandingsPage: React.FC = () => {
   const { user } = useAuth();
-  const [groupedStandings, setGroupedStandings] = useState<GroupedStanding[]>(
-    [],
-  );
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [recalculating, setRecalculating] = useState<string | null>(null);
 
   // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
@@ -40,33 +29,16 @@ export const StandingsPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [standingsData, tournamentsData, competitionsData] =
-        await Promise.all([
-          standingService.getAll(),
-          tournamentService.getAll(),
-          competitionService.getAll(),
-        ]);
-      setGroupedStandings(standingsData);
+      const [tournamentsData, competitionsData] = await Promise.all([
+        tournamentService.getAll(),
+        competitionService.getAll(),
+      ]);
       setTournaments(tournamentsData);
       setCompetitions(competitionsData);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRecalculate = async (tournamentId: string) => {
-    try {
-      setRecalculating(tournamentId);
-      await standingService.recalculate(tournamentId);
-      // Re-fetch only standings
-      const standingsData = await standingService.getAll();
-      setGroupedStandings(standingsData);
-    } catch (err) {
-      console.error("Failed to recalculate standings", err);
-    } finally {
-      setRecalculating(null);
     }
   };
 
@@ -254,10 +226,6 @@ export const StandingsPage: React.FC = () => {
   }
 
   // ============ VIEW 3: STANDINGS TABLE ============
-  const standingGroup = groupedStandings.find(
-    (g) => g.tournament.id === selectedTournament.id,
-  );
-
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <button
@@ -288,123 +256,11 @@ export const StandingsPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {(user?.role === UserRoles.SUPER_ADMIN ||
-          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-          <button
-            onClick={() => handleRecalculate(selectedTournament.id)}
-            disabled={recalculating === selectedTournament.id}
-            className="btn btn-secondary h-11 border border-slate-700/50 hover:border-blue-500/30 transition-all disabled:opacity-50"
-          >
-            <FiRefreshCw
-              className={
-                recalculating === selectedTournament.id ? "animate-spin" : ""
-              }
-            />
-            Sync Standings
-          </button>
-        )}
       </div>
 
-      {!standingGroup || standingGroup.teams.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center group">
-          <FiTrendingUp className="text-slate-600 mb-8" size={48} />
-          <h3 className="text-2xl font-black text-white font-display uppercase tracking-tight mb-2">
-            No Standings Yet
-          </h3>
-          <p className="text-slate-500 max-w-sm mx-auto font-medium">
-            Add teams and record match results to populate this table.
-          </p>
-        </div>
-      ) : (
-        <div className="card card-hover overflow-hidden border-white/10 bg-slate-900/40">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white/5 border-b border-white/10">
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                    Rank
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                    Club
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                    MP
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-blue-400">
-                    W
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-16">
-                    D
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center w-16 text-red-400">
-                    L
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center w-20">
-                    Diff
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center w-24 bg-blue-600/10">
-                    Points
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/40">
-                {standingGroup.teams.map((standing, index) => (
-                  <tr
-                    key={standing.team_id}
-                    className="hover:bg-slate-800/30 transition-colors group"
-                  >
-                    <td className="px-6 py-5 text-center">
-                      <span
-                        className={`text-sm font-black w-8 h-8 rounded-lg flex items-center justify-center mx-auto ${index === 0 ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-lg shadow-yellow-500/5" : "bg-slate-800 text-slate-500 border border-slate-700/50"}`}
-                      >
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-tighter group-hover:scale-110 transition-transform">
-                          {standing.team?.name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-bold text-white tracking-tight leading-none mb-1">
-                          {standing.team?.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                      {standing.played}
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm font-black text-blue-400/80">
-                      {standing.won}
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                      {standing.drawn}
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm font-bold text-slate-400">
-                      {standing.lost}
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span
-                        className={`text-sm font-black ${standing.goals_for - standing.goals_against >= 0 ? "text-green-500" : "text-red-500"}`}
-                      >
-                        {standing.goals_for - standing.goals_against > 0
-                          ? "+"
-                          : ""}
-                        {standing.goals_for - standing.goals_against}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-center bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors">
-                      <span className="text-lg font-black text-white font-display tabular-nums tracking-tighter">
-                        {standing.points}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <div className="card p-8 overflow-hidden border-white/10 bg-slate-900/40">
+        <SeasonStandings seasonId={selectedTournament.id} />
+      </div>
     </div>
   );
 };

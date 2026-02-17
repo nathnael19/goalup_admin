@@ -12,15 +12,18 @@ import {
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { matchService } from "../services/matchService";
+import { teamService } from "../services/teamService";
 import { ImageUpload } from "../components/ImageUpload";
 import { getFullImageUrl } from "../utils/url";
 import { KnockoutBracket } from "../components/KnockoutBracket";
+import { SeasonStandings } from "../components/match/SeasonStandings";
 import { useAuth } from "../context/AuthContext";
 import {
   type Tournament,
   type CreateTournamentDto,
   type Competition,
   type Match,
+  type Team,
   UserRoles,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
@@ -33,6 +36,7 @@ export const TournamentsPage: React.FC = () => {
 
   const [seasons, setSeasons] = useState<Tournament[]>([]);
   const [tournaments, setTournaments] = useState<Competition[]>([]); // These are Competitions
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Selection State
@@ -77,12 +81,14 @@ export const TournamentsPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [seasonsData, tournamentsData] = await Promise.all([
+      const [seasonsData, tournamentsData, teamsData] = await Promise.all([
         tournamentService.getAll(),
         competitionService.getAll(),
+        teamService.getAll(),
       ]);
       setSeasons(seasonsData);
       setTournaments(tournamentsData);
+      setTeams(teamsData);
 
       // Refresh active season if it exists
       if (activeSeason) {
@@ -521,13 +527,28 @@ export const TournamentsPage: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="card p-20 text-center opacity-50">
-                <p className="font-black uppercase tracking-[0.3em] text-slate-500">
-                  League Standings View
-                </p>
-                <p className="text-xs mt-2 italic text-slate-600">
-                  Coming soon in the unified season dashboard...
-                </p>
+              <div className="card p-8 overflow-hidden">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    League Standings
+                  </h3>
+                  <div className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[10px] font-black uppercase tracking-widest">
+                    Round Robin Format
+                  </div>
+                </div>
+                {loadingMatches ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <SeasonStandings
+                    seasonId={activeSeason.id}
+                    initialMatches={seasonMatches}
+                    initialTeams={teams.filter(
+                      (t) => t.tournament_id === activeSeason.id,
+                    )}
+                  />
+                )}
               </div>
             )}
           </div>
