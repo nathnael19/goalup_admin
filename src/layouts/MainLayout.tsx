@@ -10,7 +10,6 @@ import {
   FiUsers,
   FiUser,
   FiTarget,
-  FiBarChart2,
   FiFileText,
   FiSettings,
 } from "react-icons/fi";
@@ -62,17 +61,6 @@ export const MainLayout: React.FC = () => {
       icon: FiTarget,
       label: "Matches",
       path: "/matches",
-      roles: [
-        UserRoles.SUPER_ADMIN,
-        UserRoles.TOURNAMENT_ADMIN,
-        UserRoles.COACH,
-        UserRoles.REFEREE,
-      ],
-    },
-    {
-      icon: FiBarChart2,
-      label: "Standings",
-      path: "/standings",
       roles: [
         UserRoles.SUPER_ADMIN,
         UserRoles.TOURNAMENT_ADMIN,

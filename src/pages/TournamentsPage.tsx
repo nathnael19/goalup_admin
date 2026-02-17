@@ -45,6 +45,7 @@ export const TournamentsPage: React.FC = () => {
   const [activeSeason, setActiveSeason] = useState<Tournament | null>(null);
   const [seasonMatches, setSeasonMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [filterSeasonId, setFilterSeasonId] = useState<string>("");
 
   // Modals
   const [showTournamentModal, setShowTournamentModal] = useState(false); // Create Competition
@@ -119,6 +120,28 @@ export const TournamentsPage: React.FC = () => {
       fetchSeasonMatches(activeSeason.id);
     }
   }, [activeSeason]);
+
+  useEffect(() => {
+    if (selectedTournament) {
+      const compSeasons = seasons.filter(
+        (s) =>
+          s.competition_id === selectedTournament.id && s.type === "league",
+      );
+      if (compSeasons.length > 0) {
+        // Find latest season by year
+        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+        setFilterSeasonId(latest.id);
+      } else if (filterSeasonId === "") {
+        // If no league seasons found, maybe check for any season?
+        const anySeason = seasons.filter(
+          (s) => s.competition_id === selectedTournament.id,
+        )[0];
+        if (anySeason) setFilterSeasonId(anySeason.id);
+      }
+    } else {
+      setFilterSeasonId("");
+    }
+  }, [selectedTournament, seasons]);
 
   // --- HANDLERS ---
 
@@ -577,32 +600,27 @@ export const TournamentsPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            {(user?.role === UserRoles.SUPER_ADMIN ||
-              user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setCurrentSeason({
-                    name: "",
-                    year: new Date().getFullYear(),
-                    type: "league",
-                    competition_id: selectedTournament.id,
-                  });
-                  setShowSeasonModal(true);
-                }}
-                className="btn btn-primary h-12"
-              >
-                <FiPlus /> New Season
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSeasons.length === 0 ? (
-              <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
-                <p className="text-slate-500 font-medium">
-                  No seasons found for this tournament.
-                </p>
+            <div className="flex items-center gap-4">
+              {filteredSeasons.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                    Standings for:
+                  </span>
+                  <select
+                    className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
+                    value={filterSeasonId}
+                    onChange={(e) => setFilterSeasonId(e.target.value)}
+                  >
+                    {filteredSeasons.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.year})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {(user?.role === UserRoles.SUPER_ADMIN ||
+                user?.role === UserRoles.TOURNAMENT_ADMIN) && (
                 <button
                   onClick={() => {
                     setIsEditing(false);
@@ -614,72 +632,126 @@ export const TournamentsPage: React.FC = () => {
                     });
                     setShowSeasonModal(true);
                   }}
-                  className="text-blue-500 font-bold mt-2 hover:underline"
+                  className="btn btn-primary h-12"
                 >
-                  Create the first Season
+                  <FiPlus /> New Season
                 </button>
-              </div>
-            ) : (
-              filteredSeasons.map((season, i) => (
-                <div
-                  key={season.id}
-                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
-                    (i % 4) + 1
-                  } relative overflow-hidden`}
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-1.5">
-                      {(user?.role === UserRoles.SUPER_ADMIN ||
-                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setIsEditing(true);
-                              setCurrentSeason(season);
-                              setShowSeasonModal(true);
-                            }}
-                            className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                          >
-                            <FiEdit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => confirmDelete(season.id, "season")}
-                            className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+              )}
+            </div>
+          </div>
 
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20 text-xs font-black uppercase tracking-widest">
-                        {season.year}
-                      </div>
-                      <div className="text-xs font-bold text-slate-500 capitalize">
-                        {season.type.replace("_", " ")}
-                      </div>
-                    </div>
-
-                    <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
-                      {season.name}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="xl:col-span-2 space-y-8">
+              {filterSeasonId && (
+                <div className="card p-8 bg-slate-900/40 border-white/5 overflow-hidden">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                      Season Standings
                     </h3>
-
-                    <div className="pt-6 border-t border-slate-700/50 flex items-center justify-between mt-auto">
-                      <button
-                        onClick={() => setActiveSeason(season)}
-                        className="flex items-center gap-1.5 text-sm font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors"
-                      >
-                        Dashboard <FiChevronRight />
-                      </button>
-                    </div>
                   </div>
-                  <div className="h-1 w-full bg-blue-600/10 group-hover:bg-blue-600/40 transition-colors" />
+                  <SeasonStandings seasonId={filterSeasonId} />
                 </div>
-              ))
-            )}
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredSeasons.length === 0 ? (
+                  <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
+                    <p className="text-slate-500 font-medium">
+                      No seasons found for this tournament.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setCurrentSeason({
+                          name: "",
+                          year: new Date().getFullYear(),
+                          type: "league",
+                          competition_id: selectedTournament.id,
+                        });
+                        setShowSeasonModal(true);
+                      }}
+                      className="text-blue-500 font-bold mt-2 hover:underline"
+                    >
+                      Create the first Season
+                    </button>
+                  </div>
+                ) : (
+                  filteredSeasons.map((season, i) => (
+                    <div
+                      key={season.id}
+                      className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${
+                        (i % 4) + 1
+                      } relative overflow-hidden`}
+                    >
+                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1.5">
+                          {(user?.role === UserRoles.SUPER_ADMIN ||
+                            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setIsEditing(true);
+                                  setCurrentSeason(season);
+                                  setShowSeasonModal(true);
+                                }}
+                                className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                              >
+                                <FiEdit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  confirmDelete(season.id, "season")
+                                }
+                                className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-8">
+                        <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
+                          {season.name}
+                        </h3>
+                      </div>
+                      <div className="h-1 w-full bg-blue-600/10 group-hover:bg-blue-600/40 transition-colors" />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="card p-6 border-blue-500/10 bg-blue-600/5">
+                <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-3">
+                  Summary
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400 font-medium">
+                      Total Seasons
+                    </span>
+                    <span className="text-lg font-black text-white">
+                      {filteredSeasons.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400 font-medium">
+                      Active Teams
+                    </span>
+                    <span className="text-lg font-black text-white">
+                      {
+                        teams.filter((t) =>
+                          filteredSeasons.some((s) => s.id === t.tournament_id),
+                        ).length
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}

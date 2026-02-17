@@ -27,9 +27,6 @@ const PlayersPage = lazy(() =>
 const MatchesPage = lazy(() =>
   import("./pages/MatchesPage").then((m) => ({ default: m.MatchesPage })),
 );
-const StandingsPage = lazy(() =>
-  import("./pages/StandingsPage").then((m) => ({ default: m.StandingsPage })),
-);
 const TeamDetailPage = lazy(() =>
   import("./pages/TeamDetailPage").then((m) => ({ default: m.TeamDetailPage })),
 );
@@ -158,21 +155,6 @@ function App() {
                       ]}
                     >
                       <MatchDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="standings"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                        UserRoles.COACH,
-                        UserRoles.REFEREE,
-                      ]}
-                    >
-                      <StandingsPage />
                     </ProtectedRoute>
                   }
                 />
