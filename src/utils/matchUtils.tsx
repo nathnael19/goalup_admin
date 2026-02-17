@@ -35,7 +35,7 @@ export const getStatusBadge = (m: Match, tick?: number) => {
           FT
         </span>
       );
-    case "live":
+    case "live": {
       const timeDisplay = calculateMatchTimeDisplay(m, tick);
       return (
         <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
@@ -43,6 +43,7 @@ export const getStatusBadge = (m: Match, tick?: number) => {
           {timeDisplay || "Live"}
         </span>
       );
+    }
     default:
       return (
         <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-black uppercase tracking-widest border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">

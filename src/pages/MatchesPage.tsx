@@ -31,8 +31,7 @@ export const MatchesPage: React.FC = () => {
   // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
     useState<Competition | null>(null);
-  const [selectedTournament, setSelectedTournament] =
-    useState<Tournament | null>(null);
+  const [filterSeasonId, setFilterSeasonId] = useState<string>("");
   const [selectedRound, setSelectedRound] = useState<number | "all">("all");
 
   const [showModal, setShowModal] = useState(false);
@@ -80,6 +79,24 @@ export const MatchesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedCompetition) {
+      const compSeasons = tournaments.filter(
+        (t) => t.competition_id === selectedCompetition.id,
+      );
+      if (compSeasons.length > 0) {
+        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+        setFilterSeasonId(latest.id);
+      } else {
+        setFilterSeasonId("");
+      }
+    } else {
+      setFilterSeasonId("");
+    }
+    setSelectedRound("all");
+    setFilter("all");
+  }, [selectedCompetition, tournaments]);
 
   const [mode, setMode] = useState<"create" | "update">("create");
 
@@ -164,7 +181,7 @@ export const MatchesPage: React.FC = () => {
             FT
           </span>
         );
-      case "live":
+      case "live": {
         const timeDisplay = calculateMatchTime(match, _tick);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
@@ -172,6 +189,7 @@ export const MatchesPage: React.FC = () => {
             {timeDisplay || "Live"}
           </span>
         );
+      }
       default:
         return (
           <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
@@ -223,10 +241,6 @@ export const MatchesPage: React.FC = () => {
       .filter((t) => t.competition_id === compId)
       .map((t) => t.id);
     return matches.filter((m) => tourIds.includes(m.tournament_id)).length;
-  };
-
-  const getTourMatchCount = (tourId: string) => {
-    return matches.filter((m) => m.tournament_id === tourId).length;
   };
 
   // ============ VIEW 1: COMPETITION CARDS ============
@@ -331,114 +345,14 @@ export const MatchesPage: React.FC = () => {
   }
 
   // ============ VIEW 2: SEASON CARDS ============
-  if (!selectedTournament) {
-    const compSeasons = tournaments.filter(
-      (t) => t.competition_id === selectedCompetition.id,
-    );
-    const filteredSeasons = compSeasons.filter((s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+  // ============ VIEW 2: COMPETITION DASHBOARD (MATCHES) ============
+  const compSeasons = tournaments.filter(
+    (t) => t.competition_id === selectedCompetition.id,
+  );
+  const currentSeason = tournaments.find((s) => s.id === filterSeasonId);
 
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <button
-          onClick={() => {
-            setSelectedCompetition(null);
-            setSearchTerm("");
-          }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          ← Back to Competitions
-        </button>
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
-              {selectedCompetition.image_url ? (
-                <img
-                  src={getFullImageUrl(selectedCompetition.image_url)}
-                  alt={selectedCompetition.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <FiAward size={32} />
-              )}
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-white font-display tracking-tight">
-                {selectedCompetition.name}
-              </h1>
-              <p className="text-slate-400 font-medium font-body mt-1">
-                Select a season to view its match schedule.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative group max-w-lg">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Filter seasons..."
-            className="input pl-12 h-12 bg-slate-800/40"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSeasons.length === 0 ? (
-            <div className="col-span-full py-20 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
-              <FiCalendar className="mx-auto text-slate-600 mb-4" size={48} />
-              <p className="text-slate-500 font-medium">
-                No seasons found for this competition.
-              </p>
-            </div>
-          ) : (
-            filteredSeasons.map((season, i) => {
-              const matchCount = getTourMatchCount(season.id);
-              return (
-                <div
-                  key={season.id}
-                  onClick={() => {
-                    setSelectedTournament(season);
-                    setSearchTerm("");
-                    setFilter("all");
-                    setSelectedRound("all");
-                  }}
-                  className={`card card-hover group animate-in fade-in slide-in-from-bottom-4 duration-700 animate-stagger-${(i % 4) + 1} relative overflow-hidden cursor-pointer`}
-                >
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-600/20 text-xs font-black uppercase tracking-widest">
-                        {season.year}
-                      </div>
-                      <div className="text-xs font-bold text-slate-500 capitalize">
-                        {season.type.replace("_", " ")}
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-black text-white mb-2 font-display tracking-tight">
-                      {season.name}
-                    </h3>
-                    <div className="mt-4">
-                      <span className="bg-blue-600/10 text-blue-400 px-2 py-1 rounded-md border border-blue-600/20 text-xs font-bold uppercase tracking-widest">
-                        {matchCount} Matches
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1 w-full bg-blue-600/10 group-hover:bg-blue-600/40 transition-colors" />
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ============ VIEW 3: MATCH LIST ============
   const filteredMatches = matches.filter((m) => {
-    const isThisSeason = m.tournament_id === selectedTournament.id;
+    const isThisSeason = m.tournament_id === filterSeasonId;
     const statusMatch = filter === "all" ? true : m.status === filter;
     const roundMatch =
       selectedRound === "all" ? true : m.match_day === selectedRound;
@@ -449,7 +363,7 @@ export const MatchesPage: React.FC = () => {
   const availableRounds = Array.from(
     new Set(
       matches
-        .filter((m) => m.tournament_id === selectedTournament.id)
+        .filter((m) => m.tournament_id === filterSeasonId)
         .map((m) => m.match_day)
         .filter((r) => r !== undefined && r !== null),
     ),
@@ -467,62 +381,97 @@ export const MatchesPage: React.FC = () => {
 
       <button
         onClick={() => {
-          setSelectedTournament(null);
+          setSelectedCompetition(null);
+          setFilterSeasonId("");
           setSearchTerm("");
         }}
         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
       >
-        ← Back to {selectedCompetition.name}
+        ← Back to Competitions
       </button>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700">
-            <FiClock size={32} />
+          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
+            {selectedCompetition.image_url ? (
+              <img
+                src={getFullImageUrl(selectedCompetition.image_url)}
+                alt={selectedCompetition.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <FiAward size={32} />
+            )}
           </div>
           <div>
             <h1 className="text-4xl font-black text-white font-display tracking-tight">
-              {selectedTournament.name}
+              {selectedCompetition.name}
             </h1>
             <p className="text-slate-400 font-medium font-body mt-1">
-              {selectedCompetition.name} • {selectedTournament.year}
+              Manage fixtures and results for this competition.
             </p>
           </div>
         </div>
-        {(user?.role === UserRoles.SUPER_ADMIN ||
-          user?.role === UserRoles.TOURNAMENT_ADMIN) && (
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => {
-                setMode("create");
-                setCurrentMatch({
-                  status: "scheduled" as MatchStatus,
-                  tournament_id: selectedTournament.id,
-                  total_time: 90,
-                });
-                setShowModal(true);
-              }}
-              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-            >
-              <FiPlus className="mr-2" /> Schedule Match
-            </button>
-            <button
-              onClick={() => {
-                setShowAutoScheduleModal(true);
-                setScheduleConfig({
-                  tournament_id: selectedTournament.id,
-                  start_date: "",
-                  matches_per_day: 1,
-                  interval_days: 1,
-                  total_time: 90,
-                });
-              }}
-              className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
-            >
-              <FiCalendar className="mr-2" /> Auto Fixtures
-            </button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {compSeasons.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                Matches for:
+              </span>
+              <select
+                className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
+                value={filterSeasonId}
+                onChange={(e) => {
+                  setFilterSeasonId(e.target.value);
+                  setSelectedRound("all");
+                }}
+              >
+                {compSeasons
+                  .sort((a, b) => b.year - a.year)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.year})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+          {(user?.role === UserRoles.SUPER_ADMIN ||
+            user?.role === UserRoles.TOURNAMENT_ADMIN) &&
+            filterSeasonId && (
+              <>
+                <button
+                  onClick={() => {
+                    setMode("create");
+                    setCurrentMatch({
+                      status: "scheduled" as MatchStatus,
+                      tournament_id: filterSeasonId,
+                      total_time: 90,
+                    });
+                    setShowModal(true);
+                  }}
+                  className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                >
+                  <FiPlus className="mr-2" /> Schedule Match
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAutoScheduleModal(true);
+                    setScheduleConfig({
+                      tournament_id: filterSeasonId,
+                      start_date: "",
+                      matches_per_day: 1,
+                      interval_days: 1,
+                      total_time: 90,
+                    });
+                  }}
+                  className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
+                >
+                  <FiCalendar className="mr-2" /> Auto Fixtures
+                </button>
+              </>
+            )}
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -701,222 +650,226 @@ export const MatchesPage: React.FC = () => {
           })}
 
         {filteredMatches.length === 0 && (
-          <div className="card p-12 text-center">
-            <FiClock className="mx-auto text-slate-600 mb-4" size={48} />
-            <p className="text-slate-500 font-medium">
-              No {filter !== "all" ? filter : ""} matches found this season.
-            </p>
+          <div className="card p-12 text-center text-slate-500 font-medium">
+            No matches found for this selection.
           </div>
         )}
       </div>
 
-      {/* Auto Schedule Modal */}
-      {showAutoScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
-            onClick={() => setShowAutoScheduleModal(false)}
-          />
-          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
-            <div className="p-8">
-              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight text-center font-display">
-                Auto Schedule
-              </h2>
-              <form onSubmit={handleAutoSchedule} className="space-y-6">
+      {renderAutoScheduleModal()}
+      {renderMatchModal()}
+    </div>
+  );
+
+  function renderAutoScheduleModal() {
+    if (!showAutoScheduleModal) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+          onClick={() => setShowAutoScheduleModal(false)}
+        />
+        <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
+          <div className="p-8">
+            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight text-center font-display">
+              Auto Schedule
+            </h2>
+            <form onSubmit={handleAutoSchedule} className="space-y-6">
+              <div>
+                <label className="label">Start Date</label>
+                <input
+                  required
+                  type="date"
+                  className="input h-12"
+                  value={scheduleConfig.start_date}
+                  onChange={(e) =>
+                    setScheduleConfig({
+                      ...scheduleConfig,
+                      start_date: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Start Date</label>
-                  <input
-                    required
-                    type="date"
-                    className="input h-12"
-                    value={scheduleConfig.start_date}
-                    onChange={(e) =>
-                      setScheduleConfig({
-                        ...scheduleConfig,
-                        start_date: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Matches / Day</label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      className="input h-12"
-                      value={scheduleConfig.matches_per_day}
-                      onChange={(e) =>
-                        setScheduleConfig({
-                          ...scheduleConfig,
-                          matches_per_day: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Interval (Days)</label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      className="input h-12"
-                      value={scheduleConfig.interval_days}
-                      onChange={(e) =>
-                        setScheduleConfig({
-                          ...scheduleConfig,
-                          interval_days: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Duration (Min)</label>
+                  <label className="label">Matches / Day</label>
                   <input
                     required
                     type="number"
                     min="1"
                     className="input h-12"
-                    value={scheduleConfig.total_time}
+                    value={scheduleConfig.matches_per_day}
                     onChange={(e) =>
                       setScheduleConfig({
                         ...scheduleConfig,
-                        total_time: parseInt(e.target.value) || 90,
+                        matches_per_day: parseInt(e.target.value),
                       })
                     }
                   />
                 </div>
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAutoScheduleModal(false)}
-                    className="btn btn-secondary flex-1 h-12"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-12">
-                    Generate
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manual Match Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
-            onClick={() => setShowModal(false)}
-          />
-          <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
-            <div className="p-8">
-              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight text-center font-display">
-                Schedule Match
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Home Team</label>
-                    <select
-                      required
-                      className="input h-12 appearance-none"
-                      value={currentMatch.team_a_id || ""}
-                      onChange={(e) =>
-                        setCurrentMatch({
-                          ...currentMatch,
-                          team_a_id: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="" disabled>
-                        Select
-                      </option>
-                      {teams
-                        .filter(
-                          (t) =>
-                            t.tournament_id === selectedTournament.id &&
-                            t.id !== currentMatch.team_b_id,
-                        )
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Away Team</label>
-                    <select
-                      required
-                      className="input h-12 appearance-none"
-                      value={currentMatch.team_b_id || ""}
-                      onChange={(e) =>
-                        setCurrentMatch({
-                          ...currentMatch,
-                          team_b_id: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="" disabled>
-                        Select
-                      </option>
-                      {teams
-                        .filter(
-                          (t) =>
-                            t.tournament_id === selectedTournament.id &&
-                            t.id !== currentMatch.team_a_id,
-                        )
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
                 <div>
-                  <label className="label">Kick-off</label>
+                  <label className="label">Interval (Days)</label>
                   <input
                     required
-                    type="datetime-local"
+                    type="number"
+                    min="1"
                     className="input h-12"
-                    value={
-                      currentMatch.start_time
-                        ? new Date(currentMatch.start_time)
-                            .toISOString()
-                            .slice(0, 16)
-                        : ""
+                    value={scheduleConfig.interval_days}
+                    onChange={(e) =>
+                      setScheduleConfig({
+                        ...scheduleConfig,
+                        interval_days: parseInt(e.target.value),
+                      })
                     }
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="label">Duration (Min)</label>
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  className="input h-12"
+                  value={scheduleConfig.total_time}
+                  onChange={(e) =>
+                    setScheduleConfig({
+                      ...scheduleConfig,
+                      total_time: parseInt(e.target.value) || 90,
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAutoScheduleModal(false)}
+                  className="btn btn-secondary flex-1 h-12"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary flex-1 h-12">
+                  Generate
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderMatchModal() {
+    if (!showModal) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+          onClick={() => setShowModal(false)}
+        />
+        <div className="relative glass-panel bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
+          <div className="p-8">
+            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight text-center font-display">
+              Schedule Match
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Home Team</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none"
+                    value={currentMatch.team_a_id || ""}
                     onChange={(e) =>
                       setCurrentMatch({
                         ...currentMatch,
-                        start_time: new Date(e.target.value).toISOString(),
+                        team_a_id: e.target.value,
                       })
                     }
-                  />
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="btn btn-secondary flex-1 h-12"
                   >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-12">
-                    Schedule
-                  </button>
+                    <option value="" disabled>
+                      Select
+                    </option>
+                    {teams
+                      .filter(
+                        (t) =>
+                          t.tournament_id === filterSeasonId &&
+                          t.id !== currentMatch.team_b_id,
+                      )
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
-              </form>
-            </div>
+                <div>
+                  <label className="label">Away Team</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none"
+                    value={currentMatch.team_b_id || ""}
+                    onChange={(e) =>
+                      setCurrentMatch({
+                        ...currentMatch,
+                        team_b_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="" disabled>
+                      Select
+                    </option>
+                    {teams
+                      .filter(
+                        (t) =>
+                          t.tournament_id === filterSeasonId &&
+                          t.id !== currentMatch.team_a_id,
+                      )
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">Kick-off</label>
+                <input
+                  required
+                  type="datetime-local"
+                  className="input h-12"
+                  value={
+                    currentMatch.start_time
+                      ? new Date(currentMatch.start_time)
+                          .toISOString()
+                          .slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setCurrentMatch({
+                      ...currentMatch,
+                      start_time: new Date(e.target.value).toISOString(),
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-secondary flex-1 h-12"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary flex-1 h-12">
+                  Schedule
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
 };
