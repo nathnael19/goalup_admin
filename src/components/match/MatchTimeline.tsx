@@ -7,7 +7,14 @@ import {
   FiTrash2,
   FiArrowLeft,
 } from "react-icons/fi";
-import type { Match, Goal, CardEvent, Substitution } from "../../types";
+import type {
+  Match,
+  Goal,
+  CardEvent,
+  Substitution,
+  TeamDetail,
+} from "../../types";
+import { getFullImageUrl } from "../../utils/url";
 
 interface MatchTimelineProps {
   match: Match;
@@ -18,6 +25,8 @@ interface MatchTimelineProps {
   onDeleteGoal: (id: string) => void;
   onDeleteCard: (id: string) => void;
   onDeleteSub: (id: string) => void;
+  teamA?: TeamDetail | null;
+  teamB?: TeamDetail | null;
 }
 
 export const MatchTimeline: React.FC<MatchTimelineProps> = ({
@@ -29,7 +38,12 @@ export const MatchTimeline: React.FC<MatchTimelineProps> = ({
   onDeleteGoal,
   onDeleteCard,
   onDeleteSub,
+  teamA,
+  teamB,
 }) => {
+  const teamADisplay = teamA || match.team_a;
+  const teamBDisplay = teamB || match.team_b;
+
   const allEvents = [
     ...goals.map((g) => ({ ...g, event_type: "goal" as const })),
     ...cards.map((c) => ({ ...c, event_type: "card" as const })),
@@ -105,17 +119,17 @@ export const MatchTimeline: React.FC<MatchTimelineProps> = ({
                     <div className="flex items-center gap-3 mb-1">
                       <div className="w-5 h-5 rounded-md bg-slate-800 border border-white/5 flex items-center justify-center overflow-hidden p-0.5">
                         {event.team_id === match.team_a_id ? (
-                          match.team_a?.logo_url ? (
+                          teamADisplay?.logo_url ? (
                             <img
-                              src={match.team_a.logo_url}
+                              src={getFullImageUrl(teamADisplay.logo_url)}
                               className="w-full h-full object-contain"
                             />
                           ) : (
                             <div className="w-2 h-2 rounded-full bg-blue-500" />
                           )
-                        ) : match.team_b?.logo_url ? (
+                        ) : teamBDisplay?.logo_url ? (
                           <img
-                            src={match.team_b.logo_url}
+                            src={getFullImageUrl(teamBDisplay.logo_url)}
                             className="w-full h-full object-contain"
                           />
                         ) : (
@@ -167,8 +181,8 @@ export const MatchTimeline: React.FC<MatchTimelineProps> = ({
 
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
                       {event.team_id === match.team_a_id
-                        ? match.team_a?.name
-                        : match.team_b?.name}
+                        ? teamADisplay?.name
+                        : teamBDisplay?.name}
                     </p>
                   </div>
 

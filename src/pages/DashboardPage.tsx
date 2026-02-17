@@ -26,6 +26,7 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { useAuth } from "../context/AuthContext";
 import { UserRoles } from "../types";
 import type { Match, News, Team, Player } from "../types";
+import { getFullImageUrl } from "../utils/url";
 
 // Sub-components
 import { StatCard } from "../components/dashboard/StatCard";
@@ -385,8 +386,16 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-black">
-                          {stats.myTeam?.name.charAt(0)}
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-black overflow-hidden">
+                          {stats.myTeam?.logo_url ? (
+                            <img
+                              src={getFullImageUrl(stats.myTeam.logo_url)}
+                              alt={stats.myTeam.name}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            stats.myTeam?.name.charAt(0)
+                          )}
                         </div>
                         <span className="text-xs font-black text-white">
                           {stats.myTeam?.name}
@@ -396,8 +405,16 @@ export const DashboardPage: React.FC = () => {
                         VS
                       </div>
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-black">
-                          {opponent?.name.charAt(0)}
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-xl font-black overflow-hidden">
+                          {opponent?.logo_url ? (
+                            <img
+                              src={getFullImageUrl(opponent.logo_url)}
+                              alt={opponent?.name}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            opponent?.name.charAt(0)
+                          )}
                         </div>
                         <span className="text-xs font-black text-white">
                           {opponent?.name}

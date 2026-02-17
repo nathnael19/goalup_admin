@@ -600,12 +600,26 @@ export const MatchesPage: React.FC = () => {
                         <div className="flex-1 flex items-center justify-between w-full max-w-2xl mx-auto">
                           <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
                             <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
-                              <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                              <span className="relative z-10">
-                                {teams
-                                  .find((t) => t.id === match.team_a_id)
-                                  ?.name.charAt(0)}
-                              </span>
+                              {teams.find((t) => t.id === match.team_a_id)
+                                ?.logo_url ? (
+                                <img
+                                  src={getFullImageUrl(
+                                    teams.find((t) => t.id === match.team_a_id)!
+                                      .logo_url!,
+                                  )}
+                                  alt={
+                                    teams.find((t) => t.id === match.team_a_id)
+                                      ?.name
+                                  }
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="relative z-10">
+                                  {teams
+                                    .find((t) => t.id === match.team_a_id)
+                                    ?.name.charAt(0)}
+                                </span>
+                              )}
                             </div>
                             <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
                               {
@@ -634,12 +648,26 @@ export const MatchesPage: React.FC = () => {
 
                           <div className="flex flex-col items-center gap-4 text-center w-32 md:w-44">
                             <div className="w-14 h-14 md:w-20 md:h-20 rounded-4xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 flex items-center justify-center text-2xl font-black text-white shadow-2xl relative overflow-hidden">
-                              <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors" />
-                              <span className="relative z-10">
-                                {teams
-                                  .find((t) => t.id === match.team_b_id)
-                                  ?.name.charAt(0)}
-                              </span>
+                              {teams.find((t) => t.id === match.team_b_id)
+                                ?.logo_url ? (
+                                <img
+                                  src={getFullImageUrl(
+                                    teams.find((t) => t.id === match.team_b_id)!
+                                      .logo_url!,
+                                  )}
+                                  alt={
+                                    teams.find((t) => t.id === match.team_b_id)
+                                      ?.name
+                                  }
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="relative z-10">
+                                  {teams
+                                    .find((t) => t.id === match.team_b_id)
+                                    ?.name.charAt(0)}
+                                </span>
+                              )}
                             </div>
                             <h4 className="text-sm font-black text-white font-display tracking-tight leading-none mb-1 line-clamp-1">
                               {

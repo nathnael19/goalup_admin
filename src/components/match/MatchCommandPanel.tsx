@@ -8,9 +8,10 @@ import {
   FiRepeat,
   FiEdit2,
 } from "react-icons/fi";
-import type { Match, UserRole, CardType } from "../../types";
+import type { Match, UserRole, CardType, TeamDetail } from "../../types";
 import { UserRoles } from "../../types";
 import { calculateMatchTimeDisplay } from "../../utils/matchUtils";
+import { getFullImageUrl } from "../../utils/url";
 
 interface MatchCommandPanelProps {
   match: Match;
@@ -28,6 +29,8 @@ interface MatchCommandPanelProps {
   editedMatch: Partial<Match>;
   setEditedMatch: (m: Partial<Match>) => void;
   isEditing: boolean;
+  teamA?: TeamDetail | null;
+  teamB?: TeamDetail | null;
 }
 
 export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
@@ -46,8 +49,13 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
   editedMatch,
   setEditedMatch,
   isEditing,
+  teamA,
+  teamB,
 }) => {
   if (userRole === UserRoles.COACH) return null;
+
+  const teamADisplay = teamA || match.team_a;
+  const teamBDisplay = teamB || match.team_b;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -98,9 +106,9 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
                     className="h-20 rounded-2xl bg-slate-800 hover:bg-blue-600/20 border border-white/5 hover:border-blue-500/30 flex flex-col items-center justify-center gap-2 transition-all group/btn disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden border border-white/10 group-hover/btn:border-blue-500/50 transition-colors p-1.5">
-                      {match.team_a?.logo_url ? (
+                      {teamADisplay?.logo_url ? (
                         <img
-                          src={match.team_a.logo_url}
+                          src={getFullImageUrl(teamADisplay.logo_url)}
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -111,7 +119,7 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
                       )}
                     </div>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Goal {match.team_a?.name.split(" ")[0]}
+                      Goal {teamADisplay?.name?.split(" ")[0]}
                     </span>
                   </button>
                   <button
@@ -120,9 +128,9 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
                     className="h-20 rounded-2xl bg-slate-800 hover:bg-blue-600/20 border border-white/5 hover:border-blue-500/30 flex flex-col items-center justify-center gap-2 transition-all group/btn disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden border border-white/10 group-hover/btn:border-blue-500/50 transition-colors p-1.5">
-                      {match.team_b?.logo_url ? (
+                      {teamBDisplay?.logo_url ? (
                         <img
-                          src={match.team_b.logo_url}
+                          src={getFullImageUrl(teamBDisplay.logo_url)}
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -133,7 +141,7 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
                       )}
                     </div>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Goal {match.team_b?.name.split(" ")[0]}
+                      Goal {teamBDisplay?.name?.split(" ")[0]}
                     </span>
                   </button>
                 </div>
@@ -252,14 +260,14 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
                   disabled={isLocked}
                   className="col-span-1 md:col-span-2 h-12 rounded-xl bg-blue-600/5 border border-blue-500/20 text-blue-500 hover:bg-blue-600 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FiRepeat size={14} /> Sub {match.team_a?.name.split(" ")[0]}
+                  <FiRepeat size={14} /> Sub {teamADisplay?.name?.split(" ")[0]}
                 </button>
                 <button
                   onClick={() => onOpenSubModal(match.team_b_id)}
                   disabled={isLocked}
                   className="col-span-1 md:col-span-2 h-12 rounded-xl bg-blue-600/5 border border-blue-500/20 text-blue-500 hover:bg-blue-600 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FiRepeat size={14} /> Sub {match.team_b?.name.split(" ")[0]}
+                  <FiRepeat size={14} /> Sub {teamBDisplay?.name?.split(" ")[0]}
                 </button>
               </div>
             )}

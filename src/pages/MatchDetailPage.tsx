@@ -267,6 +267,8 @@ export const MatchDetailPage: React.FC = () => {
         editedMatch={editedMatch}
         updateScore={handleUpdateScore}
         otherLegMatch={otherLegMatch}
+        teamA={teamADetail}
+        teamB={teamBDetail}
       />
 
       <MatchCommandPanel
@@ -302,6 +304,8 @@ export const MatchDetailPage: React.FC = () => {
         editedMatch={editedMatch}
         setEditedMatch={setEditedMatch}
         isEditing={isEditing}
+        teamA={teamADetail}
+        teamB={teamBDetail}
       />
 
       <div className="grid grid-cols-1 gap-6">
@@ -314,6 +318,8 @@ export const MatchDetailPage: React.FC = () => {
           onDeleteGoal={mutations.deleteGoal}
           onDeleteCard={mutations.deleteCard}
           onDeleteSub={mutations.deleteSub}
+          teamA={teamADetail}
+          teamB={teamBDetail}
         />
       </div>
 

@@ -8,6 +8,9 @@ import {
   FiActivity,
   FiClock,
   FiMapPin,
+  FiTarget,
+  FiTrendingUp,
+  FiShield,
 } from "react-icons/fi";
 import {
   useTeamDetail,
@@ -32,7 +35,7 @@ export const TeamDetailPage: React.FC = () => {
   const { data: teams = [], isLoading: loadingTeams } = useTeams();
 
   const [activeTab, setActiveTab] = useState<
-    "roster" | "matches" | "standings"
+    "roster" | "matches" | "standings" | "statistics"
   >("roster");
 
   const loading =
@@ -135,21 +138,22 @@ export const TeamDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs / Navigation */}
       <div className="flex items-center gap-2 p-1 bg-slate-800/20 rounded-2xl border border-slate-800/50 w-fit">
-        {(["roster", "matches", "standings"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-              activeTab === tab
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {(["roster", "matches", "standings", "statistics"] as const).map(
+          (tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                activeTab === tab
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {tab}
+            </button>
+          ),
+        )}
       </div>
 
       {/* Content Area */}
@@ -435,6 +439,218 @@ export const TeamDetailPage: React.FC = () => {
                 </h3>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "statistics" && (
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Aggregate Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                {
+                  label: "Total Goals",
+                  value: team.standings.reduce(
+                    (acc, s) => acc + s.goals_for,
+                    0,
+                  ),
+                  icon: <FiTarget className="text-blue-500" />,
+                  color: "blue",
+                },
+                {
+                  label: "Total Wins",
+                  value: team.standings.reduce((acc, s) => acc + s.won, 0),
+                  icon: <FiAward className="text-yellow-500" />,
+                  color: "yellow",
+                },
+                {
+                  label: "Win Rate",
+                  value: `${
+                    team.standings.reduce((acc, s) => acc + s.played, 0) > 0
+                      ? (
+                          (team.standings.reduce((acc, s) => acc + s.won, 0) /
+                            team.standings.reduce(
+                              (acc, s) => acc + s.played,
+                              0,
+                            )) *
+                          100
+                        ).toFixed(0)
+                      : 0
+                  }%`,
+                  icon: <FiTrendingUp className="text-green-500" />,
+                  color: "green",
+                },
+                {
+                  label: "Clean Sheets",
+                  value: team.matches.filter(
+                    (m) =>
+                      (m.team_a_id === team.id && m.score_b === 0) ||
+                      (m.team_b_id === team.id && m.score_a === 0),
+                  ).length,
+                  icon: <FiShield className="text-purple-500" />,
+                  color: "purple",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="card p-6 border-slate-800/50 bg-linear-to-br from-slate-900/50 to-slate-950/50 group hover:border-slate-700 transition-all"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className={`w-10 h-10 rounded-xl bg-${stat.color}-500/10 border border-${stat.color}-500/20 flex items-center justify-center`}
+                    >
+                      {stat.icon}
+                    </div>
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                      Overall
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                    {stat.label}
+                  </p>
+                  <p className="text-3xl font-black text-white font-display">
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Top Scorers Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                    <FiAward />
+                  </div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                    Elite Marksmen
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {Object.values(team.roster)
+                    .flat()
+                    .filter((p) => p.goals > 0)
+                    .sort((a, b) => b.goals - a.goals)
+                    .slice(0, 5)
+                    .map((player, i) => (
+                      <div
+                        key={player.id}
+                        className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 hover:border-slate-700 transition-all group/marksman"
+                      >
+                        <div className="text-xs font-black text-slate-700 tabular-nums w-4">
+                          {i + 1}
+                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+                          {player.image_url ? (
+                            <img
+                              src={getFullImageUrl(player.image_url)}
+                              alt={player.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-blue-500 font-black">
+                              {player.name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-black text-white uppercase tracking-tight">
+                            {player.name}
+                          </p>
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            {player.position} • #{player.jersey_number}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-blue-500 font-display">
+                            {player.goals}
+                          </p>
+                          <p className="text-[8px] font-black text-slate-700 uppercase tracking-widest">
+                            Goals
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  {Object.values(team.roster)
+                    .flat()
+                    .filter((p) => p.goals > 0).length === 0 && (
+                    <div className="py-10 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                      <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                        No recorded scores
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Disciplinary Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                    <FiActivity />
+                  </div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                    Disciplinary Registry
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Yellow Cards List */}
+                  <div className="space-y-3">
+                    <p className="text-[9px] font-black text-yellow-500 uppercase tracking-widest ml-1">
+                      Yellow Cards
+                    </p>
+                    {Object.values(team.roster)
+                      .flat()
+                      .filter((p) => p.yellow_cards > 0)
+                      .sort((a, b) => b.yellow_cards - a.yellow_cards)
+                      .slice(0, 3)
+                      .map((player) => (
+                        <div
+                          key={player.id}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-800/50"
+                        >
+                          <div className="w-2 h-3 rounded-sm bg-yellow-500 shadow-lg shadow-yellow-500/20" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black text-white uppercase tracking-tight truncate">
+                              {player.name}
+                            </p>
+                          </div>
+                          <span className="text-xs font-black text-slate-400 tabular-nums">
+                            {player.yellow_cards}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Red Cards List */}
+                  <div className="space-y-3">
+                    <p className="text-[9px] font-black text-red-500 uppercase tracking-widest ml-1">
+                      Red Cards
+                    </p>
+                    {Object.values(team.roster)
+                      .flat()
+                      .filter((p) => p.red_cards > 0)
+                      .sort((a, b) => b.red_cards - a.red_cards)
+                      .slice(0, 3)
+                      .map((player) => (
+                        <div
+                          key={player.id}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-800/50"
+                        >
+                          <div className="w-2 h-3 rounded-sm bg-red-500 shadow-lg shadow-red-500/20" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black text-white uppercase tracking-tight truncate">
+                              {player.name}
+                            </p>
+                          </div>
+                          <span className="text-xs font-black text-slate-400 tabular-nums">
+                            {player.red_cards}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

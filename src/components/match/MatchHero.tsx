@@ -1,7 +1,8 @@
 import React from "react";
 import { FiCalendar, FiClock, FiPlus, FiMinus } from "react-icons/fi";
-import type { Match } from "../../types";
+import type { Match, Team } from "../../types";
 import { getStatusBadge } from "../../utils/matchUtils";
+import { getFullImageUrl } from "../../utils/url";
 
 interface MatchHeroProps {
   match: Match;
@@ -10,6 +11,8 @@ interface MatchHeroProps {
   editedMatch: Partial<Match>;
   updateScore: (team: "a" | "b", delta: number) => void;
   otherLegMatch?: Match | null;
+  teamA?: Team | null;
+  teamB?: Team | null;
 }
 
 export const MatchHero: React.FC<MatchHeroProps> = ({
@@ -19,7 +22,11 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
   editedMatch,
   updateScore,
   otherLegMatch,
+  teamA,
+  teamB,
 }) => {
+  const teamADisplay = teamA || match.team_a;
+  const teamBDisplay = teamB || match.team_b;
   return (
     <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900/40 border border-white/5 shadow-2xl backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-700">
       {/* Animated Background Elements */}
@@ -68,10 +75,10 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
                   minute: "2-digit",
                 })}
               </span>
-              {match.team_a?.stadium && (
+              {teamADisplay?.stadium && (
                 <>
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
-                  <span className="text-slate-400">{match.team_a.stadium}</span>
+                  <span className="text-slate-400">{teamADisplay.stadium}</span>
                 </>
               )}
             </div>
@@ -89,25 +96,25 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
               <div
                 className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-slate-800/50 backdrop-blur-md p-1 border-4 border-white/5 shadow-2xl relative transition-transform duration-700 group-hover:scale-105"
                 style={{
-                  boxShadow: `0 0 50px ${match.team_a?.color || "#3b82f6"}1a`,
+                  boxShadow: `0 0 50px ${teamADisplay?.color || "#3b82f6"}1a`,
                 }}
               >
                 <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center text-3xl font-black text-white p-4">
-                  {match.team_a?.logo_url ? (
+                  {teamADisplay?.logo_url ? (
                     <img
-                      src={match.team_a.logo_url}
-                      alt={match.team_a.name}
+                      src={getFullImageUrl(teamADisplay.logo_url)}
+                      alt={teamADisplay.name}
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <span>{match.team_a?.name.charAt(0)}</span>
+                    <span>{teamADisplay?.name?.charAt(0) || "A"}</span>
                   )}
                 </div>
               </div>
               <div
                 className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-xl z-20"
                 style={{
-                  backgroundColor: `${match.team_a?.color || "#3b82f6"}`,
+                  backgroundColor: `${teamADisplay?.color || "#3b82f6"}`,
                   borderColor: "rgba(255,255,255,0.2)",
                   color: "#fff",
                 }}
@@ -117,7 +124,7 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
             </div>
             <div className="text-center">
               <h1 className="text-xl md:text-2xl font-black text-white font-display mb-2 drop-shadow-xl">
-                {match.team_a?.name}
+                {teamADisplay?.name || "Home Team"}
               </h1>
               <div className="flex justify-center gap-1">
                 {[...Array(5)].map((_, i) => (
@@ -239,25 +246,25 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
               <div
                 className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-slate-800/50 backdrop-blur-md p-1 border-4 border-white/5 shadow-2xl relative transition-transform duration-700 group-hover:scale-105"
                 style={{
-                  boxShadow: `0 0 50px ${match.team_b?.color || "#ef4444"}1a`,
+                  boxShadow: `0 0 50px ${teamBDisplay?.color || "#ef4444"}1a`,
                 }}
               >
                 <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center text-3xl font-black text-white p-4">
-                  {match.team_b?.logo_url ? (
+                  {teamBDisplay?.logo_url ? (
                     <img
-                      src={match.team_b.logo_url}
-                      alt={match.team_b.name}
+                      src={getFullImageUrl(teamBDisplay.logo_url)}
+                      alt={teamBDisplay.name}
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <span>{match.team_b?.name.charAt(0)}</span>
+                    <span>{teamBDisplay?.name?.charAt(0) || "B"}</span>
                   )}
                 </div>
               </div>
               <div
                 className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-xl z-20"
                 style={{
-                  backgroundColor: `${match.team_b?.color || "#ef4444"}`,
+                  backgroundColor: `${teamBDisplay?.color || "#ef4444"}`,
                   borderColor: "rgba(255,255,255,0.2)",
                   color: "#fff",
                 }}
@@ -267,7 +274,7 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
             </div>
             <div className="text-center">
               <h1 className="text-xl md:text-2xl font-black text-white font-display mb-2 drop-shadow-xl">
-                {match.team_b?.name}
+                {teamBDisplay?.name || "Away Team"}
               </h1>
               <div className="flex justify-center gap-1">
                 {[...Array(5)].map((_, i) => (

@@ -313,150 +313,156 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
               setFormation: setFormationB,
               key: "B" as const,
             },
-          ].map((cfg, i) => (
-            <div key={i} className="space-y-6">
-              {(userRole === UserRoles.SUPER_ADMIN ||
-                userRole === UserRoles.TOURNAMENT_ADMIN ||
-                userRole === UserRoles.REFEREE ||
-                (userRole === UserRoles.COACH &&
-                  userTeamId?.toString() === cfg.team?.id?.toString())) && (
-                <>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 overflow-hidden p-1 flex items-center justify-center">
-                        {cfg.team?.logo_url ? (
-                          <img
-                            src={getFullImageUrl(cfg.team.logo_url)}
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div
-                            className={`w-2 h-2 rounded-full ${cfg.color === "blue" ? "bg-blue-600" : "bg-red-600"}`}
-                          />
-                        )}
-                      </div>
-                      <h4 className="text-lg font-black text-white uppercase tracking-tight">
-                        {cfg.team?.name} XI
-                      </h4>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <select
-                        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider outline-hidden cursor-pointer hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        value={cfg.formation}
-                        disabled={isLocked}
-                        onChange={(e) => cfg.setFormation(e.target.value)}
-                      >
-                        {[
-                          "4-3-3",
-                          "4-4-2",
-                          "4-2-3-1",
-                          "4-3-2-1",
-                          "3-5-2",
-                          "5-3-2",
-                          "4-5-1",
-                        ].map((f) => (
-                          <option key={f} value={f}>
-                            {f}
-                          </option>
-                        ))}
-                      </select>
-                      <span
-                        className={`text-[10px] font-extra-black uppercase tracking-widest px-3 py-1 rounded-lg ${Object.values(cfg.selected).length >= 11 ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-600/10 text-amber-500 border border-amber-500/20"}`}
-                      >
-                        {Object.values(cfg.selected).length}/11 Selected
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-8 border-t border-white/5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiUsers className="text-slate-500" size={14} />
-                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                          Substitutes (Bench)
-                        </h5>
-                      </div>
-                      <span className="text-[9px] font-bold text-slate-500">
-                        {cfg.bench.length} Selected
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-3xl bg-white/2 border border-white/5 space-y-3">
-                        <select
-                          className="w-full bg-transparent text-xs font-bold text-white outline-hidden cursor-pointer hover:text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={isLocked}
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              cfg.setBench([...cfg.bench, e.target.value]);
-                              e.target.value = "";
-                            }
-                          }}
-                        >
-                          <option value="" className="bg-slate-900">
-                            Add Bench Player...
-                          </option>
-                          {[
-                            ...(cfg.detail?.roster.goalkeepers || []),
-                            ...(cfg.detail?.roster.defenders || []),
-                            ...(cfg.detail?.roster.midfielders || []),
-                            ...(cfg.detail?.roster.forwards || []),
-                          ]
-                            .filter(
-                              (p) =>
-                                !Object.values(cfg.selected).includes(p.id) &&
-                                !cfg.bench.includes(p.id),
-                            )
-                            .map((p) => (
-                              <option
-                                key={p.id}
-                                value={p.id}
-                                className="bg-slate-900"
-                              >
-                                #{p.jersey_number} {p.name}
+          ]
+            .filter((cfg) => cfg.key === viewTeam)
+            .map((cfg, i) => {
+              const teamInfo = cfg.detail || cfg.team;
+              return (
+                <div key={i} className="space-y-6">
+                  {(userRole === UserRoles.SUPER_ADMIN ||
+                    userRole === UserRoles.TOURNAMENT_ADMIN ||
+                    userRole === UserRoles.REFEREE ||
+                    (userRole === UserRoles.COACH &&
+                      userTeamId?.toString() === cfg.team?.id?.toString())) && (
+                    <>
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 overflow-hidden p-1 flex items-center justify-center">
+                            {teamInfo?.logo_url ? (
+                              <img
+                                src={getFullImageUrl(teamInfo.logo_url)}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <div
+                                className={`w-2 h-2 rounded-full ${cfg.color === "blue" ? "bg-blue-600" : "bg-red-600"}`}
+                              />
+                            )}
+                          </div>
+                          <h4 className="text-lg font-black text-white uppercase tracking-tight">
+                            {teamInfo?.name} XI
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <select
+                            className="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider outline-hidden cursor-pointer hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            value={cfg.formation}
+                            disabled={isLocked}
+                            onChange={(e) => cfg.setFormation(e.target.value)}
+                          >
+                            {[
+                              "4-3-3",
+                              "4-4-2",
+                              "4-2-3-1",
+                              "4-3-2-1",
+                              "3-5-2",
+                              "5-3-2",
+                              "4-5-1",
+                            ].map((f) => (
+                              <option key={f} value={f}>
+                                {f}
                               </option>
                             ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {cfg.bench.map((pid) => {
-                        const p = [
-                          ...(cfg.detail?.roster.goalkeepers || []),
-                          ...(cfg.detail?.roster.defenders || []),
-                          ...(cfg.detail?.roster.midfielders || []),
-                          ...(cfg.detail?.roster.forwards || []),
-                        ].find((pl) => pl.id === pid);
-                        return (
-                          <div
-                            key={pid}
-                            className="flex items-center gap-2 pl-3 pr-2 py-1.5 bg-emerald-600/10 border border-emerald-500/20 rounded-xl hover:border-emerald-500/50 transition-all cursor-default shadow-lg group"
+                          </select>
+                          <span
+                            className={`text-[10px] font-extra-black uppercase tracking-widest px-3 py-1 rounded-lg ${Object.values(cfg.selected).length >= 11 ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-600/10 text-amber-500 border border-amber-500/20"}`}
                           >
-                            <span className="text-xs font-black text-emerald-500 uppercase tracking-tight">
-                              {p?.name.split(" ").pop()}
-                            </span>
-                            <button
-                              onClick={() =>
-                                !isLocked &&
-                                cfg.setBench(
-                                  cfg.bench.filter((id) => id !== pid),
-                                )
-                              }
-                              disabled={isLocked}
-                              className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50"
-                            >
-                              <FiX size={12} />
-                            </button>
+                            {Object.values(cfg.selected).length}/11 Selected
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-8 border-t border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FiUsers className="text-slate-500" size={14} />
+                            <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                              Substitutes (Bench)
+                            </h5>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
+                          <span className="text-[9px] font-bold text-slate-500">
+                            {cfg.bench.length} Selected
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-3xl bg-white/2 border border-white/5 space-y-3">
+                            <select
+                              className="w-full bg-transparent text-xs font-bold text-white outline-hidden cursor-pointer hover:text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={isLocked}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  cfg.setBench([...cfg.bench, e.target.value]);
+                                  e.target.value = "";
+                                }
+                              }}
+                            >
+                              <option value="" className="bg-slate-900">
+                                Add Bench Player...
+                              </option>
+                              {[
+                                ...(cfg.detail?.roster.goalkeepers || []),
+                                ...(cfg.detail?.roster.defenders || []),
+                                ...(cfg.detail?.roster.midfielders || []),
+                                ...(cfg.detail?.roster.forwards || []),
+                              ]
+                                .filter(
+                                  (p) =>
+                                    !Object.values(cfg.selected).includes(
+                                      p.id,
+                                    ) && !cfg.bench.includes(p.id),
+                                )
+                                .map((p) => (
+                                  <option
+                                    key={p.id}
+                                    value={p.id}
+                                    className="bg-slate-900"
+                                  >
+                                    #{p.jersey_number} {p.name}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {cfg.bench.map((pid) => {
+                            const p = [
+                              ...(cfg.detail?.roster.goalkeepers || []),
+                              ...(cfg.detail?.roster.defenders || []),
+                              ...(cfg.detail?.roster.midfielders || []),
+                              ...(cfg.detail?.roster.forwards || []),
+                            ].find((pl) => pl.id === pid);
+                            return (
+                              <div
+                                key={pid}
+                                className="flex items-center gap-2 pl-3 pr-2 py-1.5 bg-emerald-600/10 border border-emerald-500/20 rounded-xl hover:border-emerald-500/50 transition-all cursor-default shadow-lg group"
+                              >
+                                <span className="text-xs font-black text-emerald-500 uppercase tracking-tight">
+                                  {p?.name.split(" ").pop()}
+                                </span>
+                                <button
+                                  onClick={() =>
+                                    !isLocked &&
+                                    cfg.setBench(
+                                      cfg.bench.filter((id) => id !== pid),
+                                    )
+                                  }
+                                  disabled={isLocked}
+                                  className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50"
+                                >
+                                  <FiX size={12} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>

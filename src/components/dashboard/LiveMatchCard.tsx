@@ -1,5 +1,6 @@
 import React from "react";
 import type { Match } from "../../types";
+import { getFullImageUrl } from "../../utils/url";
 
 interface LiveMatchCardProps {
   match: Match;
@@ -26,8 +27,16 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1 flex flex-col items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-sm font-black">
-            {match.team_a?.name.charAt(0)}
+          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-sm font-black overflow-hidden">
+            {match.team_a?.logo_url ? (
+              <img
+                src={getFullImageUrl(match.team_a.logo_url)}
+                alt={match.team_a.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              match.team_a?.name.charAt(0)
+            )}
           </div>
           <span className="text-[10px] font-black text-white text-center line-clamp-1">
             {match.team_a?.name}
@@ -39,8 +48,16 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({
           </div>
         </div>
         <div className="flex-1 flex flex-col items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-sm font-black">
-            {match.team_b?.name.charAt(0)}
+          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-sm font-black overflow-hidden">
+            {match.team_b?.logo_url ? (
+              <img
+                src={getFullImageUrl(match.team_b.logo_url)}
+                alt={match.team_b.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              match.team_b?.name.charAt(0)
+            )}
           </div>
           <span className="text-[10px] font-black text-white text-center line-clamp-1">
             {match.team_b?.name}
