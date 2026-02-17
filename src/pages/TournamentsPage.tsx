@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   FiPlus,
   FiEdit2,
   FiTrash2,
-  FiSearch,
-  FiChevronRight,
   FiAward,
+  FiSearch,
   FiZap,
   FiAlertTriangle,
 } from "react-icons/fi";
 import { tournamentService } from "../services/tournamentService";
 import { competitionService } from "../services/competitionService";
 import { matchService } from "../services/matchService";
-import { teamService } from "../services/teamService";
+import {
+  useTournaments,
+  useCompetitions,
+  useTeams,
+  queryKeys,
+} from "../hooks/useData";
 import { ImageUpload } from "../components/ImageUpload";
 import { getFullImageUrl } from "../utils/url";
 import { KnockoutBracket } from "../components/KnockoutBracket";
@@ -22,8 +27,6 @@ import {
   type Tournament,
   type CreateTournamentDto,
   type Competition,
-  type Match,
-  type Team,
   UserRoles,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
@@ -31,20 +34,26 @@ import { ConfirmationModal } from "../components/common/ConfirmationModal";
 
 export const TournamentsPage: React.FC = () => {
   const { user } = useAuth();
-  // "Tournaments" in UI = Competitions in Backend
-  // "Seasons" in UI = Tournaments in Backend
+  const queryClient = useQueryClient();
 
-  const [seasons, setSeasons] = useState<Tournament[]>([]);
-  const [tournaments, setTournaments] = useState<Competition[]>([]); // These are Competitions
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Queries
+  const { data: seasons = [], isLoading: loadingSeasons } = useTournaments();
+  const { data: tournaments = [], isLoading: loadingTournaments } =
+    useCompetitions();
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+
+  const loading = loadingSeasons || loadingTournaments || loadingTeams;
 
   // Selection State
   const [selectedTournament, setSelectedTournament] =
     useState<Competition | null>(null);
   const [activeSeason, setActiveSeason] = useState<Tournament | null>(null);
-  const [seasonMatches, setSeasonMatches] = useState<Match[]>([]);
-  const [loadingMatches, setLoadingMatches] = useState(false);
+
+  const { data: seasonMatches = [], isLoading: loadingMatches } = useQuery({
+    queryKey: ["matches", activeSeason?.id],
+    queryFn: () => matchService.getAll({ tournament_id: activeSeason!.id }),
+    enabled: !!activeSeason,
+  });
   const [filterSeasonId, setFilterSeasonId] = useState<string>("");
 
   // Modals
@@ -73,112 +82,110 @@ export const TournamentsPage: React.FC = () => {
   const [deleteType, setDeleteType] = useState<"tournament" | "season" | null>(
     null,
   );
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Mutations
+  const createTournamentMutation = useMutation({
+    mutationFn: (data: Partial<Competition>) =>
+      competitionService.create(data as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.competitions });
+      setShowTournamentModal(false);
+      setNewTournament({ name: "", description: "", image_url: "" });
+    },
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [seasonsData, tournamentsData, teamsData] = await Promise.all([
-        tournamentService.getAll(),
-        competitionService.getAll(),
-        teamService.getAll(),
-      ]);
-      setSeasons(seasonsData);
-      setTournaments(tournamentsData);
-      setTeams(teamsData);
+  const updateTournamentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Competition> }) =>
+      competitionService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.competitions });
+      setShowTournamentModal(false);
+      setEditingTournamentId(null);
+    },
+  });
 
-      // Refresh active season if it exists
-      if (activeSeason) {
-        const updated = seasonsData.find((s) => s.id === activeSeason.id);
-        if (updated) setActiveSeason(updated || null);
-      }
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deleteTournamentMutation = useMutation({
+    mutationFn: (id: string) => competitionService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.competitions });
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    },
+  });
 
-  const fetchSeasonMatches = async (seasonId: string) => {
-    try {
-      setLoadingMatches(true);
-      const data = await matchService.getAll({ tournament_id: seasonId });
-      setSeasonMatches(data);
-    } catch (err) {
-      console.error("Failed to fetch matches", err);
-    } finally {
-      setLoadingMatches(false);
-    }
-  };
+  const createSeasonMutation = useMutation({
+    mutationFn: (data: any) => tournamentService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tournaments });
+      setShowSeasonModal(false);
+      setCurrentSeason({});
+    },
+  });
 
-  useEffect(() => {
-    if (activeSeason) {
-      fetchSeasonMatches(activeSeason.id);
-    }
-  }, [activeSeason]);
+  const updateSeasonMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      tournamentService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tournaments });
+      setShowSeasonModal(false);
+      setCurrentSeason({});
+    },
+  });
+
+  const deleteSeasonMutation = useMutation({
+    mutationFn: (id: string) => tournamentService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tournaments });
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    },
+  });
 
   useEffect(() => {
     if (selectedTournament) {
-      const compSeasons = seasons.filter(
-        (s) =>
-          s.competition_id === selectedTournament.id && s.type === "league",
-      );
-      if (compSeasons.length > 0) {
-        // Find latest season by year
-        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
-        setFilterSeasonId(latest.id);
-      } else if (filterSeasonId === "") {
-        // If no league seasons found, maybe check for any season?
-        const anySeason = seasons.filter(
-          (s) => s.competition_id === selectedTournament.id,
-        )[0];
-        if (anySeason) setFilterSeasonId(anySeason.id);
+      if (filterSeasonId === null || filterSeasonId === "") {
+        const compSeasons = seasons.filter(
+          (s) =>
+            s.competition_id === selectedTournament.id && s.type === "league",
+        );
+        if (compSeasons.length > 0) {
+          const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+          setFilterSeasonId(latest.id);
+        } else {
+          const anySeason = seasons.filter(
+            (s) => s.competition_id === selectedTournament.id,
+          )[0];
+          if (anySeason) setFilterSeasonId(anySeason.id);
+        }
       }
-    } else {
+    } else if (filterSeasonId !== "") {
       setFilterSeasonId("");
     }
-  }, [selectedTournament, seasons]);
+  }, [selectedTournament, seasons, filterSeasonId]);
 
   // --- HANDLERS ---
 
   const handleCreateTournament = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (isEditing && editingTournamentId) {
-        await competitionService.update(editingTournamentId, newTournament);
-      } else {
-        await competitionService.create(newTournament);
-      }
-      setShowTournamentModal(false);
-      setIsEditing(false);
-      setEditingTournamentId(null);
-      setNewTournament({ name: "", description: "", image_url: "" });
-      fetchData();
-    } catch (err) {
-      console.error("Failed to save tournament", err);
+    if (isEditing && editingTournamentId) {
+      updateTournamentMutation.mutate({
+        id: editingTournamentId,
+        data: newTournament,
+      });
+    } else {
+      createTournamentMutation.mutate(newTournament);
     }
   };
 
   const handleCreateSeason = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (isEditing && currentSeason.id) {
-        await tournamentService.update(
-          currentSeason.id.toString(),
-          currentSeason as CreateTournamentDto,
-        );
-      } else {
-        await tournamentService.create(currentSeason as CreateTournamentDto);
-      }
-      setShowSeasonModal(false);
-      fetchData();
-      setCurrentSeason({});
-    } catch (err) {
-      console.error("Failed to save season", err);
+    if (isEditing && currentSeason.id) {
+      updateSeasonMutation.mutate({
+        id: currentSeason.id.toString(),
+        data: currentSeason as CreateTournamentDto,
+      });
+    } else {
+      createSeasonMutation.mutate(currentSeason as CreateTournamentDto);
     }
   };
 
@@ -190,22 +197,10 @@ export const TournamentsPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!itemToDelete || !deleteType) return;
-
-    try {
-      setIsDeleting(true);
-      if (deleteType === "season") {
-        await tournamentService.delete(itemToDelete);
-      } else {
-        await competitionService.delete(itemToDelete);
-      }
-      fetchData();
-      setShowDeleteModal(false);
-      setItemToDelete(null);
-      setDeleteType(null);
-    } catch (err) {
-      console.error("Failed to delete item", err);
-    } finally {
-      setIsDeleting(false);
+    if (deleteType === "season") {
+      deleteSeasonMutation.mutate(itemToDelete);
+    } else {
+      deleteTournamentMutation.mutate(itemToDelete);
     }
   };
 
@@ -375,7 +370,9 @@ export const TournamentsPage: React.FC = () => {
           onConfirm={handleDelete}
           title="Delete Tournament"
           message="Are you sure you want to delete this tournament? All seasons and data within it will be permanently removed."
-          isLoading={isDeleting}
+          isLoading={
+            deleteTournamentMutation.isPending || deleteSeasonMutation.isPending
+          }
         />
 
         {/* Create Tournament Modal */}
@@ -504,7 +501,9 @@ export const TournamentsPage: React.FC = () => {
                           generate_third_place: false,
                         },
                       );
-                      fetchSeasonMatches(activeSeason.id);
+                      queryClient.invalidateQueries({
+                        queryKey: ["matches", activeSeason.id],
+                      });
                     } catch (err) {
                       console.error("Failed to generate bracket", err);
                     }
@@ -864,7 +863,9 @@ export const TournamentsPage: React.FC = () => {
         onConfirm={handleDelete}
         title="Delete Item"
         message="Are you sure you want to delete this? This action cannot be undone."
-        isLoading={isDeleting}
+        isLoading={
+          deleteTournamentMutation.isPending || deleteSeasonMutation.isPending
+        }
       />
     </div>
   );

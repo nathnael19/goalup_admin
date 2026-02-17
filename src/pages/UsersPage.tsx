@@ -21,6 +21,7 @@ import type {
   Tournament,
   UserCreateDto,
   UserUpdateDto,
+  UserRole,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
@@ -85,7 +86,7 @@ export const UsersPage: React.FC = () => {
         const updateData: UserUpdateDto = {
           email: data.email,
           full_name: data.full_name,
-          role: data.role as any,
+          role: data.role as UserRole,
           team_id: data.team_id,
           tournament_id: data.tournament_id,
         };
@@ -123,7 +124,7 @@ export const UsersPage: React.FC = () => {
       email: user.email,
       full_name: user.full_name,
       password: "", // Don't show password
-      role: user.role as any,
+      role: user.role as UserRole,
       team_id: user.team_id || "",
       tournament_id: user.tournament_id || "",
     });
@@ -388,7 +389,7 @@ export const UsersPage: React.FC = () => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          role: e.target.value as any,
+                          role: e.target.value as UserRole,
                           team_id: "",
                           tournament_id: "",
                         })

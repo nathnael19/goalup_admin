@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FiPlus,
   FiEdit2,
@@ -10,11 +11,19 @@ import {
   FiActivity,
 } from "react-icons/fi";
 import { teamService } from "../services/teamService";
-import { tournamentService } from "../services/tournamentService";
-import { competitionService } from "../services/competitionService";
+import {
+  useTeams,
+  useTournaments,
+  useCompetitions,
+  queryKeys,
+} from "../hooks/useData";
 import { ImageUpload } from "../components/ImageUpload";
-import type { Team, CreateTeamDto, Tournament, Competition } from "../types";
-import { UserRoles } from "../types";
+import {
+  type Team,
+  type CreateTeamDto,
+  type Competition,
+  UserRoles,
+} from "../types";
 import { useAuth } from "../context/AuthContext";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { CardSkeleton } from "../components/LoadingSkeleton";
@@ -23,10 +32,17 @@ import { getFullImageUrl } from "../utils/url";
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+  const { data: tournaments = [], isLoading: loadingTournaments } =
+    useTournaments();
+  const { data: competitions = [], isLoading: loadingCompetitions } =
+    useCompetitions();
+
+  const loading = loadingTeams || loadingTournaments || loadingCompetitions;
+
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTeam, setCurrentTeam] = useState<Partial<Team>>({});
@@ -43,28 +59,58 @@ export const TeamsPage: React.FC = () => {
   // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Mutations
+  const saveTeamMutation = useMutation({
+    mutationFn: async ({
+      isEditing,
+      team,
+    }: {
+      isEditing: boolean;
+      team: Partial<Team>;
+    }) => {
+      if (isEditing && team.id) {
+        return teamService.update(team.id.toString(), team as CreateTeamDto);
+      } else {
+        return teamService.create(team as CreateTeamDto);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+      setShowModal(false);
+      setCurrentTeam({});
+    },
+    onError: (err: {
+      response?: { data?: { detail?: string } };
+      message: string;
+    }) => {
+      console.error("Failed to save team", err);
+      alert(
+        `Failed to save team: ${err.response?.data?.detail || err.message}`,
+      );
+    },
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [teamsData, tournamentsData, competitionsData] = await Promise.all([
-        teamService.getAll(),
-        tournamentService.getAll(),
-        competitionService.getAll(),
-      ]);
-      setTeams(teamsData);
-      setTournaments(tournamentsData);
-      setCompetitions(competitionsData);
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoading(false);
-    }
+  const deleteTeamMutation = useMutation({
+    mutationFn: (id: string) => teamService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    },
+    onError: (err) => {
+      console.error("Failed to delete team", err);
+    },
+  });
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    saveTeamMutation.mutate({ isEditing, team: currentTeam });
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+    deleteTeamMutation.mutate(itemToDelete);
   };
 
   useEffect(() => {
@@ -84,47 +130,9 @@ export const TeamsPage: React.FC = () => {
     }
   }, [selectedCompetition, tournaments]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (isEditing && currentTeam.id) {
-        await teamService.update(
-          currentTeam.id.toString(),
-          currentTeam as CreateTeamDto,
-        );
-      } else {
-        await teamService.create(currentTeam as CreateTeamDto);
-      }
-      setShowModal(false);
-      fetchData();
-      setCurrentTeam({});
-    } catch (err: any) {
-      console.error("Failed to save team", err);
-      alert(
-        `Failed to save team: ${err.response?.data?.detail || err.message}`,
-      );
-    }
-  };
-
   const confirmDelete = (id: string) => {
     setItemToDelete(id);
     setShowDeleteModal(true);
-  };
-
-  const handleDelete = async () => {
-    if (!itemToDelete) return;
-
-    try {
-      setIsDeleting(true);
-      await teamService.delete(itemToDelete.toString());
-      fetchData();
-      setShowDeleteModal(false);
-      setItemToDelete(null);
-    } catch (err) {
-      console.error("Failed to delete team", err);
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   // Helper: get team count for a competition
@@ -272,7 +280,7 @@ export const TeamsPage: React.FC = () => {
           onConfirm={handleDelete}
           title="Delete Team"
           message="Are you sure you want to delete this team? This action cannot be undone."
-          isLoading={isDeleting}
+          isLoading={deleteTeamMutation.isPending}
         />
       </div>
     );
@@ -522,7 +530,7 @@ export const TeamsPage: React.FC = () => {
         onConfirm={handleDelete}
         title="Delete Team"
         message="Are you sure you want to delete this team? This action cannot be undone."
-        isLoading={isDeleting}
+        isLoading={deleteTeamMutation.isPending}
       />
     </div>
   );

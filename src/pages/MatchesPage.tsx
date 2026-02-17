@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FiClock, FiCalendar, FiSearch, FiAward, FiPlus } from "react-icons/fi";
 import { matchService } from "../services/matchService";
-import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
-import { competitionService } from "../services/competitionService";
+import {
+  useMatches,
+  useTeams,
+  useTournaments,
+  useCompetitions,
+  queryKeys,
+} from "../hooks/useData";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   type Match,
-  type Team,
-  type Tournament,
   type Competition,
   type UpdateMatchScoreDto,
   type MatchStatus,
@@ -22,11 +26,18 @@ import { getFullImageUrl } from "../utils/url";
 export const MatchesPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: matches = [], isLoading: loadingMatches } = useMatches();
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+  const { data: tournaments = [], isLoading: loadingTournaments } =
+    useTournaments();
+  const { data: competitions = [], isLoading: loadingCompetitions } =
+    useCompetitions();
+
+  const loading =
+    loadingMatches || loadingTeams || loadingTournaments || loadingCompetitions;
 
   // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
@@ -45,40 +56,7 @@ export const MatchesPage: React.FC = () => {
     type: "success" | "error";
   } | null>(null);
 
-  const [tick, setTick] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    fetchData();
-
-    // Live clock update every 10 seconds for smoothness
-    const interval = setInterval(() => {
-      setTick((t) => t + 1);
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [matchesData, teamsData, tournamentsData, competitionsData] =
-        await Promise.all([
-          matchService.getAll(),
-          teamService.getAll(),
-          tournamentService.getAll(),
-          competitionService.getAll(),
-        ]);
-      setMatches(matchesData);
-      setTeams(teamsData);
-      setTournaments(tournamentsData);
-      setCompetitions(competitionsData);
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (selectedCompetition) {
@@ -100,60 +78,113 @@ export const MatchesPage: React.FC = () => {
 
   const [mode, setMode] = useState<"create" | "update">("create");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (mode === "update" && currentMatch.id) {
-        const updateData: UpdateMatchScoreDto = {
-          score_a: currentMatch.score_a,
-          score_b: currentMatch.score_b,
-          status: currentMatch.status,
-        };
-
-        const existingMatch = matches.find((m) => m.id === currentMatch.id);
-        if (
-          currentMatch.status === "live" &&
-          existingMatch?.status !== "live"
-        ) {
-          updateData.start_time = new Date().toISOString();
-        }
-
-        await matchService.update(currentMatch.id, updateData);
-      } else if (mode === "create") {
-        if (
-          !currentMatch.tournament_id ||
-          !currentMatch.team_a_id ||
-          !currentMatch.team_b_id ||
-          !currentMatch.start_time
-        ) {
-          return;
-        }
-        await matchService.create({
-          tournament_id: currentMatch.tournament_id,
-          team_a_id: currentMatch.team_a_id,
-          team_b_id: currentMatch.team_b_id,
-          start_time: currentMatch.start_time,
-          total_time: currentMatch.total_time || 90,
+  // Mutations
+  const saveMatchMutation = useMutation({
+    mutationFn: async ({
+      mode,
+      match,
+      updateData,
+    }: {
+      mode: "create" | "update";
+      match: Partial<Match>;
+      updateData?: Partial<Match>;
+    }) => {
+      if (mode === "update" && match.id) {
+        return matchService.update(match.id, updateData!);
+      } else {
+        return matchService.create({
+          tournament_id: match.tournament_id!,
+          team_a_id: match.team_a_id!,
+          team_b_id: match.team_b_id!,
+          start_time: match.start_time!,
+          total_time: match.total_time || 90,
         });
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches });
       setShowModal(false);
-      fetchData();
       setToast({
-        message: currentMatch.id
-          ? "Match updated successfully!"
-          : "Match created successfully!",
+        message:
+          mode === "update"
+            ? "Match updated successfully!"
+            : "Match created successfully!",
         type: "success",
       });
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error("Failed to save match", err);
       setToast({
         message: "Failed to save match. Please try again.",
         type: "error",
       });
+    },
+  });
+
+  const autoScheduleMutation = useMutation({
+    mutationFn: (config: {
+      tournament_id: string;
+      start_date: string;
+      matches_per_day: number;
+      interval_days: number;
+      total_time: number;
+    }) =>
+      tournamentService.schedule(config.tournament_id, {
+        start_date: new Date(config.start_date).toISOString(),
+        matches_per_day: config.matches_per_day,
+        interval_days: config.interval_days,
+        total_time: config.total_time,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches });
+      setShowAutoScheduleModal(false);
+      setToast({
+        message: "Fixtures generated successfully!",
+        type: "success",
+      });
+    },
+    onError: (err: {
+      response?: { data?: { detail?: string } };
+      message: string;
+    }) => {
+      console.error("Failed to generate schedule", err);
+      const errorMessage =
+        err?.response?.data?.detail ||
+        "Failed to generate fixtures. Please try again.";
+      setToast({ message: errorMessage, type: "error" });
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let updateData: UpdateMatchScoreDto | undefined;
+
+    if (mode === "update" && currentMatch.id) {
+      updateData = {
+        score_a: currentMatch.score_a,
+        score_b: currentMatch.score_b,
+        status: currentMatch.status,
+      };
+
+      const existingMatch = matches.find((m) => m.id === currentMatch.id);
+      if (currentMatch.status === "live" && existingMatch?.status !== "live") {
+        updateData.start_time = new Date().toISOString();
+      }
+    } else if (mode === "create") {
+      if (
+        !currentMatch.tournament_id ||
+        !currentMatch.team_a_id ||
+        !currentMatch.team_b_id ||
+        !currentMatch.start_time
+      ) {
+        return;
+      }
     }
+
+    saveMatchMutation.mutate({ mode, match: currentMatch, updateData });
   };
 
-  const calculateMatchTime = (match: Match, _tick?: number) => {
+  const calculateMatchTime = (match: Match) => {
     if (match.status !== "live") return null;
     if (match.is_halftime) return "HT";
 
@@ -173,7 +204,7 @@ export const MatchesPage: React.FC = () => {
     return `${diffInMinutes + 1}'`;
   };
 
-  const getStatusBadge = (match: Match, _tick?: number) => {
+  const getStatusBadge = (match: Match) => {
     switch (match.status) {
       case "finished":
         return (
@@ -182,7 +213,7 @@ export const MatchesPage: React.FC = () => {
           </span>
         );
       case "live": {
-        const timeDisplay = calculateMatchTime(match, _tick);
+        const timeDisplay = calculateMatchTime(match);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
@@ -210,29 +241,8 @@ export const MatchesPage: React.FC = () => {
 
   const handleAutoSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (!scheduleConfig.tournament_id || !scheduleConfig.start_date) return;
-
-      await tournamentService.schedule(scheduleConfig.tournament_id, {
-        start_date: new Date(scheduleConfig.start_date).toISOString(),
-        matches_per_day: scheduleConfig.matches_per_day,
-        interval_days: scheduleConfig.interval_days,
-        total_time: scheduleConfig.total_time,
-      });
-
-      setShowAutoScheduleModal(false);
-      fetchData();
-      setToast({
-        message: "Fixtures generated successfully!",
-        type: "success",
-      });
-    } catch (err: any) {
-      console.error("Failed to generate schedule", err);
-      const errorMessage =
-        err?.response?.data?.detail ||
-        "Failed to generate fixtures. Please try again.";
-      setToast({ message: errorMessage, type: "error" });
-    }
+    if (!scheduleConfig.tournament_id || !scheduleConfig.start_date) return;
+    autoScheduleMutation.mutate(scheduleConfig);
   };
 
   // Helper counts
@@ -349,7 +359,6 @@ export const MatchesPage: React.FC = () => {
   const compSeasons = tournaments.filter(
     (t) => t.competition_id === selectedCompetition.id,
   );
-  const currentSeason = tournaments.find((s) => s.id === filterSeasonId);
 
   const filteredMatches = matches.filter((m) => {
     const isThisSeason = m.tournament_id === filterSeasonId;
@@ -583,7 +592,7 @@ export const MatchesPage: React.FC = () => {
                             </div>
                           </div>
                           <div className="hidden lg:block">
-                            {getStatusBadge(match, tick)}
+                            {getStatusBadge(match)}
                           </div>
                         </div>
 
@@ -619,7 +628,7 @@ export const MatchesPage: React.FC = () => {
                               </span>
                             </div>
                             <div className="lg:hidden">
-                              {getStatusBadge(match, tick)}
+                              {calculateMatchTime(match)}
                             </div>
                           </div>
 

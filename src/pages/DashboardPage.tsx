@@ -14,11 +14,13 @@ import {
   FiClock,
 } from "react-icons/fi";
 
-import { tournamentService } from "../services/tournamentService";
-import { teamService } from "../services/teamService";
-import { playerService } from "../services/playerService";
-import { matchService } from "../services/matchService";
-import { newsService } from "../services/newsService";
+import {
+  useNews,
+  useMatches,
+  usePlayers,
+  useTeams,
+  useTournaments,
+} from "../hooks/useData";
 import { auditLogService } from "../services/auditLogService";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { useAuth } from "../context/AuthContext";
@@ -36,30 +38,12 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
 
   // Queries
-  const { data: tournaments = [], isLoading: loadingTournaments } = useQuery({
-    queryKey: ["tournaments"],
-    queryFn: () => tournamentService.getAll(),
-  });
-
-  const { data: teams = [], isLoading: loadingTeams } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => teamService.getAll(),
-  });
-
-  const { data: players = [], isLoading: loadingPlayers } = useQuery({
-    queryKey: ["players"],
-    queryFn: () => playerService.getAll(),
-  });
-
-  const { data: matches = [], isLoading: loadingMatches } = useQuery({
-    queryKey: ["matches"],
-    queryFn: () => matchService.getAll(),
-  });
-
-  const { data: news = [], isLoading: loadingNews } = useQuery({
-    queryKey: ["news"],
-    queryFn: () => newsService.getAll(),
-  });
+  const { data: tournaments = [], isLoading: loadingTournaments } =
+    useTournaments();
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+  const { data: players = [], isLoading: loadingPlayers } = usePlayers();
+  const { data: matches = [], isLoading: loadingMatches } = useMatches();
+  const { data: news = [], isLoading: loadingNews } = useNews();
 
   const {
     data: auditLogs = [],

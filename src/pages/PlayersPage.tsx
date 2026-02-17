@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FiPlus,
   FiEdit2,
@@ -10,16 +11,19 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { playerService } from "../services/playerService";
-import { teamService } from "../services/teamService";
-import { tournamentService } from "../services/tournamentService";
-import { competitionService } from "../services/competitionService";
+import {
+  usePlayers,
+  useTeams,
+  useTournaments,
+  useCompetitions,
+  queryKeys,
+} from "../hooks/useData";
 import { ImageUpload } from "../components/ImageUpload";
 import { useAuth } from "../context/AuthContext";
 import { UserRoles } from "../types";
 import type {
   Player,
   CreatePlayerDto,
-  Team,
   Tournament,
   Competition,
 } from "../types";
@@ -29,11 +33,19 @@ import { getFullImageUrl } from "../utils/url";
 
 export const PlayersPage: React.FC = () => {
   const { user } = useAuth();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: players = [], isLoading: loadingPlayers } = usePlayers();
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+  const { data: tournaments = [], isLoading: loadingTournaments } =
+    useTournaments();
+  const { data: competitions = [], isLoading: loadingCompetitions } =
+    useCompetitions();
+
+  const loading =
+    loadingPlayers || loadingTeams || loadingTournaments || loadingCompetitions;
+
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState<Partial<Player>>({});
@@ -56,49 +68,59 @@ export const PlayersPage: React.FC = () => {
   // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [playersData, teamsData, tournamentsData, competitionsData] =
-        await Promise.all([
-          playerService.getAll(),
-          teamService.getAll(),
-          tournamentService.getAll(),
-          competitionService.getAll(),
-        ]);
-      setPlayers(playersData);
-      setTeams(teamsData);
-      setTournaments(tournamentsData);
-      setCompetitions(competitionsData);
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (isEditing && currentPlayer.id) {
-        await playerService.update(
-          currentPlayer.id.toString(),
-          currentPlayer as CreatePlayerDto,
+  // Mutations
+  const savePlayerMutation = useMutation({
+    mutationFn: async ({
+      isEditing,
+      player,
+    }: {
+      isEditing: boolean;
+      player: Partial<Player>;
+    }) => {
+      if (isEditing && player.id) {
+        return playerService.update(
+          player.id.toString(),
+          player as CreatePlayerDto,
         );
       } else {
-        await playerService.create(currentPlayer as CreatePlayerDto);
+        return playerService.create(player as CreatePlayerDto);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.players });
       setShowModal(false);
-      fetchData();
       setCurrentPlayer({});
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error("Failed to save player", err);
+    },
+  });
+
+  const deletePlayerMutation = useMutation({
+    mutationFn: (id: string) => playerService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.players });
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    },
+    onError: (err) => {
+      console.error("Failed to delete player", err);
+    },
+  });
+
+  const getPositionBadge = (pos: string) => {
+    switch (pos) {
+      case "GK":
+        return "bg-blue-600/10 text-blue-400 border-blue-600/20";
+      case "DF":
+        return "bg-green-600/10 text-green-400 border-green-600/20";
+      case "MF":
+        return "bg-yellow-600/10 text-yellow-400 border-yellow-600/20";
+      case "ST":
+        return "bg-red-600/10 text-red-400 border-red-600/20";
+      default:
+        return "bg-slate-600/10 text-slate-400 border-slate-600/20";
     }
   };
 
@@ -107,20 +129,14 @@ export const PlayersPage: React.FC = () => {
     setShowDeleteModal(true);
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    savePlayerMutation.mutate({ isEditing, player: currentPlayer });
+  };
+
   const handleDelete = async () => {
     if (!itemToDelete) return;
-
-    try {
-      setIsDeleting(true);
-      await playerService.delete(itemToDelete.toString());
-      fetchData();
-      setShowDeleteModal(false);
-      setItemToDelete(null);
-    } catch (err) {
-      console.error("Failed to delete player", err);
-    } finally {
-      setIsDeleting(false);
-    }
+    deletePlayerMutation.mutate(itemToDelete);
   };
 
   // Helper: get player count for a competition
@@ -307,7 +323,7 @@ export const PlayersPage: React.FC = () => {
           onConfirm={handleDelete}
           title="Delete Player"
           message="Are you sure you want to delete this player? This action cannot be undone."
-          isLoading={isDeleting}
+          isLoading={deletePlayerMutation.isPending}
         />
       </div>
     );
@@ -458,7 +474,7 @@ export const PlayersPage: React.FC = () => {
           onConfirm={handleDelete}
           title="Delete Player"
           message="Are you sure you want to delete this player? This action cannot be undone."
-          isLoading={isDeleting}
+          isLoading={deletePlayerMutation.isPending}
         />
       </div>
     );
@@ -670,7 +686,9 @@ export const PlayersPage: React.FC = () => {
                     {player.name}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${getPositionBadge(player.position)}`}
+                    >
                       {player.position}
                     </span>
                     <span className="text-xs font-bold text-slate-400">
@@ -723,7 +741,7 @@ export const PlayersPage: React.FC = () => {
         onConfirm={handleDelete}
         title="Delete Player"
         message="Are you sure you want to delete this player? This action cannot be undone."
-        isLoading={isDeleting}
+        isLoading={deletePlayerMutation.isPending}
       />
     </div>
   );
