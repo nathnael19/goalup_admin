@@ -88,8 +88,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
 
   // Mutations
   const updateMatchMutation = useMutation({
-    mutationFn: (data: UpdateMatchScoreDto) =>
-      matchService.update(matchId!, data),
+    mutationFn: (data: UpdateMatchScoreDto) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return matchService.update(matchId!, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["matches"] });
@@ -97,8 +100,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const addGoalMutation = useMutation({
-    mutationFn: (data: Omit<CreateGoalDto, "match_id">) =>
-      goalService.create({ ...data, match_id: matchId! }),
+    mutationFn: (data: Omit<CreateGoalDto, "match_id">) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return goalService.create({ ...data, match_id: matchId! });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -106,7 +112,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const deleteGoalMutation = useMutation({
-    mutationFn: (id: string) => goalService.delete(id),
+    mutationFn: (id: string) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return goalService.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -114,8 +124,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const addCardMutation = useMutation({
-    mutationFn: (data: Omit<CreateCardDto, "match_id">) =>
-      cardService.create({ ...data, match_id: matchId! }),
+    mutationFn: (data: Omit<CreateCardDto, "match_id">) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return cardService.create({ ...data, match_id: matchId! });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cards", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -123,7 +136,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const deleteCardMutation = useMutation({
-    mutationFn: (id: string) => cardService.delete(id),
+    mutationFn: (id: string) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return cardService.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cards", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -131,8 +148,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const addSubMutation = useMutation({
-    mutationFn: (data: Omit<CreateSubstitutionDto, "match_id">) =>
-      substitutionService.create({ ...data, match_id: matchId! }),
+    mutationFn: (data: Omit<CreateSubstitutionDto, "match_id">) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return substitutionService.create({ ...data, match_id: matchId! });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["substitutions", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -140,7 +160,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const deleteSubMutation = useMutation({
-    mutationFn: (id: string) => substitutionService.delete(id),
+    mutationFn: (id: string) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return substitutionService.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["substitutions", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
@@ -148,7 +172,11 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const deleteMatchMutation = useMutation({
-    mutationFn: (id: string) => matchService.delete(id),
+    mutationFn: (id: string) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
+      return matchService.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     },
@@ -170,6 +198,8 @@ export const useMatchDetailState = (matchId: string | undefined) => {
       formationA: string;
       formationB: string;
     }) => {
+      if (match?.status === "finished")
+        return Promise.reject("Match is locked");
       const lineupPayloadA = [
         ...Object.entries(lineupsA).map(([slot, pid]) => ({
           match_id: matchId!,

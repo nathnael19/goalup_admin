@@ -1,12 +1,7 @@
-import React from "react";
 import type { Match } from "../types";
 
 export const isMatchLocked = (m: Match) => {
-  if (m.status !== "finished" || !m.finished_at) return false;
-  const finishTime = new Date(m.finished_at).getTime();
-  const now = new Date().getTime();
-  const oneHour = 60 * 60 * 1000;
-  return now - finishTime > oneHour;
+  return m.status === "finished";
 };
 
 export const calculateMatchTimeDisplay = (m: Match, _tick?: number) => {

@@ -273,6 +273,7 @@ export const MatchDetailPage: React.FC = () => {
         match={match}
         tick={tick}
         userRole={user?.role}
+        isLocked={isMatchLocked(match)}
         onStartMatch={() =>
           mutations.updateMatch({
             status: "live",
@@ -309,6 +310,7 @@ export const MatchDetailPage: React.FC = () => {
           goals={goals}
           cards={cards}
           substitutions={substitutions}
+          isLocked={isMatchLocked(match)}
           onDeleteGoal={mutations.deleteGoal}
           onDeleteCard={mutations.deleteCard}
           onDeleteSub={mutations.deleteSub}

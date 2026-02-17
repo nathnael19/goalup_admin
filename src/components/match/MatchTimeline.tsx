@@ -14,6 +14,7 @@ interface MatchTimelineProps {
   goals: Goal[];
   cards: CardEvent[];
   substitutions: Substitution[];
+  isLocked?: boolean;
   onDeleteGoal: (id: string) => void;
   onDeleteCard: (id: string) => void;
   onDeleteSub: (id: string) => void;
@@ -24,6 +25,7 @@ export const MatchTimeline: React.FC<MatchTimelineProps> = ({
   goals,
   cards,
   substitutions,
+  isLocked,
   onDeleteGoal,
   onDeleteCard,
   onDeleteSub,
@@ -170,17 +172,19 @@ export const MatchTimeline: React.FC<MatchTimelineProps> = ({
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (event.event_type === "goal") onDeleteGoal(event.id);
-                      else if (event.event_type === "card")
-                        onDeleteCard(event.id);
-                      else onDeleteSub(event.id);
-                    }}
-                    className="w-10 h-10 rounded-xl bg-red-600/5 text-red-500/30 hover:text-red-500 hover:bg-red-600/10 flex items-center justify-center transition-all opacity-0 group-hover/event:opacity-100"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
+                  {!isLocked && (
+                    <button
+                      onClick={() => {
+                        if (event.event_type === "goal") onDeleteGoal(event.id);
+                        else if (event.event_type === "card")
+                          onDeleteCard(event.id);
+                        else onDeleteSub(event.id);
+                      }}
+                      className="w-10 h-10 rounded-xl bg-red-600/5 text-red-500/30 hover:text-red-500 hover:bg-red-600/10 flex items-center justify-center transition-all opacity-0 group-hover/event:opacity-100"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

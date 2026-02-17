@@ -243,6 +243,7 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
                     className={`flex flex-col items-center gap-2 ${canEdit ? "cursor-pointer group/slot" : "cursor-default"}`}
                     onClick={() =>
                       canEdit &&
+                      !isLocked &&
                       onOpenSlotModal({
                         teamId: activeTeamId,
                         position: slot.category,
@@ -340,8 +341,9 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
                     </div>
                     <div className="flex items-center gap-4">
                       <select
-                        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider outline-hidden cursor-pointer hover:border-blue-500/50 transition-all"
+                        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider outline-hidden cursor-pointer hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         value={cfg.formation}
+                        disabled={isLocked}
                         onChange={(e) => cfg.setFormation(e.target.value)}
                       >
                         {[
@@ -382,7 +384,8 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="p-4 rounded-3xl bg-white/2 border border-white/5 space-y-3">
                         <select
-                          className="w-full bg-transparent text-xs font-bold text-white outline-hidden cursor-pointer hover:text-emerald-400 transition-colors"
+                          className="w-full bg-transparent text-xs font-bold text-white outline-hidden cursor-pointer hover:text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={isLocked}
                           onChange={(e) => {
                             if (e.target.value) {
                               cfg.setBench([...cfg.bench, e.target.value]);
@@ -435,11 +438,13 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
                             </span>
                             <button
                               onClick={() =>
+                                !isLocked &&
                                 cfg.setBench(
                                   cfg.bench.filter((id) => id !== pid),
                                 )
                               }
-                              className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors"
+                              disabled={isLocked}
+                              className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50"
                             >
                               <FiX size={12} />
                             </button>
