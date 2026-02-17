@@ -30,6 +30,7 @@ import type {
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { getFullImageUrl } from "../utils/url";
+import { getPositionBadge } from "../utils/playerUtils";
 
 export const PlayersPage: React.FC = () => {
   const { user } = useAuth();
@@ -108,21 +109,6 @@ export const PlayersPage: React.FC = () => {
       console.error("Failed to delete player", err);
     },
   });
-
-  const getPositionBadge = (pos: string) => {
-    switch (pos) {
-      case "GK":
-        return "bg-blue-600/10 text-blue-400 border-blue-600/20";
-      case "DF":
-        return "bg-green-600/10 text-green-400 border-green-600/20";
-      case "MF":
-        return "bg-yellow-600/10 text-yellow-400 border-yellow-600/20";
-      case "ST":
-        return "bg-red-600/10 text-red-400 border-red-600/20";
-      default:
-        return "bg-slate-600/10 text-slate-400 border-slate-600/20";
-    }
-  };
 
   const confirmDelete = (id: string) => {
     setItemToDelete(id);

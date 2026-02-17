@@ -13,6 +13,8 @@ export const queryKeys = {
   matches: ["matches"] as const,
   players: ["players"] as const,
   news: ["news"] as const,
+  teamDetail: (id: string) => ["team", id] as const,
+  matchDetail: (id: string) => ["match", id] as const,
 };
 
 export const useCompetitions = () => {
@@ -54,5 +56,21 @@ export const useNews = () => {
   return useQuery({
     queryKey: queryKeys.news,
     queryFn: () => newsService.getAll(),
+  });
+};
+
+export const useTeamDetail = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.teamDetail(id),
+    queryFn: () => teamService.getById(id),
+    enabled: !!id,
+  });
+};
+
+export const useMatchDetail = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.matchDetail(id),
+    queryFn: () => matchService.getById(id),
+    enabled: !!id,
   });
 };
