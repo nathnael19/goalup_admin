@@ -53,6 +53,14 @@ export const UsersPage: React.FC = () => {
     competition_id: "",
   });
 
+  // Filter State
+  const [filters, setFilters] = useState({
+    role: "" as UserRole | "",
+    competition_id: "",
+    tournament_id: "",
+    team_id: "",
+  });
+
   // Delete Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
@@ -89,6 +97,24 @@ export const UsersPage: React.FC = () => {
       (t) => t.competition_id === formData.competition_id,
     );
   }, [formData.competition_id, tournaments]);
+
+  const filteredTeams = useMemo(() => {
+    if (!formData.tournament_id) return [];
+    return teams.filter((t) => t.tournament_id === formData.tournament_id);
+  }, [formData.tournament_id, teams]);
+
+  // Filters Dropdowns Data
+  const filterTournaments = useMemo(() => {
+    if (!filters.competition_id) return tournaments;
+    return tournaments.filter(
+      (t) => t.competition_id === filters.competition_id,
+    );
+  }, [filters.competition_id, tournaments]);
+
+  const filterTeams = useMemo(() => {
+    if (!filters.tournament_id) return teams;
+    return teams.filter((t) => t.tournament_id === filters.tournament_id);
+  }, [filters.tournament_id, teams]);
 
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,11 +175,26 @@ export const UsersPage: React.FC = () => {
     setShowUserModal(true);
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = !filters.role || u.role === filters.role;
+    const matchesCompetition =
+      !filters.competition_id || u.competition_id === filters.competition_id;
+    const matchesTournament =
+      !filters.tournament_id || u.tournament_id === filters.tournament_id;
+    const matchesTeam = !filters.team_id || u.team_id === filters.team_id;
+
+    return (
+      matchesSearch &&
+      matchesRole &&
+      matchesCompetition &&
+      matchesTournament &&
+      matchesTeam
+    );
+  });
 
   const getRoleBadge = (role: string) => {
     const roles: Record<string, string> = {
@@ -208,18 +249,117 @@ export const UsersPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
-          <div className="relative group">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search users by name or email..."
-              className="input pl-12 h-14 bg-slate-800/40"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex flex-col gap-4">
+            <div className="relative group">
+              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search users by name or email..."
+                className="input pl-12 h-14 bg-slate-800/40"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Filters Row */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="relative">
+                <select
+                  className="input h-10 text-xs appearance-none pl-3"
+                  value={filters.role}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      role: e.target.value as UserRole | "",
+                    })
+                  }
+                >
+                  <option value="">All Roles</option>
+                  {Object.values(UserRoles).map((role) => (
+                    <option key={role} value={role}>
+                      {role.replace("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  className="input h-10 text-xs appearance-none pl-3"
+                  value={filters.competition_id}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      competition_id: e.target.value,
+                      tournament_id: "",
+                      team_id: "",
+                    })
+                  }
+                >
+                  <option value="">All Competitions</option>
+                  {competitions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  className="input h-10 text-xs appearance-none pl-3"
+                  value={filters.tournament_id}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      tournament_id: e.target.value,
+                      team_id: "",
+                    })
+                  }
+                >
+                  <option value="">All Seasons</option>
+                  {filterTournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  className="input h-10 text-xs appearance-none pl-3"
+                  value={filters.team_id}
+                  onChange={(e) =>
+                    setFilters({ ...filters, team_id: e.target.value })
+                  }
+                >
+                  <option value="">All Teams</option>
+                  {filterTeams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={() =>
+                  setFilters({
+                    role: "",
+                    competition_id: "",
+                    tournament_id: "",
+                    team_id: "",
+                  })
+                }
+                className="btn btn-ghost h-10 text-xs text-slate-400 hover:text-white"
+              >
+                Clear Filters
+              </button>
+            </div>
           </div>
         </div>
-        <div className="card flex items-center justify-between p-4 px-6">
+        <div className="card flex items-center justify-between p-4 px-6 h-fit self-start">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
               Total Users
@@ -435,33 +575,9 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {formData.role === "COACH" && (
-                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="label">Assigned Team</label>
-                    <div className="relative">
-                      <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <select
-                        required
-                        className="input pl-12 h-12 appearance-none"
-                        value={formData.team_id}
-                        onChange={(e) =>
-                          setFormData({ ...formData, team_id: e.target.value })
-                        }
-                      >
-                        <option value="">Select a team...</option>
-                        {teams.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
                 {(formData.role === "TOURNAMENT_ADMIN" ||
                   formData.role === "REFEREE" ||
-                  formData.role === "NEWS_REPORTER") && (
+                  formData.role === "COACH") && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="label">Assigned Competition</label>
                     <div className="relative">
@@ -474,7 +590,8 @@ export const UsersPage: React.FC = () => {
                           setFormData({
                             ...formData,
                             competition_id: e.target.value,
-                            tournament_id: "", // Reset tournament selection when competition changes
+                            tournament_id: "",
+                            team_id: "",
                           })
                         }
                       >
@@ -491,7 +608,7 @@ export const UsersPage: React.FC = () => {
 
                 {(formData.role === "TOURNAMENT_ADMIN" ||
                   formData.role === "REFEREE" ||
-                  formData.role === "NEWS_REPORTER") &&
+                  formData.role === "COACH") &&
                   formData.competition_id && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                       <label className="label">
@@ -507,6 +624,7 @@ export const UsersPage: React.FC = () => {
                             setFormData({
                               ...formData,
                               tournament_id: e.target.value,
+                              team_id: "",
                             })
                           }
                         >
@@ -520,6 +638,30 @@ export const UsersPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                {formData.role === "COACH" && formData.tournament_id && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="label">Assigned Team</label>
+                    <div className="relative">
+                      <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <select
+                        required
+                        className="input pl-12 h-12 appearance-none"
+                        value={formData.team_id}
+                        onChange={(e) =>
+                          setFormData({ ...formData, team_id: e.target.value })
+                        }
+                      >
+                        <option value="">Select a team...</option>
+                        {filteredTeams.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-6">
                   <button
