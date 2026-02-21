@@ -445,41 +445,39 @@ export const MatchesPage: React.FC = () => {
               </select>
             </div>
           )}
-          {(user?.role === UserRoles.SUPER_ADMIN ||
-            user?.role === UserRoles.TOURNAMENT_ADMIN) &&
-            filterSeasonId && (
-              <>
-                <button
-                  onClick={() => {
-                    setMode("create");
-                    setCurrentMatch({
-                      status: "scheduled" as MatchStatus,
-                      tournament_id: filterSeasonId,
-                      total_time: 90,
-                    });
-                    setShowModal(true);
-                  }}
-                  className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-                >
-                  <FiPlus className="mr-2" /> Schedule Match
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAutoScheduleModal(true);
-                    setScheduleConfig({
-                      tournament_id: filterSeasonId,
-                      start_date: "",
-                      matches_per_day: 1,
-                      interval_days: 1,
-                      total_time: 90,
-                    });
-                  }}
-                  className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
-                >
-                  <FiCalendar className="mr-2" /> Auto Fixtures
-                </button>
-              </>
-            )}
+          {user?.role === UserRoles.TOURNAMENT_ADMIN && filterSeasonId && (
+            <>
+              <button
+                onClick={() => {
+                  setMode("create");
+                  setCurrentMatch({
+                    status: "scheduled" as MatchStatus,
+                    tournament_id: filterSeasonId,
+                    total_time: 90,
+                  });
+                  setShowModal(true);
+                }}
+                className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+              >
+                <FiPlus className="mr-2" /> Schedule Match
+              </button>
+              <button
+                onClick={() => {
+                  setShowAutoScheduleModal(true);
+                  setScheduleConfig({
+                    tournament_id: filterSeasonId,
+                    start_date: "",
+                    matches_per_day: 1,
+                    interval_days: 1,
+                    total_time: 90,
+                  });
+                }}
+                className="btn btn-secondary h-12 border-slate-700 hover:bg-slate-800 text-slate-300"
+              >
+                <FiCalendar className="mr-2" /> Auto Fixtures
+              </button>
+            </>
+          )}
         </div>
       </div>
 

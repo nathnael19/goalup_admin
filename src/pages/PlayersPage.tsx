@@ -34,6 +34,9 @@ import { getPositionBadge } from "../utils/playerUtils";
 
 export const PlayersPage: React.FC = () => {
   const { user } = useAuth();
+  // SUPER_ADMIN is view-only for players; TOURNAMENT_ADMIN and COACH can manage
+  const canManagePlayers =
+    user?.role === UserRoles.TOURNAMENT_ADMIN || user?.role === UserRoles.COACH;
   const queryClient = useQueryClient();
 
   // Queries
@@ -180,24 +183,26 @@ export const PlayersPage: React.FC = () => {
               Select a competition to manage its player roster.
             </p>
           </div>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              const context = getCoachTeamContext();
-              setCurrentPlayer({
-                name: "",
-                team_id: context?.teamId || "",
-                position: "ST" as any,
-                jersey_number: 10,
-              });
-              setSelectedCompetitionId(context?.competitionId || "");
-              setSelectedTournamentId(context?.tournamentId || "");
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus /> New Player
-          </button>
+          {canManagePlayers && (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                const context = getCoachTeamContext();
+                setCurrentPlayer({
+                  name: "",
+                  team_id: context?.teamId || "",
+                  position: "ST" as any,
+                  jersey_number: 10,
+                });
+                setSelectedCompetitionId(context?.competitionId || "");
+                setSelectedTournamentId(context?.tournamentId || "");
+                setShowModal(true);
+              }}
+              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+            >
+              <FiPlus /> New Player
+            </button>
+          )}
         </div>
 
         {/* Search & Stats */}
@@ -358,26 +363,28 @@ export const PlayersPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              const context = getCoachTeamContext();
-              setCurrentPlayer({
-                name: "",
-                team_id: context?.teamId || "",
-                position: "ST" as any,
-                jersey_number: 10,
-              });
-              setSelectedCompetitionId(
-                context?.competitionId || selectedCompetition.id,
-              );
-              setSelectedTournamentId(context?.tournamentId || "");
-              setShowModal(true);
-            }}
-            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-          >
-            <FiPlus /> New Player
-          </button>
+          {canManagePlayers && (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                const context = getCoachTeamContext();
+                setCurrentPlayer({
+                  name: "",
+                  team_id: context?.teamId || "",
+                  position: "ST" as any,
+                  jersey_number: 10,
+                });
+                setSelectedCompetitionId(
+                  context?.competitionId || selectedCompetition.id,
+                );
+                setSelectedTournamentId(context?.tournamentId || "");
+                setShowModal(true);
+              }}
+              className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+            >
+              <FiPlus /> New Player
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -524,28 +531,30 @@ export const PlayersPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            const context = getCoachTeamContext();
-            setCurrentPlayer({
-              name: "",
-              team_id: context?.teamId || "",
-              position: "ST" as any,
-              jersey_number: 10,
-            });
-            setSelectedCompetitionId(
-              context?.competitionId || selectedCompetition.id,
-            );
-            setSelectedTournamentId(
-              context?.tournamentId || selectedTournament.id,
-            );
-            setShowModal(true);
-          }}
-          className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
-        >
-          <FiPlus /> New Player
-        </button>
+        {canManagePlayers && (
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              const context = getCoachTeamContext();
+              setCurrentPlayer({
+                name: "",
+                team_id: context?.teamId || "",
+                position: "ST" as any,
+                jersey_number: 10,
+              });
+              setSelectedCompetitionId(
+                context?.competitionId || selectedCompetition.id,
+              );
+              setSelectedTournamentId(
+                context?.tournamentId || selectedTournament.id,
+              );
+              setShowModal(true);
+            }}
+            className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+          >
+            <FiPlus /> New Player
+          </button>
+        )}
       </div>
 
       {/* Search & Filters */}
@@ -645,26 +654,28 @@ export const PlayersPage: React.FC = () => {
                       #{player.jersey_number}
                     </div>
                   </div>
-                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        setIsEditing(true);
-                        setCurrentPlayer(player);
-                        setSelectedCompetitionId(selectedCompetition.id);
-                        setSelectedTournamentId(selectedTournament.id);
-                        setShowModal(true);
-                      }}
-                      className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                    >
-                      <FiEdit2 size={14} />
-                    </button>
-                    <button
-                      onClick={() => confirmDelete(player.id)}
-                      className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
-                    >
-                      <FiTrash2 size={14} />
-                    </button>
-                  </div>
+                  {canManagePlayers && (
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setIsEditing(true);
+                          setCurrentPlayer(player);
+                          setSelectedCompetitionId(selectedCompetition.id);
+                          setSelectedTournamentId(selectedTournament.id);
+                          setShowModal(true);
+                        }}
+                        className="p-2.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => confirmDelete(player.id)}
+                        className="p-2.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-700/50"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-6">

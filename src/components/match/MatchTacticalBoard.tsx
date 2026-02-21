@@ -160,7 +160,6 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
   );
 
   const canEdit =
-    userRole === UserRoles.SUPER_ADMIN ||
     userRole === UserRoles.TOURNAMENT_ADMIN ||
     userRole === UserRoles.REFEREE ||
     (userRole === UserRoles.COACH &&
@@ -319,8 +318,7 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
               const teamInfo = cfg.detail || cfg.team;
               return (
                 <div key={i} className="space-y-6">
-                  {(userRole === UserRoles.SUPER_ADMIN ||
-                    userRole === UserRoles.TOURNAMENT_ADMIN ||
+                  {(userRole === UserRoles.TOURNAMENT_ADMIN ||
                     userRole === UserRoles.REFEREE ||
                     (userRole === UserRoles.COACH &&
                       userTeamId?.toString() === cfg.team?.id?.toString())) && (

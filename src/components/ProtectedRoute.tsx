@@ -1,7 +1,7 @@
 import React, { type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { type UserRole, UserRoles } from "../types";
+import { type UserRole } from "../types";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -32,7 +32,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     allowedRoles &&
     user &&
     !user.is_superuser &&
-    user.role !== UserRoles.SUPER_ADMIN &&
     !allowedRoles.includes(user.role)
   ) {
     return <Navigate to="/" replace />;

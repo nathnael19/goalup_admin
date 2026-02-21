@@ -160,8 +160,7 @@ export const TeamsPage: React.FC = () => {
               Select a competition to manage its registered clubs.
             </p>
           </div>
-          {(user?.role === UserRoles.SUPER_ADMIN ||
-            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          {user?.role === UserRoles.TOURNAMENT_ADMIN && (
             <button
               onClick={() => {
                 setIsEditing(false);
@@ -353,8 +352,7 @@ export const TeamsPage: React.FC = () => {
               </select>
             </div>
           )}
-          {(user?.role === UserRoles.SUPER_ADMIN ||
-            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          {user?.role === UserRoles.TOURNAMENT_ADMIN && (
             <button
               onClick={() => {
                 setIsEditing(false);
@@ -413,8 +411,7 @@ export const TeamsPage: React.FC = () => {
                       >
                         <FiActivity size={14} />
                       </button>
-                      {(user?.role === UserRoles.SUPER_ADMIN ||
-                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                      {user?.role === UserRoles.TOURNAMENT_ADMIN && (
                         <>
                           <button
                             onClick={() => {

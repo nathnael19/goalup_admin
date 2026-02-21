@@ -16,6 +16,8 @@ import { playerService } from "../services/playerService";
 import type { News, NewsCategory, CreateNewsDto, Team, Player } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { getFullImageUrl } from "../utils/url";
+import { useAuth } from "../context/AuthContext";
+import { UserRoles } from "../types";
 
 const CATEGORY_CONFIG: Record<
   NewsCategory,
@@ -49,6 +51,9 @@ const CATEGORY_CONFIG: Record<
 
 export const NewsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Only NEWS_REPORTER can create/edit/delete articles; SUPER_ADMIN is view-only
+  const canManageNews = user?.role === UserRoles.NEWS_REPORTER;
   const [news, setNews] = useState<News[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -208,9 +213,11 @@ export const NewsPage: React.FC = () => {
             {news.length} article{news.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <button onClick={openCreateModal} className="btn btn-primary">
-          <FiPlus className="mr-2" /> New Article
-        </button>
+        {canManageNews && (
+          <button onClick={openCreateModal} className="btn btn-primary">
+            <FiPlus className="mr-2" /> New Article
+          </button>
+        )}
       </div>
 
       {/* Featured / Hero Section */}
@@ -251,17 +258,19 @@ export const NewsPage: React.FC = () => {
               <p className="text-slate-300 font-medium text-lg line-clamp-2 mb-8 opacity-80 group-hover:opacity-100 transition-opacity">
                 {news[0].content}
               </p>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditModal(news[0]);
-                  }}
-                  className="btn btn-secondary bg-white/5 border-white/10 backdrop-blur-md"
-                >
-                  <FiEdit2 className="mr-2" /> Edit Headline
-                </button>
-              </div>
+              {canManageNews && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(news[0]);
+                    }}
+                    className="btn btn-secondary bg-white/5 border-white/10 backdrop-blur-md"
+                  >
+                    <FiEdit2 className="mr-2" /> Edit Headline
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -432,20 +441,22 @@ export const NewsPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditModal(article)}
-                          className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-all shadow-inner"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(article.id)}
-                          className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all shadow-inner"
-                        >
-                          <FiTrash2 size={14} />
-                        </button>
-                      </div>
+                      {canManageNews && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEditModal(article)}
+                            className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-all shadow-inner"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(article.id)}
+                            className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all shadow-inner"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="absolute top-0 left-0 w-1 h-full bg-blue-600/0 group-hover:bg-blue-600 transition-all duration-300" />

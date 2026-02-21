@@ -238,7 +238,7 @@ export const MatchDetailPage: React.FC = () => {
               </button>
             </>
           ) : (
-            user?.role !== UserRoles.COACH && (
+            user?.role === UserRoles.TOURNAMENT_ADMIN && (
               <>
                 <button
                   onClick={() => setIsEditing(true)}

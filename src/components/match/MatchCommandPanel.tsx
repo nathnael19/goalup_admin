@@ -52,7 +52,8 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
   teamA,
   teamB,
 }) => {
-  if (userRole === UserRoles.COACH) return null;
+  if (userRole === UserRoles.COACH || userRole === UserRoles.SUPER_ADMIN)
+    return null;
 
   const teamADisplay = teamA || match.team_a;
   const teamBDisplay = teamB || match.team_b;
