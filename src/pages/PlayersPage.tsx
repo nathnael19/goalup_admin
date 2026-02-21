@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FiPlus,
@@ -68,9 +68,34 @@ export const PlayersPage: React.FC = () => {
   const [filterPosition, setFilterPosition] = useState<string>("all");
   const [filterTeamId, setFilterTeamId] = useState<string>("all");
 
-  // Confirmation Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  // Auto-select for COACH role
+  useEffect(() => {
+    if (
+      user?.role === UserRoles.COACH &&
+      !selectedCompetition &&
+      competitions.length > 0 &&
+      tournaments.length > 0 &&
+      teams.length > 0
+    ) {
+      const context = getCoachTeamContext();
+      if (context) {
+        const comp = competitions.find(
+          (c) => c.id.toString() === context.competitionId,
+        );
+        const tour = tournaments.find(
+          (t) => t.id.toString() === context.tournamentId,
+        );
+        if (comp && tour) {
+          setSelectedCompetition(comp);
+          setSelectedTournament(tour);
+          setFilterTeamId(context.teamId);
+        }
+      }
+    }
+  }, [user, competitions, tournaments, teams, selectedCompetition]);
 
   // Mutations
   const savePlayerMutation = useMutation({
@@ -330,15 +355,17 @@ export const PlayersPage: React.FC = () => {
 
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <button
-          onClick={() => {
-            setSelectedCompetition(null);
-            setSearchTerm("");
-          }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          ← Back to Competitions
-        </button>
+        {user?.role !== UserRoles.COACH && (
+          <button
+            onClick={() => {
+              setSelectedCompetition(null);
+              setSearchTerm("");
+            }}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            ← Back to Competitions
+          </button>
+        )}
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-6">
@@ -504,17 +531,19 @@ export const PlayersPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <button
-        onClick={() => {
-          setSelectedTournament(null);
-          setSearchTerm("");
-          setFilterPosition("all");
-          setFilterTeamId("all");
-        }}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-      >
-        ← Back to {selectedCompetition.name}
-      </button>
+      {user?.role !== UserRoles.COACH && (
+        <button
+          onClick={() => {
+            setSelectedTournament(null);
+            setSearchTerm("");
+            setFilterPosition("all");
+            setFilterTeamId("all");
+          }}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          ← Back to {selectedCompetition.name}
+        </button>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
@@ -584,21 +613,23 @@ export const PlayersPage: React.FC = () => {
             <option value="FW">Forwards</option>
           </select>
         </div>
-        <div className="relative">
-          <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-          <select
-            className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800 w-full"
-            value={filterTeamId}
-            onChange={(e) => setFilterTeamId(e.target.value)}
-          >
-            <option value="all">All Teams</option>
-            {seasonTeams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {user?.role !== UserRoles.COACH && (
+          <div className="relative">
+            <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <select
+              className="input pl-12 h-12 appearance-none bg-slate-800/40 border-slate-800 w-full"
+              value={filterTeamId}
+              onChange={(e) => setFilterTeamId(e.target.value)}
+            >
+              <option value="all">All Teams</option>
+              {seasonTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="card flex items-center justify-between p-4 px-6 bg-purple-600/5 border-purple-600/10 h-12">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 leading-tight">

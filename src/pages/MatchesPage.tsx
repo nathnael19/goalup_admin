@@ -58,10 +58,11 @@ export const MatchesPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Auto-selection for TOURNAMENT_ADMIN
+  // Auto-selection for TOURNAMENT_ADMIN and COACH
   useEffect(() => {
     if (
-      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+      (user?.role === UserRoles.TOURNAMENT_ADMIN ||
+        user?.role === UserRoles.COACH) &&
       user.competition_id &&
       competitions.length > 0 &&
       !selectedCompetition
@@ -383,7 +384,13 @@ export const MatchesPage: React.FC = () => {
     const statusMatch = filter === "all" ? true : m.status === filter;
     const roundMatch =
       selectedRound === "all" ? true : m.match_day === selectedRound;
-    return isThisSeason && statusMatch && roundMatch;
+
+    const matchesTeam =
+      user?.role === UserRoles.COACH
+        ? m.team_a_id === user.team_id || m.team_b_id === user.team_id
+        : true;
+
+    return isThisSeason && statusMatch && roundMatch && matchesTeam;
   });
 
   // Unique rounds for filtering
@@ -406,18 +413,19 @@ export const MatchesPage: React.FC = () => {
         />
       )}
 
-      {user?.role !== UserRoles.TOURNAMENT_ADMIN && (
-        <button
-          onClick={() => {
-            setSelectedCompetition(null);
-            setFilterSeasonId("");
-            setSearchTerm("");
-          }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          ← Back to Competitions
-        </button>
-      )}
+      {user?.role !== UserRoles.TOURNAMENT_ADMIN &&
+        user?.role !== UserRoles.COACH && (
+          <button
+            onClick={() => {
+              setSelectedCompetition(null);
+              setFilterSeasonId("");
+              setSearchTerm("");
+            }}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            ← Back to Competitions
+          </button>
+        )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
@@ -442,6 +450,7 @@ export const MatchesPage: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {user?.role !== UserRoles.TOURNAMENT_ADMIN &&
+            user?.role !== UserRoles.COACH &&
             compSeasons.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
