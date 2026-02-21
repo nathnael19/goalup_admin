@@ -58,6 +58,24 @@ export const MatchesPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Auto-selection for TOURNAMENT_ADMIN
+  useEffect(() => {
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+      user.competition_id &&
+      competitions.length > 0 &&
+      !selectedCompetition
+    ) {
+      const comp = competitions.find((c) => c.id === user.competition_id);
+      if (comp) {
+        setSelectedCompetition(comp);
+        if (user.tournament_id) {
+          setFilterSeasonId(user.tournament_id);
+        }
+      }
+    }
+  }, [user, competitions, selectedCompetition]);
+
   useEffect(() => {
     if (selectedCompetition) {
       const compSeasons = tournaments.filter(
@@ -388,17 +406,18 @@ export const MatchesPage: React.FC = () => {
         />
       )}
 
-      <button
-        onClick={() => {
-          setSelectedCompetition(null);
-          setFilterSeasonId("");
-          setSearchTerm("");
-        }}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-      >
-        ← Back to Competitions
-      </button>
-
+      {user?.role !== UserRoles.TOURNAMENT_ADMIN && (
+        <button
+          onClick={() => {
+            setSelectedCompetition(null);
+            setFilterSeasonId("");
+            setSearchTerm("");
+          }}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          ← Back to Competitions
+        </button>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
@@ -422,29 +441,28 @@ export const MatchesPage: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {compSeasons.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
-                Matches for:
-              </span>
-              <select
-                className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
-                value={filterSeasonId}
-                onChange={(e) => {
-                  setFilterSeasonId(e.target.value);
-                  setSelectedRound("all");
-                }}
-              >
-                {compSeasons
-                  .sort((a, b) => b.year - a.year)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.year})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
+          {user?.role !== UserRoles.TOURNAMENT_ADMIN &&
+            compSeasons.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  Matches for:
+                </span>
+                <select
+                  className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
+                  value={filterSeasonId}
+                  onChange={(e) => setFilterSeasonId(e.target.value)}
+                >
+                  <option value="">All Seasons</option>
+                  {compSeasons
+                    .sort((a, b) => b.year - a.year)
+                    .map((season) => (
+                      <option key={season.id} value={season.id}>
+                        {season.name} ({season.year})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
           {user?.role === UserRoles.TOURNAMENT_ADMIN && filterSeasonId && (
             <>
               <button

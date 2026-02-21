@@ -51,11 +51,7 @@ export const MainLayout: React.FC = () => {
       icon: FiUser,
       label: "Players",
       path: "/players",
-      roles: [
-        UserRoles.SUPER_ADMIN,
-        UserRoles.TOURNAMENT_ADMIN,
-        UserRoles.COACH,
-      ],
+      roles: [UserRoles.SUPER_ADMIN, UserRoles.COACH],
     },
     {
       icon: FiTarget,

@@ -35,8 +35,7 @@ import { getPositionBadge } from "../utils/playerUtils";
 export const PlayersPage: React.FC = () => {
   const { user } = useAuth();
   // SUPER_ADMIN is view-only for players; TOURNAMENT_ADMIN and COACH can manage
-  const canManagePlayers =
-    user?.role === UserRoles.TOURNAMENT_ADMIN || user?.role === UserRoles.COACH;
+  const canManagePlayers = user?.role === UserRoles.COACH;
   const queryClient = useQueryClient();
 
   // Queries
