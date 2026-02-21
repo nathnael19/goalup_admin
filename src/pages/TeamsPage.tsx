@@ -113,22 +113,48 @@ export const TeamsPage: React.FC = () => {
     deleteTeamMutation.mutate(itemToDelete);
   };
 
+  // Auto-select competition and season for tournament admins
+  useEffect(() => {
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+      !selectedCompetition &&
+      !loadingCompetitions &&
+      competitions.length > 0
+    ) {
+      const assignedComp = competitions.find(
+        (c) => c.id === user.competition_id,
+      );
+
+      if (assignedComp) {
+        setSelectedCompetition(assignedComp);
+        if (user.tournament_id) {
+          setFilterSeasonId(user.tournament_id);
+        }
+      }
+    }
+  }, [user, competitions, selectedCompetition, loadingCompetitions]);
+
   useEffect(() => {
     if (selectedCompetition) {
       const compSeasons = tournaments.filter(
         (t) => t.competition_id === selectedCompetition.id,
       );
       if (compSeasons.length > 0) {
-        // Default to latest season by year
-        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
-        setFilterSeasonId(latest.id);
+        // Default to latest season by year if not already set (e.g. for non-admins)
+        if (
+          !filterSeasonId ||
+          !compSeasons.find((s) => s.id === filterSeasonId)
+        ) {
+          const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+          setFilterSeasonId(latest.id);
+        }
       } else {
         setFilterSeasonId("");
       }
     } else {
       setFilterSeasonId("");
     }
-  }, [selectedCompetition, tournaments]);
+  }, [selectedCompetition, tournaments, filterSeasonId]);
 
   const confirmDelete = (id: string) => {
     setItemToDelete(id);
@@ -145,6 +171,53 @@ export const TeamsPage: React.FC = () => {
 
   // ============ VIEW 1: COMPETITION CARDS ============
   if (!selectedCompetition) {
+    // If it's a tournament admin, we wait for the auto-select to happen or show loading
+    // We NEVER want them to see the competition selection grid
+    if (user?.role === UserRoles.TOURNAMENT_ADMIN) {
+      if (loadingCompetitions) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-slate-500 font-bold animate-pulse">
+                Loading assigned competition...
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // If finished loading but no competition selected, it means the user has no valid assignment
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center p-8 bg-slate-900/50 rounded-2xl border border-slate-800 max-w-md">
+            <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-red-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              No Access Assigned
+            </h3>
+            <p className="text-slate-400">
+              You are not currently assigned to any active competition or
+              season. Please contact a Super Admin to update your profile.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     const filteredComps = competitions.filter((c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
@@ -164,8 +237,11 @@ export const TeamsPage: React.FC = () => {
             <button
               onClick={() => {
                 setIsEditing(false);
-                setCurrentTeam({ name: "", tournament_id: "" });
-                setModalCompetitionId("");
+                setCurrentTeam({
+                  name: "",
+                  tournament_id: user?.tournament_id || "",
+                });
+                setModalCompetitionId(user?.competition_id || "");
                 setShowModal(true);
               }}
               className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -298,69 +374,85 @@ export const TeamsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <button
-        onClick={() => {
-          setSelectedCompetition(null);
-          setFilterSeasonId("");
-          setSearchTerm("");
-        }}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-      >
-        ← Back to Competitions
-      </button>
+      {user?.role !== UserRoles.TOURNAMENT_ADMIN && (
+        <button
+          onClick={() => {
+            setSelectedCompetition(null);
+            setFilterSeasonId("");
+            setSearchTerm("");
+          }}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          ← Back to Competitions
+        </button>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
-            {selectedCompetition.image_url ? (
-              <img
-                src={getFullImageUrl(selectedCompetition.image_url)}
-                alt={selectedCompetition.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <FiAward size={32} />
-            )}
-          </div>
+        {user?.role === UserRoles.TOURNAMENT_ADMIN ? (
           <div>
             <h1 className="text-4xl font-black text-white font-display tracking-tight">
-              {selectedCompetition.name}
+              Teams
             </h1>
             <p className="text-slate-400 font-medium font-body mt-1">
-              Manage clubs and list registrations for this competition.
+              Manage clubs and list registrations for your assigned season.
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          {compSeasons.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
-                Teams for:
-              </span>
-              <select
-                className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
-                value={filterSeasonId}
-                onChange={(e) => setFilterSeasonId(e.target.value)}
-              >
-                {compSeasons
-                  .sort((a, b) => b.year - a.year)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.year})
-                    </option>
-                  ))}
-              </select>
+        ) : (
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700 overflow-hidden">
+              {selectedCompetition.image_url ? (
+                <img
+                  src={getFullImageUrl(selectedCompetition.image_url)}
+                  alt={selectedCompetition.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <FiAward size={32} />
+              )}
             </div>
-          )}
+            <div>
+              <h1 className="text-4xl font-black text-white font-display tracking-tight">
+                {selectedCompetition.name}
+              </h1>
+              <p className="text-slate-400 font-medium font-body mt-1">
+                Manage clubs and list registrations for this competition.
+              </p>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          {user?.role !== UserRoles.TOURNAMENT_ADMIN &&
+            compSeasons.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  Teams for:
+                </span>
+                <select
+                  className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
+                  value={filterSeasonId}
+                  onChange={(e) => setFilterSeasonId(e.target.value)}
+                >
+                  {compSeasons
+                    .sort((a, b) => b.year - a.year)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.year})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
           {user?.role === UserRoles.TOURNAMENT_ADMIN && (
             <button
               onClick={() => {
                 setIsEditing(false);
                 setCurrentTeam({
                   name: "",
-                  tournament_id: filterSeasonId || "",
+                  tournament_id: user?.tournament_id || filterSeasonId || "",
                 });
-                setModalCompetitionId(selectedCompetition.id);
+                setModalCompetitionId(
+                  user?.competition_id || selectedCompetition.id,
+                );
                 setShowModal(true);
               }}
               className="btn btn-primary h-12 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -482,7 +574,9 @@ export const TeamsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="card p-6 border-blue-500/10 bg-blue-600/5">
             <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-3">
-              Competition Summary
+              {user?.role === UserRoles.TOURNAMENT_ADMIN
+                ? "Registry Summary"
+                : "Competition Summary"}
             </h4>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -584,54 +678,56 @@ export const TeamsPage: React.FC = () => {
                   placeholder="e.g. Old Trafford"
                 />
               </div>
-              <div>
-                <label className="label">League / Competition</label>
-                <select
-                  required
-                  className="input h-12 appearance-none mb-4"
-                  value={modalCompetitionId}
-                  onChange={(e) => {
-                    setModalCompetitionId(e.target.value);
-                    setCurrentTeam({ ...currentTeam, tournament_id: "" });
-                  }}
-                >
-                  <option value="" disabled>
-                    Select a competition
-                  </option>
-                  {competitions.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+              {user?.role !== UserRoles.TOURNAMENT_ADMIN && (
+                <div>
+                  <label className="label">League / Competition</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none mb-4"
+                    value={modalCompetitionId}
+                    onChange={(e) => {
+                      setModalCompetitionId(e.target.value);
+                      setCurrentTeam({ ...currentTeam, tournament_id: "" });
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a competition
                     </option>
-                  ))}
-                </select>
-
-                <label className="label">Season</label>
-                <select
-                  required
-                  className="input h-12 appearance-none"
-                  value={currentTeam.tournament_id || ""}
-                  onChange={(e) =>
-                    setCurrentTeam({
-                      ...currentTeam,
-                      tournament_id: e.target.value,
-                    })
-                  }
-                  disabled={!modalCompetitionId}
-                >
-                  <option value="" disabled>
-                    {modalCompetitionId
-                      ? "Select a season"
-                      : "Select a competition first"}
-                  </option>
-                  {tournaments
-                    .filter((t) => t.competition_id === modalCompetitionId)
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.year})
+                    {competitions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
                     ))}
-                </select>
-              </div>
+                  </select>
+
+                  <label className="label">Season</label>
+                  <select
+                    required
+                    className="input h-12 appearance-none"
+                    value={currentTeam.tournament_id || ""}
+                    onChange={(e) =>
+                      setCurrentTeam({
+                        ...currentTeam,
+                        tournament_id: e.target.value,
+                      })
+                    }
+                    disabled={!modalCompetitionId}
+                  >
+                    <option value="" disabled>
+                      {modalCompetitionId
+                        ? "Select a season"
+                        : "Select a competition first"}
+                    </option>
+                    {tournaments
+                      .filter((t) => t.competition_id === modalCompetitionId)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.year})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
 
               <ImageUpload
                 label="Team Emblem"

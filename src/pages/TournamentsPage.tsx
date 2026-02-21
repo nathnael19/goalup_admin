@@ -204,16 +204,57 @@ export const TournamentsPage: React.FC = () => {
     }
   };
 
-  const filteredTournaments = tournaments.filter((t) =>
-    t.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredTournaments = tournaments.filter((t) => {
+    const matchesSearch = t.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    if (user?.role === UserRoles.TOURNAMENT_ADMIN && user.competition_id) {
+      return matchesSearch && t.id === user.competition_id;
+    }
+    return matchesSearch;
+  });
 
   const filteredSeasons = seasons.filter((s) => {
     if (selectedTournament) {
-      return s.competition_id === selectedTournament.id;
+      const belongsToComp = s.competition_id === selectedTournament.id;
+      if (user?.role === UserRoles.TOURNAMENT_ADMIN && user.tournament_id) {
+        return belongsToComp && s.id === user.tournament_id;
+      }
+      return belongsToComp;
     }
     return false;
   });
+
+  // Auto-select tournament for restricted admins
+  useEffect(() => {
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+      user.competition_id &&
+      !selectedTournament &&
+      tournaments.length > 0
+    ) {
+      const assigned = tournaments.find((t) => t.id === user.competition_id);
+      if (assigned) {
+        setSelectedTournament(assigned);
+      }
+    }
+  }, [user, tournaments, selectedTournament]);
+
+  // Auto-select season for restricted admins
+  useEffect(() => {
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+      user.tournament_id &&
+      selectedTournament &&
+      !activeSeason &&
+      seasons.length > 0
+    ) {
+      const assigned = seasons.find((s) => s.id === user.tournament_id);
+      if (assigned) {
+        setActiveSeason(assigned);
+      }
+    }
+  }, [user, seasons, selectedTournament, activeSeason]);
 
   // --- VIEWS ---
 
@@ -229,8 +270,7 @@ export const TournamentsPage: React.FC = () => {
               Your main leagues and cup competitions.
             </p>
           </div>
-          {(user?.role === UserRoles.SUPER_ADMIN ||
-            user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          {user?.role === UserRoles.SUPER_ADMIN && (
             <button
               onClick={() => {
                 setIsEditing(false);
@@ -294,8 +334,7 @@ export const TournamentsPage: React.FC = () => {
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <div className="flex gap-1.5">
-                      {(user?.role === UserRoles.SUPER_ADMIN ||
-                        user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+                      {user?.role === UserRoles.SUPER_ADMIN && (
                         <>
                           <button
                             onClick={(e) => {
@@ -454,18 +493,31 @@ export const TournamentsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <button
-        onClick={() => {
-          if (activeSeason) {
-            setActiveSeason(null);
-          } else {
-            setSelectedTournament(null);
-          }
-        }}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-      >
-        ← Back to {activeSeason ? "Seasons" : "Tournaments"}
-      </button>
+      {user?.role === UserRoles.SUPER_ADMIN && (
+        <button
+          onClick={() => {
+            if (activeSeason) {
+              setActiveSeason(null);
+            } else {
+              setSelectedTournament(null);
+            }
+          }}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          ← Back to {activeSeason ? "Seasons" : "Tournaments"}
+        </button>
+      )}
+
+      {user?.role === UserRoles.TOURNAMENT_ADMIN &&
+        !user.tournament_id &&
+        activeSeason && (
+          <button
+            onClick={() => setActiveSeason(null)}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            ← Back to Seasons
+          </button>
+        )}
 
       {activeSeason ? (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -607,7 +659,16 @@ export const TournamentsPage: React.FC = () => {
                   </span>
                   <select
                     className="bg-slate-800 border-none rounded-lg text-sm font-bold text-white px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[140px]"
-                    value={filterSeasonId}
+                    value={
+                      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+                      user.tournament_id
+                        ? user.tournament_id
+                        : filterSeasonId
+                    }
+                    disabled={
+                      user?.role === UserRoles.TOURNAMENT_ADMIN &&
+                      !!user.tournament_id
+                    }
                     onChange={(e) => setFilterSeasonId(e.target.value)}
                   >
                     {filteredSeasons.map((s) => (
@@ -618,8 +679,7 @@ export const TournamentsPage: React.FC = () => {
                   </select>
                 </div>
               )}
-              {(user?.role === UserRoles.SUPER_ADMIN ||
-                user?.role === UserRoles.TOURNAMENT_ADMIN) && (
+              {user?.role === UserRoles.SUPER_ADMIN && (
                 <button
                   onClick={() => {
                     setIsEditing(false);
