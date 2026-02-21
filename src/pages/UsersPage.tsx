@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FiPlus,
   FiEdit2,
@@ -10,10 +10,12 @@ import {
   FiKey,
   FiHash,
   FiUsers,
+  FiCalendar,
 } from "react-icons/fi";
 import { userService } from "../services/userService";
 import { teamService } from "../services/teamService";
 import { tournamentService } from "../services/tournamentService";
+import { competitionService } from "../services/competitionService";
 import { UserRoles } from "../types";
 import type {
   User,
@@ -22,6 +24,7 @@ import type {
   UserCreateDto,
   UserUpdateDto,
   UserRole,
+  Competition,
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
@@ -30,6 +33,7 @@ export const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -46,6 +50,7 @@ export const UsersPage: React.FC = () => {
     role: UserRoles.VIEWER,
     team_id: "",
     tournament_id: "",
+    competition_id: "",
   });
 
   // Delete Modal
@@ -60,14 +65,17 @@ export const UsersPage: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [usersData, teamsData, tournamentsData] = await Promise.all([
-        userService.getAll(),
-        teamService.getAll(),
-        tournamentService.getAll(),
-      ]);
+      const [usersData, teamsData, tournamentsData, competitionsData] =
+        await Promise.all([
+          userService.getAll(),
+          teamService.getAll(),
+          tournamentService.getAll(),
+          competitionService.getAll(),
+        ]);
       setUsers(usersData);
       setTeams(teamsData);
       setTournaments(tournamentsData);
+      setCompetitions(competitionsData);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -75,12 +83,20 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const filteredTournaments = useMemo(() => {
+    if (!formData.competition_id) return [];
+    return tournaments.filter(
+      (t) => t.competition_id === formData.competition_id,
+    );
+  }, [formData.competition_id, tournaments]);
+
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const data = { ...formData };
       if (data.team_id === "") delete data.team_id;
       if (data.tournament_id === "") delete data.tournament_id;
+      if (data.competition_id === "") delete data.competition_id;
 
       if (isEditing && selectedUser) {
         const updateData: UserUpdateDto = {
@@ -89,6 +105,7 @@ export const UsersPage: React.FC = () => {
           role: data.role as UserRole,
           team_id: data.team_id,
           tournament_id: data.tournament_id,
+          competition_id: data.competition_id,
         };
         if (data.password) updateData.password = data.password;
         await userService.update(selectedUser.id, updateData);
@@ -127,6 +144,7 @@ export const UsersPage: React.FC = () => {
       role: user.role as UserRole,
       team_id: user.team_id || "",
       tournament_id: user.tournament_id || "",
+      competition_id: user.competition_id || "",
     });
     setShowUserModal(true);
   };
@@ -178,6 +196,7 @@ export const UsersPage: React.FC = () => {
               role: UserRoles.VIEWER,
               team_id: "",
               tournament_id: "",
+              competition_id: "",
             });
             setShowUserModal(true);
           }}
@@ -286,12 +305,22 @@ export const UsersPage: React.FC = () => {
                     </div>
                   )}
 
-                  {(user.role === "TOURNAMENT_ADMIN" ||
-                    user.role === "REFEREE" ||
-                    user.tournament_id) && (
+                  {user.competition_id && (
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        Tournament
+                        Competition
+                      </span>
+                      <span className="text-xs font-bold text-slate-300">
+                        {competitions.find((c) => c.id === user.competition_id)
+                          ?.name || "N/A"}
+                      </span>
+                    </div>
+                  )}
+
+                  {user.tournament_id && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        Season
                       </span>
                       <span className="text-xs font-bold text-slate-300">
                         {tournaments.find((t) => t.id === user.tournament_id)
@@ -392,6 +421,7 @@ export const UsersPage: React.FC = () => {
                           role: e.target.value as UserRole,
                           team_id: "",
                           tournament_id: "",
+                          competition_id: "",
                         })
                       }
                     >
@@ -430,32 +460,66 @@ export const UsersPage: React.FC = () => {
                 )}
 
                 {(formData.role === "TOURNAMENT_ADMIN" ||
-                  formData.role === "REFEREE") && (
+                  formData.role === "REFEREE" ||
+                  formData.role === "NEWS_REPORTER") && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="label">Assigned Tournament</label>
+                    <label className="label">Assigned Competition</label>
                     <div className="relative">
                       <FiHash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                       <select
                         required
                         className="input pl-12 h-12 appearance-none"
-                        value={formData.tournament_id}
+                        value={formData.competition_id}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            tournament_id: e.target.value,
+                            competition_id: e.target.value,
+                            tournament_id: "", // Reset tournament selection when competition changes
                           })
                         }
                       >
-                        <option value="">Select a tournament...</option>
-                        {tournaments.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
+                        <option value="">Select a competition...</option>
+                        {competitions.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
                 )}
+
+                {(formData.role === "TOURNAMENT_ADMIN" ||
+                  formData.role === "REFEREE" ||
+                  formData.role === "NEWS_REPORTER") &&
+                  formData.competition_id && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="label">
+                        Assigned Season (Tournament)
+                      </label>
+                      <div className="relative">
+                        <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <select
+                          required
+                          className="input pl-12 h-12 appearance-none"
+                          value={formData.tournament_id}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              tournament_id: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">Select a season...</option>
+                          {filteredTournaments.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({t.year})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
 
                 <div className="flex gap-3 pt-6">
                   <button

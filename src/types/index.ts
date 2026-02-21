@@ -45,6 +45,7 @@ export interface User {
   role: UserRole;
   team_id?: string;
   tournament_id?: string;
+  competition_id?: string;
 }
 
 export interface UserCreateDto {
@@ -54,6 +55,7 @@ export interface UserCreateDto {
   role: UserRole;
   team_id?: string;
   tournament_id?: string;
+  competition_id?: string;
 }
 
 export interface UserUpdateDto {
@@ -64,6 +66,7 @@ export interface UserUpdateDto {
   is_active?: boolean;
   team_id?: string;
   tournament_id?: string;
+  competition_id?: string;
 }
 
 // Competition Types
