@@ -71,27 +71,38 @@ export const PlayersPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Auto-select for COACH role
+  // Auto-select for COACH and TOURNAMENT_ADMIN roles
   useEffect(() => {
     if (
-      user?.role === UserRoles.COACH &&
+      (user?.role === UserRoles.COACH ||
+        user?.role === UserRoles.TOURNAMENT_ADMIN) &&
       !selectedCompetition &&
-      competitions.length > 0 &&
-      tournaments.length > 0 &&
-      teams.length > 0
+      competitions.length > 0
     ) {
-      const context = getCoachTeamContext();
-      if (context) {
-        const comp = competitions.find(
-          (c) => c.id.toString() === context.competitionId,
-        );
-        const tour = tournaments.find(
-          (t) => t.id.toString() === context.tournamentId,
-        );
-        if (comp && tour) {
+      if (user.role === UserRoles.COACH) {
+        if (tournaments.length > 0 && teams.length > 0) {
+          const context = getCoachTeamContext();
+          if (context) {
+            const comp = competitions.find(
+              (c) => c.id.toString() === context.competitionId,
+            );
+            const tour = tournaments.find(
+              (t) => t.id.toString() === context.tournamentId,
+            );
+            if (comp && tour) {
+              setSelectedCompetition(comp);
+              setSelectedTournament(tour);
+              setFilterTeamId(context.teamId);
+            }
+          }
+        }
+      } else if (
+        user.role === UserRoles.TOURNAMENT_ADMIN &&
+        user.competition_id
+      ) {
+        const comp = competitions.find((c) => c.id === user.competition_id);
+        if (comp) {
           setSelectedCompetition(comp);
-          setSelectedTournament(tour);
-          setFilterTeamId(context.teamId);
         }
       }
     }
@@ -192,6 +203,44 @@ export const PlayersPage: React.FC = () => {
 
   // ============ VIEW 1: COMPETITION CARDS ============
   if (!selectedCompetition) {
+    // Coaches and Tournament Admins: auto-selected — never show the picker grid
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN ||
+      user?.role === UserRoles.COACH
+    ) {
+      if (loading) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-slate-500 font-bold animate-pulse">
+                Loading your competition...
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Finished loading but nothing resolved — no valid assignment
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center p-8 bg-slate-900/50 rounded-2xl border border-slate-800 max-w-md">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <FiAward size={32} />
+            </div>
+            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tight">
+              No Access Assigned
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              Your account hasn't been assigned to a competition or season yet.
+              Please contact a Super Admin to get set up.
+            </p>
+            <div className="h-1 w-20 bg-red-500/20 mx-auto rounded-full" />
+          </div>
+        </div>
+      );
+    }
+
     const filteredComps = competitions.filter((c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
@@ -355,17 +404,18 @@ export const PlayersPage: React.FC = () => {
 
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
-        {user?.role !== UserRoles.COACH && (
-          <button
-            onClick={() => {
-              setSelectedCompetition(null);
-              setSearchTerm("");
-            }}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-          >
-            ← Back to Competitions
-          </button>
-        )}
+        {user?.role !== UserRoles.COACH &&
+          user?.role !== UserRoles.TOURNAMENT_ADMIN && (
+            <button
+              onClick={() => {
+                setSelectedCompetition(null);
+                setSearchTerm("");
+              }}
+              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+            >
+              ← Back to Competitions
+            </button>
+          )}
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-6">
@@ -531,19 +581,20 @@ export const PlayersPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {user?.role !== UserRoles.COACH && (
-        <button
-          onClick={() => {
-            setSelectedTournament(null);
-            setSearchTerm("");
-            setFilterPosition("all");
-            setFilterTeamId("all");
-          }}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          ← Back to {selectedCompetition.name}
-        </button>
-      )}
+      {user?.role !== UserRoles.COACH &&
+        user?.role !== UserRoles.TOURNAMENT_ADMIN && (
+          <button
+            onClick={() => {
+              setSelectedTournament(null);
+              setSearchTerm("");
+              setFilterPosition("all");
+              setFilterTeamId("all");
+            }}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            ← Back to {selectedCompetition.name}
+          </button>
+        )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">

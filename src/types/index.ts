@@ -37,8 +37,9 @@ export const UserRoles = {
 };
 
 export interface User {
-  id: string; // Backend uses int for ID in users.py but auth/me returns string? I'll use string to be safe as it matches existing code.
+  id: number; // Backend uses int for ID
   email: string;
+  username: string;
   full_name: string;
   is_active: boolean;
   is_superuser: boolean;
@@ -220,7 +221,8 @@ export interface Match {
   lineups?: Lineup[];
   formation_a: string;
   formation_b: string;
-  referee_id?: string;
+  referee_id?: number;
+  referee?: User;
 }
 
 export type CardType = "yellow" | "red";
@@ -270,6 +272,7 @@ export interface CreateMatchDto {
   team_b_id: string;
   start_time: string;
   total_time?: number;
+  referee_id?: number;
 }
 
 export interface UpdateMatchScoreDto {
@@ -294,6 +297,7 @@ export interface UpdateMatchScoreDto {
   is_extra_time?: boolean;
   formation_a?: string;
   formation_b?: string;
+  referee_id?: number;
 }
 
 // Standings Types

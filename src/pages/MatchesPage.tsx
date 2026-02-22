@@ -8,6 +8,7 @@ import {
   useTeams,
   useTournaments,
   useCompetitions,
+  useReferees,
   queryKeys,
 } from "../hooks/useData";
 import { useNavigate } from "react-router-dom";
@@ -35,9 +36,14 @@ export const MatchesPage: React.FC = () => {
     useTournaments();
   const { data: competitions = [], isLoading: loadingCompetitions } =
     useCompetitions();
+  const { data: referees = [], isLoading: loadingReferees } = useReferees();
 
   const loading =
-    loadingMatches || loadingTeams || loadingTournaments || loadingCompetitions;
+    loadingMatches ||
+    loadingTeams ||
+    loadingTournaments ||
+    loadingCompetitions ||
+    loadingReferees;
 
   // Drill-down selection
   const [selectedCompetition, setSelectedCompetition] =
@@ -58,21 +64,25 @@ export const MatchesPage: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Auto-selection for TOURNAMENT_ADMIN and COACH
+  // Auto-selection for TOURNAMENT_ADMIN, COACH, and REFEREE
   useEffect(() => {
     if (
       (user?.role === UserRoles.TOURNAMENT_ADMIN ||
-        user?.role === UserRoles.COACH) &&
-      user.competition_id &&
+        user?.role === UserRoles.COACH ||
+        user?.role === UserRoles.REFEREE) &&
       competitions.length > 0 &&
       !selectedCompetition
     ) {
-      const comp = competitions.find((c) => c.id === user.competition_id);
+      let comp;
+      if (user.role === UserRoles.TOURNAMENT_ADMIN && user.competition_id) {
+        comp = competitions.find((c) => c.id === user.competition_id);
+      } else {
+        // Coaches and Referees only receive their own competition from the API
+        comp = competitions[0];
+      }
+
       if (comp) {
         setSelectedCompetition(comp);
-        if (user.tournament_id) {
-          setFilterSeasonId(user.tournament_id);
-        }
       }
     }
   }, [user, competitions, selectedCompetition]);
@@ -83,8 +93,33 @@ export const MatchesPage: React.FC = () => {
         (t) => t.competition_id === selectedCompetition.id,
       );
       if (compSeasons.length > 0) {
-        const latest = [...compSeasons].sort((a, b) => b.year - a.year)[0];
-        setFilterSeasonId(latest.id);
+        let seasonToSelect = null;
+
+        // Smart selection for Referees: find a season where they have a match
+        if (user?.role === UserRoles.REFEREE && matches.length > 0) {
+          const refereeMatchTournamentIds = new Set(
+            matches
+              .filter((m) => m.referee_id === user.id)
+              .map((m) => m.tournament_id),
+          );
+          seasonToSelect = compSeasons.find((s) =>
+            refereeMatchTournamentIds.has(s.id),
+          );
+        }
+
+        // Default or fixed tournament_id selection
+        if (!seasonToSelect && user?.tournament_id) {
+          seasonToSelect = compSeasons.find((t) => t.id === user.tournament_id);
+        }
+
+        // Fallback to latest season
+        if (!seasonToSelect) {
+          seasonToSelect = [...compSeasons].sort((a, b) => b.year - a.year)[0];
+        }
+
+        if (seasonToSelect) {
+          setFilterSeasonId(seasonToSelect.id);
+        }
       } else {
         setFilterSeasonId("");
       }
@@ -93,7 +128,7 @@ export const MatchesPage: React.FC = () => {
     }
     setSelectedRound("all");
     setFilter("all");
-  }, [selectedCompetition, tournaments]);
+  }, [selectedCompetition, tournaments, user, matches]);
 
   const [mode, setMode] = useState<"create" | "update">("create");
 
@@ -117,6 +152,7 @@ export const MatchesPage: React.FC = () => {
           team_b_id: match.team_b_id!,
           start_time: match.start_time!,
           total_time: match.total_time || 90,
+          referee_id: match.referee_id,
         });
       }
     },
@@ -183,6 +219,7 @@ export const MatchesPage: React.FC = () => {
         score_a: currentMatch.score_a,
         score_b: currentMatch.score_b,
         status: currentMatch.status,
+        referee_id: currentMatch.referee_id,
       };
 
       const existingMatch = matches.find((m) => m.id === currentMatch.id);
@@ -274,6 +311,45 @@ export const MatchesPage: React.FC = () => {
 
   // ============ VIEW 1: COMPETITION CARDS ============
   if (!selectedCompetition) {
+    // Coaches and Tournament Admins: auto-selected — never show the picker grid
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN ||
+      user?.role === UserRoles.COACH ||
+      user?.role === UserRoles.REFEREE
+    ) {
+      if (loading) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-slate-500 font-bold animate-pulse">
+                Loading your competition...
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Finished loading but nothing resolved — no valid assignment
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center p-8 bg-slate-900/50 rounded-2xl border border-slate-800 max-w-md">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <FiAward size={32} />
+            </div>
+            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tight">
+              No Access Assigned
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              Your account hasn't been assigned to a competition or season yet.
+              Please contact a Super Admin to get set up.
+            </p>
+            <div className="h-1 w-20 bg-red-500/20 mx-auto rounded-full" />
+          </div>
+        </div>
+      );
+    }
+
     const filteredComps = competitions.filter((c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
@@ -414,7 +490,8 @@ export const MatchesPage: React.FC = () => {
       )}
 
       {user?.role !== UserRoles.TOURNAMENT_ADMIN &&
-        user?.role !== UserRoles.COACH && (
+        user?.role !== UserRoles.COACH &&
+        user?.role !== UserRoles.REFEREE && (
           <button
             onClick={() => {
               setSelectedCompetition(null);
@@ -615,6 +692,12 @@ export const MatchesPage: React.FC = () => {
                                 )}
                               </span>
                             </div>
+                            {match.referee && (
+                              <div className="flex items-center gap-2.5 text-blue-400 font-bold text-xs mt-2 pl-0.5">
+                                <FiAward className="text-blue-500" size={14} />
+                                <span>{match.referee.full_name}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="hidden lg:block">
                             {getStatusBadge(match)}
@@ -916,6 +999,36 @@ export const MatchesPage: React.FC = () => {
                   }
                 />
               </div>
+              <div>
+                <label className="label text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">
+                  Referee (Optional)
+                </label>
+                <div className="relative group">
+                  <select
+                    className="input h-12 appearance-none pr-10"
+                    value={currentMatch.referee_id || ""}
+                    onChange={(e) =>
+                      setCurrentMatch({
+                        ...currentMatch,
+                        referee_id: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                  >
+                    <option value="">No Referee Assigned</option>
+                    {referees.map((ref) => (
+                      <option key={ref.id} value={ref.id}>
+                        {ref.full_name} ({ref.username})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-500 group-hover:text-blue-500 transition-colors">
+                    <FiAward size={18} />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
@@ -925,7 +1038,7 @@ export const MatchesPage: React.FC = () => {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary flex-1 h-12">
-                  Schedule
+                  {mode === "create" ? "Schedule" : "Update"}
                 </button>
               </div>
             </form>

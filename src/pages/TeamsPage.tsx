@@ -113,26 +113,44 @@ export const TeamsPage: React.FC = () => {
     deleteTeamMutation.mutate(itemToDelete);
   };
 
-  // Auto-select competition and season for tournament admins
+  // Auto-select competition and season for tournament admins AND coaches
   useEffect(() => {
-    if (
-      user?.role === UserRoles.TOURNAMENT_ADMIN &&
-      !selectedCompetition &&
-      !loadingCompetitions &&
-      competitions.length > 0
-    ) {
-      const assignedComp = competitions.find(
-        (c) => c.id === user.competition_id,
-      );
-
-      if (assignedComp) {
-        setSelectedCompetition(assignedComp);
-        if (user.tournament_id) {
-          setFilterSeasonId(user.tournament_id);
+    if (!selectedCompetition && !loadingCompetitions && !loadingTournaments) {
+      if (
+        user?.role === UserRoles.TOURNAMENT_ADMIN &&
+        competitions.length > 0
+      ) {
+        const assignedComp = competitions.find(
+          (c) => c.id === user.competition_id,
+        );
+        if (assignedComp) {
+          setSelectedCompetition(assignedComp);
+          if (user.tournament_id) {
+            setFilterSeasonId(user.tournament_id);
+          }
+        }
+      } else if (user?.role === UserRoles.COACH && competitions.length > 0) {
+        // Coaches only receive their own competition from the API, auto-select it
+        setSelectedCompetition(competitions[0]);
+        // Also pre-select the season that matches their team's tournament
+        if (user.team_id) {
+          const team = teams.find(
+            (t) => t.id?.toString() === user.team_id?.toString(),
+          );
+          if (team?.tournament_id) {
+            setFilterSeasonId(team.tournament_id);
+          }
         }
       }
     }
-  }, [user, competitions, selectedCompetition, loadingCompetitions]);
+  }, [
+    user,
+    competitions,
+    teams,
+    selectedCompetition,
+    loadingCompetitions,
+    loadingTournaments,
+  ]);
 
   useEffect(() => {
     if (selectedCompetition) {
@@ -171,23 +189,25 @@ export const TeamsPage: React.FC = () => {
 
   // ============ VIEW 1: COMPETITION CARDS ============
   if (!selectedCompetition) {
-    // If it's a tournament admin, we wait for the auto-select to happen or show loading
-    // We NEVER want them to see the competition selection grid
-    if (user?.role === UserRoles.TOURNAMENT_ADMIN) {
-      if (loadingCompetitions) {
+    // Coaches and Tournament Admins: auto-selected — never show the picker grid
+    if (
+      user?.role === UserRoles.TOURNAMENT_ADMIN ||
+      user?.role === UserRoles.COACH
+    ) {
+      if (loadingCompetitions || loadingTeams) {
         return (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
               <p className="text-slate-500 font-bold animate-pulse">
-                Loading assigned competition...
+                Loading your competition...
               </p>
             </div>
           </div>
         );
       }
 
-      // If finished loading but no competition selected, it means the user has no valid assignment
+      // Finished loading but nothing resolved — no valid assignment
       return (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center p-8 bg-slate-900/50 rounded-2xl border border-slate-800 max-w-md">

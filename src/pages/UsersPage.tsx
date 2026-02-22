@@ -43,7 +43,7 @@ export const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState<UserCreateDto & { id?: string }>({
+  const [formData, setFormData] = useState<UserCreateDto & { id?: number }>({
     email: "",
     full_name: "",
     password: "",
@@ -63,7 +63,7 @@ export const UsersPage: React.FC = () => {
 
   // Delete Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {

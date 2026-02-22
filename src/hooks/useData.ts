@@ -15,6 +15,7 @@ export const queryKeys = {
   news: ["news"] as const,
   teamDetail: (id: string) => ["team", id] as const,
   matchDetail: (id: string) => ["match", id] as const,
+  referees: ["referees"] as const,
 };
 
 export const useCompetitions = () => {
@@ -72,5 +73,14 @@ export const useMatchDetail = (id: string) => {
     queryKey: queryKeys.matchDetail(id),
     queryFn: () => matchService.getById(id),
     enabled: !!id,
+  });
+};
+
+import { userService } from "../services/userService";
+
+export const useReferees = () => {
+  return useQuery({
+    queryKey: queryKeys.referees,
+    queryFn: () => userService.getReferees(),
   });
 };
