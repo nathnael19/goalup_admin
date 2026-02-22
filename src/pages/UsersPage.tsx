@@ -28,6 +28,7 @@ import type {
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
+import { getFullImageUrl } from "../utils/url";
 
 export const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -187,12 +188,16 @@ export const UsersPage: React.FC = () => {
       !filters.tournament_id || u.tournament_id === filters.tournament_id;
     const matchesTeam = !filters.team_id || u.team_id === filters.team_id;
 
+    // Hide Super Admins from the list
+    const notSuperAdmin = u.role !== "SUPER_ADMIN";
+
     return (
       matchesSearch &&
       matchesRole &&
       matchesCompetition &&
       matchesTournament &&
-      matchesTeam
+      matchesTeam &&
+      notSuperAdmin
     );
   });
 
@@ -274,11 +279,13 @@ export const UsersPage: React.FC = () => {
                   }
                 >
                   <option value="">All Roles</option>
-                  {Object.values(UserRoles).map((role) => (
-                    <option key={role} value={role}>
-                      {role.replace("_", " ")}
-                    </option>
-                  ))}
+                  {Object.values(UserRoles)
+                    .filter((role) => role !== "SUPER_ADMIN")
+                    .map((role) => (
+                      <option key={role} value={role}>
+                        {role.replace("_", " ")}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -364,7 +371,7 @@ export const UsersPage: React.FC = () => {
               Total Users
             </p>
             <p className="text-2xl font-black text-white font-display leading-none">
-              {users.length}
+              {filteredUsers.length}
             </p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 shadow-inner">
@@ -411,8 +418,16 @@ export const UsersPage: React.FC = () => {
               </div>
               <div className="p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-500 font-bold text-xl">
-                    {user.full_name?.charAt(0) || "U"}
+                  <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-500 font-bold text-xl overflow-hidden shrink-0 shadow-lg">
+                    {user.profile_image_url ? (
+                      <img
+                        src={getFullImageUrl(user.profile_image_url)}
+                        alt={user.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.full_name?.charAt(0) || "U"
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-white font-display tracking-tight leading-none mb-1">
@@ -488,9 +503,29 @@ export const UsersPage: React.FC = () => {
           />
           <div className="relative glass-panel bg-[#020617]/40 backdrop-blur-3xl border border-white/10 rounded-4xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden max-h-[95vh] flex flex-col">
             <div className="p-8 overflow-y-auto">
-              <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight font-display">
-                {isEditing ? "Edit User" : "New User"}
-              </h2>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center text-blue-500 font-bold text-2xl overflow-hidden shadow-xl shrink-0">
+                  {formData.profile_image_url ? (
+                    <img
+                      src={getFullImageUrl(formData.profile_image_url)}
+                      alt={formData.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    formData.full_name?.charAt(0) || <FiUser size={32} />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight font-display leading-none mb-1">
+                    {isEditing ? "Edit User" : "New User"}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {isEditing
+                      ? `Managing ${formData.email}`
+                      : "Create a new administrative user"}
+                  </p>
+                </div>
+              </div>
               <form onSubmit={handleCreateOrUpdate} className="space-y-5">
                 <div>
                   <label className="label">Full Name</label>
@@ -499,9 +534,10 @@ export const UsersPage: React.FC = () => {
                     <input
                       required
                       type="text"
-                      className="input pl-12 h-12"
+                      className={`input pl-12 h-12 ${isEditing ? "opacity-60 cursor-not-allowed bg-slate-800/20" : ""}`}
                       placeholder="John Doe"
                       value={formData.full_name}
+                      readOnly={isEditing}
                       onChange={(e) =>
                         setFormData({ ...formData, full_name: e.target.value })
                       }
@@ -516,9 +552,10 @@ export const UsersPage: React.FC = () => {
                     <input
                       required
                       type="email"
-                      className="input pl-12 h-12"
+                      className={`input pl-12 h-12 ${isEditing ? "opacity-60 cursor-not-allowed bg-slate-800/20" : ""}`}
                       placeholder="john@example.com"
                       value={formData.email}
+                      readOnly={isEditing}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
@@ -526,14 +563,13 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {isEditing && (
+                {!isEditing && (
                   <div>
-                    <label className="label">
-                      New Password (Leave blank to keep current)
-                    </label>
+                    <label className="label">Password</label>
                     <div className="relative">
                       <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                       <input
+                        required
                         type="password"
                         className="input pl-12 h-12"
                         placeholder="••••••••"
@@ -563,7 +599,6 @@ export const UsersPage: React.FC = () => {
                         })
                       }
                     >
-                      <option value="SUPER_ADMIN">Super Admin</option>
                       <option value="TOURNAMENT_ADMIN">Tournament Admin</option>
                       <option value="COACH">Coach</option>
                       <option value="REFEREE">Referee</option>
