@@ -24,8 +24,7 @@ export type UserRole =
   | "TOURNAMENT_ADMIN"
   | "NEWS_REPORTER"
   | "COACH"
-  | "REFEREE"
-  | "VIEWER";
+  | "REFEREE";
 
 export const UserRoles = {
   SUPER_ADMIN: "SUPER_ADMIN" as UserRole,
@@ -33,7 +32,6 @@ export const UserRoles = {
   NEWS_REPORTER: "NEWS_REPORTER" as UserRole,
   COACH: "COACH" as UserRole,
   REFEREE: "REFEREE" as UserRole,
-  VIEWER: "VIEWER" as UserRole,
 };
 
 export interface User {
@@ -47,27 +45,34 @@ export interface User {
   team_id?: string;
   tournament_id?: string;
   competition_id?: string;
+  profile_image_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserCreateDto {
   email: string;
   full_name: string;
-  password: string;
+  password?: string;
   role: UserRole;
   team_id?: string;
   tournament_id?: string;
   competition_id?: string;
+  profile_image_url?: string;
 }
 
 export interface UserUpdateDto {
   email?: string;
   full_name?: string;
   password?: string;
+  current_password?: string;
+  confirm_password?: string; // For frontend validation
   role?: UserRole;
   is_active?: boolean;
   team_id?: string;
   tournament_id?: string;
   competition_id?: string;
+  profile_image_url?: string;
 }
 
 // Competition Types

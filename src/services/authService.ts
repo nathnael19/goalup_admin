@@ -20,6 +20,13 @@ export const authService = {
     return response.data;
   },
 
+  async updateProfile(
+    userData: Partial<User> & { password?: string },
+  ): Promise<User> {
+    const response = await apiClient.patch<User>("/auth/me", userData);
+    return response.data;
+  },
+
   logout() {
     localStorage.removeItem("access_token");
   },

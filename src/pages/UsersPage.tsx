@@ -47,7 +47,7 @@ export const UsersPage: React.FC = () => {
     email: "",
     full_name: "",
     password: "",
-    role: UserRoles.VIEWER,
+    role: UserRoles.REFEREE,
     team_id: "",
     tournament_id: "",
     competition_id: "",
@@ -203,12 +203,11 @@ export const UsersPage: React.FC = () => {
       COACH: "bg-green-500/10 text-green-500 border-green-500/20",
       REFEREE: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       NEWS_REPORTER: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      VIEWER: "bg-slate-500/10 text-slate-500 border-slate-500/20",
     };
     return (
       <span
         className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-          roles[role] || roles.VIEWER
+          roles[role] || "bg-slate-500/10 text-slate-500 border-slate-500/20"
         }`}
       >
         {role.replace("_", " ")}
@@ -234,7 +233,7 @@ export const UsersPage: React.FC = () => {
               email: "",
               full_name: "",
               password: "",
-              role: UserRoles.VIEWER,
+              role: UserRoles.REFEREE,
               team_id: "",
               tournament_id: "",
               competition_id: "",
@@ -527,26 +526,25 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="label">
-                    {isEditing
-                      ? "New Password (Leave blank to keep current)"
-                      : "Password"}
-                  </label>
-                  <div className="relative">
-                    <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input
-                      required={!isEditing}
-                      type="password"
-                      className="input pl-12 h-12"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                    />
+                {isEditing && (
+                  <div>
+                    <label className="label">
+                      New Password (Leave blank to keep current)
+                    </label>
+                    <div className="relative">
+                      <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="password"
+                        className="input pl-12 h-12"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div>
                   <label className="label">Role</label>
@@ -565,7 +563,6 @@ export const UsersPage: React.FC = () => {
                         })
                       }
                     >
-                      <option value="VIEWER">Viewer</option>
                       <option value="SUPER_ADMIN">Super Admin</option>
                       <option value="TOURNAMENT_ADMIN">Tournament Admin</option>
                       <option value="COACH">Coach</option>

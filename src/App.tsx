@@ -41,6 +41,14 @@ const NewsPage = lazy(() =>
 const UsersPage = lazy(() =>
   import("./pages/UsersPage").then((m) => ({ default: m.UsersPage })),
 );
+const ProfilePage = lazy(() =>
+  import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+);
+const SetupPasswordPage = lazy(() =>
+  import("./pages/SetupPasswordPage").then((m) => ({
+    default: m.SetupPasswordPage,
+  })),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -67,6 +75,7 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/setup-password" element={<SetupPasswordPage />} />
               <Route
                 path="/"
                 element={
@@ -177,6 +186,7 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="profile" element={<ProfilePage />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

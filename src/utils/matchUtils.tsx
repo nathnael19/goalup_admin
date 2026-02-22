@@ -4,7 +4,7 @@ export const isMatchLocked = (m: Match) => {
   return m.status === "finished";
 };
 
-export const calculateMatchTimeDisplay = (m: Match, _tick?: number) => {
+export const calculateMatchTimeDisplay = (m: Match) => {
   if (m.status !== "live") return null;
   if (m.is_halftime) return "HT";
 
@@ -36,7 +36,7 @@ export const getStatusBadge = (m: Match, tick?: number) => {
         </span>
       );
     case "live": {
-      const timeDisplay = calculateMatchTimeDisplay(m, tick);
+      const timeDisplay = calculateMatchTimeDisplay(m);
       return (
         <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}

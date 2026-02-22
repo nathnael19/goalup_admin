@@ -13,6 +13,7 @@ import {
   FiFileText,
   FiSettings,
 } from "react-icons/fi";
+import { getFullImageUrl } from "../utils/url";
 
 export const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -196,9 +197,26 @@ export const MainLayout: React.FC = () => {
 
         {/* User Section */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/40">
-          <div className="flex items-center gap-3 mb-4 p-2 rounded-xl bg-slate-800/30">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shrink-0">
-              {user?.full_name?.charAt(0) || "A"}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center gap-3 mb-4 p-2 rounded-xl transition-all duration-300 ${
+                isActive
+                  ? "bg-blue-600/20 ring-1 ring-blue-500/50"
+                  : "bg-slate-800/30 hover:bg-slate-800/50"
+              }`
+            }
+          >
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shrink-0 overflow-hidden">
+              {user?.profile_image_url ? (
+                <img
+                  src={getFullImageUrl(user.profile_image_url)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                user?.full_name?.charAt(0) || "A"
+              )}
             </div>
             <div className={`flex-1 min-w-0 ${!sidebarOpen && "lg:hidden"}`}>
               <p className="text-sm font-bold text-white truncate leading-none mb-1">
@@ -208,7 +226,7 @@ export const MainLayout: React.FC = () => {
                 {user?.role?.replace("_", " ") || "Admin"}
               </p>
             </div>
-          </div>
+          </NavLink>
           <button
             onClick={logout}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-500 font-bold text-sm border border-red-500/20"
