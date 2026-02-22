@@ -110,7 +110,9 @@ export const DashboardPage: React.FC = () => {
           : 0,
       myArticles:
         user?.role === UserRoles.NEWS_REPORTER
-          ? news.filter((n: News) => n.author_id === user.id).length
+          ? news.filter(
+              (n: News) => n.author_id?.toString() === user?.id?.toString(),
+            ).length
           : 0,
       totalNews: news.length,
     };

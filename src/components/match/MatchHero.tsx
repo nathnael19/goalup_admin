@@ -6,7 +6,6 @@ import { getFullImageUrl } from "../../utils/url";
 
 interface MatchHeroProps {
   match: Match;
-  tick: number;
   isEditing: boolean;
   editedMatch: Partial<Match>;
   updateScore: (team: "a" | "b", delta: number) => void;
@@ -17,7 +16,6 @@ interface MatchHeroProps {
 
 export const MatchHero: React.FC<MatchHeroProps> = ({
   match,
-  tick,
   isEditing,
   editedMatch,
   updateScore,
@@ -84,7 +82,7 @@ export const MatchHero: React.FC<MatchHeroProps> = ({
             </div>
           </div>
           <div className="scale-110 drop-shadow-2xl">
-            {getStatusBadge(match, tick)}
+            {getStatusBadge(match)}
           </div>
         </div>
 

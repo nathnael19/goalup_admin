@@ -37,7 +37,6 @@ export const MatchDetailPage: React.FC = () => {
     teamADetail,
     teamBDetail,
     otherLegMatch,
-    tick,
     calculateMatchTime,
     isLoading,
     mutations,
@@ -262,7 +261,6 @@ export const MatchDetailPage: React.FC = () => {
 
       <MatchHero
         match={match}
-        tick={tick}
         isEditing={isEditing}
         editedMatch={editedMatch}
         updateScore={handleUpdateScore}
@@ -273,7 +271,6 @@ export const MatchDetailPage: React.FC = () => {
 
       <MatchCommandPanel
         match={match}
-        tick={tick}
         userRole={user?.role}
         isLocked={isMatchLocked(match)}
         onStartMatch={() =>

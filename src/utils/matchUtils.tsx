@@ -27,7 +27,7 @@ export const calculateMatchTimeDisplay = (m: Match) => {
   return "1'";
 };
 
-export const getStatusBadge = (m: Match, tick?: number) => {
+export const getStatusBadge = (m: Match) => {
   switch (m.status) {
     case "finished":
       return (

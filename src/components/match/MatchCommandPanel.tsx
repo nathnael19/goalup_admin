@@ -15,7 +15,6 @@ import { getFullImageUrl } from "../../utils/url";
 
 interface MatchCommandPanelProps {
   match: Match;
-  tick: number;
   userRole?: UserRole;
   isLocked?: boolean;
   onStartMatch: () => void;
@@ -35,7 +34,6 @@ interface MatchCommandPanelProps {
 
 export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
   match,
-  tick,
   userRole,
   isLocked,
   onStartMatch,
@@ -80,7 +78,7 @@ export const MatchCommandPanel: React.FC<MatchCommandPanelProps> = ({
               <div className="flex items-center gap-3 px-4 py-2 bg-blue-600/10 border border-blue-500/20 rounded-2xl">
                 <FiClock className="text-blue-500 animate-spin-slow" />
                 <span className="text-xl font-black text-white tabular-nums">
-                  {calculateMatchTimeDisplay(match, tick)}
+                  {calculateMatchTimeDisplay(match)}
                 </span>
               </div>
             )}
