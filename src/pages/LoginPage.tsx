@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AxiosError } from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../context/AuthContext";
@@ -127,6 +127,14 @@ export const LoginPage: React.FC = () => {
                   {formik.errors.password}
                 </p>
               )}
+              <div className="flex justify-end mt-2">
+                <Link
+                  to="/forgot-password"
+                  className="text-[10px] font-black uppercase text-slate-500 hover:text-blue-500 transition-colors tracking-widest px-1"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             {/* Submit Button */}

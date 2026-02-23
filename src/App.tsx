@@ -49,6 +49,16 @@ const SetupPasswordPage = lazy(() =>
     default: m.SetupPasswordPage,
   })),
 );
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("./pages/ResetPasswordPage").then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -75,6 +85,8 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/setup-password" element={<SetupPasswordPage />} />
               <Route
                 path="/"
