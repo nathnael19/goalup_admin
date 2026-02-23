@@ -7,7 +7,6 @@ import {
   FiUser,
   FiShield,
   FiMail,
-  FiKey,
   FiHash,
   FiUsers,
   FiCalendar,
@@ -47,7 +46,6 @@ export const UsersPage: React.FC = () => {
   const [formData, setFormData] = useState<UserCreateDto & { id?: number }>({
     email: "",
     full_name: "",
-    password: "",
     role: UserRoles.REFEREE,
     team_id: "",
     tournament_id: "",
@@ -237,7 +235,6 @@ export const UsersPage: React.FC = () => {
             setFormData({
               email: "",
               full_name: "",
-              password: "",
               role: UserRoles.REFEREE,
               team_id: "",
               tournament_id: "",
@@ -564,21 +561,15 @@ export const UsersPage: React.FC = () => {
                 </div>
 
                 {!isEditing && (
-                  <div>
-                    <label className="label">Password</label>
-                    <div className="relative">
-                      <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <input
-                        required
-                        type="password"
-                        className="input pl-12 h-12"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                      />
-                    </div>
+                  <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <FiMail
+                      className="text-blue-400 mt-0.5 shrink-0"
+                      size={16}
+                    />
+                    <p className="text-xs text-blue-300 leading-relaxed">
+                      An invitation email will be sent to the user with a secure
+                      link to set up their own password.
+                    </p>
                   </div>
                 )}
 
