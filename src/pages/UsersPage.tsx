@@ -29,7 +29,7 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
-import type { AxiosError } from "axios";
+import { getErrorMessage } from "../utils/error";
 import { useAuth } from "../context/AuthContext";
 
 // Roles that a Tournament Admin is allowed to create
@@ -99,7 +99,10 @@ export const UsersPage: React.FC = () => {
       setTournaments(tournamentsData);
       setCompetitions(competitionsData);
     } catch (err) {
-      console.error("Failed to fetch data", err);
+      setToast({
+        message: getErrorMessage(err, "Failed to load users"),
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -129,16 +132,6 @@ export const UsersPage: React.FC = () => {
     if (!filters.tournament_id) return teams;
     return teams.filter((t) => t.tournament_id === filters.tournament_id);
   }, [filters.tournament_id, teams]);
-
-  const getErrorMessage = (err: unknown): string => {
-    const axiosErr = err as AxiosError<{ detail?: string | Array<{ msg: string }> }>;
-    const detail = axiosErr.response?.data?.detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-      return detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
-    }
-    return axiosErr.message || "Failed to save user";
-  };
 
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,7 +165,10 @@ export const UsersPage: React.FC = () => {
       fetchData();
     } catch (err) {
       console.error("Failed to save user", err);
-      setToast({ message: getErrorMessage(err), type: "error" });
+      setToast({
+        message: getErrorMessage(err, "Failed to save user"),
+        type: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -187,7 +183,10 @@ export const UsersPage: React.FC = () => {
       setShowDeleteModal(false);
       setUserToDelete(null);
     } catch (err) {
-      console.error("Failed to delete user", err);
+      setToast({
+        message: getErrorMessage(err, "Failed to delete user"),
+        type: "error",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -214,8 +213,10 @@ export const UsersPage: React.FC = () => {
       const result = await userService.resendSetupEmail(user.id);
       setToast({ message: result.message, type: "success" });
     } catch (err) {
-      console.error("Failed to resend email", err);
-      setToast({ message: getErrorMessage(err), type: "error" });
+      setToast({
+        message: getErrorMessage(err, "Failed to resend invitation email"),
+        type: "error",
+      });
     }
   };
 
