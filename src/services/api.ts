@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { getErrorMessage } from "../utils/error";
 
 export const SERVER_URL =
   import.meta.env.VITE_API_SERVER_URL || "http://localhost:8000";
@@ -111,9 +112,12 @@ apiClient.interceptors.response.use(
       localStorage.removeItem("refresh_token");
       const currentPath = window.location.pathname;
       if (currentPath !== "/login" && currentPath !== "/") {
-        window.location.href = "/login";
-      }
+          window.location.href = "/login";
+        }
     }
+    // Attach a user-facing message so callers can show it (e.g. toast)
+    (error as AxiosError & { userMessage?: string }).userMessage =
+      getErrorMessage(error);
     return Promise.reject(error);
   },
 );
