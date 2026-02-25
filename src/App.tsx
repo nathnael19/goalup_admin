@@ -93,14 +93,13 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/setup-password" element={<SetupPasswordPage />} />
               <Route
-                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <MainLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
                 <Route
                   path="tournaments"
                   element={
@@ -204,7 +203,7 @@ function App() {
                 />
                 <Route path="profile" element={<ProfilePage />} />
               </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

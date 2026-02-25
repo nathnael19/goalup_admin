@@ -27,7 +27,7 @@ export const MainLayout: React.FC = () => {
     {
       icon: FiHome,
       label: "Dashboard",
-      path: "/",
+      path: "/dashboard",
       roles: [
         UserRoles.SUPER_ADMIN,
         UserRoles.TOURNAMENT_ADMIN,
@@ -171,6 +171,7 @@ export const MainLayout: React.FC = () => {
             <NavLink
               key={item.path}
               to={item.path}
+              end
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-500 group relative overflow-hidden ${
                   isActive
