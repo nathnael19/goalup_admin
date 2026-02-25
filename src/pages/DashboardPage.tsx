@@ -450,8 +450,18 @@ export const DashboardPage: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">
-                              {tour.name.charAt(0)}
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-sm font-black overflow-hidden border border-purple-500/20 shadow-lg shadow-purple-500/10">
+                              {tour.competition?.image_url ? (
+                                <img
+                                  src={getFullImageUrl(
+                                    tour.competition.image_url,
+                                  )}
+                                  alt={tour.competition.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                tour.name.charAt(0)
+                              )}
                             </div>
                             <div>
                               <p className="text-sm font-black text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">
