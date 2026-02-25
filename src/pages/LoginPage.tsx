@@ -26,7 +26,7 @@ export const LoginPage: React.FC = () => {
       try {
         setError("");
         await login(values.email, values.password);
-        navigate("/");
+        navigate("/dashboard");
       } catch (err: unknown) {
         let errorMsg = "Login failed. Please check your credentials.";
         if (err instanceof AxiosError && err.response?.data?.detail) {

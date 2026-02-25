@@ -1,5 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   FiAward,
   FiUsers,
@@ -10,6 +11,15 @@ import {
 } from "react-icons/fi";
 
 export const LandingPage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
   return (
     <div className="min-h-screen bg-[#020617] text-white selection:bg-blue-500/30 selection:text-blue-200 overflow-x-hidden">
       {/* Navigation */}
