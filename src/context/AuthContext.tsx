@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -42,6 +42,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [hasToken, setHasToken] = useState(
     () => !!localStorage.getItem("access_token"),
   );
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(() => {
+    const stored = localStorage.getItem("session_expires_at");
+    return stored ? Number(stored) : null;
+  });
 
   useEffect(() => {
     // Initialize from existing session on the backend
@@ -54,6 +58,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       try {
+        const now = Date.now();
+        if (sessionExpiresAt && now > sessionExpiresAt) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("session_expires_at");
+          setUser(null);
+          setHasToken(false);
+          setIsLoading(false);
+          return;
+        }
+
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
         setHasToken(true);
@@ -80,16 +95,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, remember = true) => {
     const userProfile = await authService.login(email, password);
     setUser(userProfile);
     setHasToken(true);
+    const ttlHours = remember ? 72 : 8; // 3 days vs 8 hours
+    const expiresAt = Date.now() + ttlHours * 60 * 60 * 1000;
+    setSessionExpiresAt(expiresAt);
+    localStorage.setItem("session_expires_at", String(expiresAt));
   };
 
   const logout = async () => {
     await authService.logout();
     setUser(null);
     setHasToken(false);
+    setSessionExpiresAt(null);
+    localStorage.removeItem("session_expires_at");
   };
 
   return (
