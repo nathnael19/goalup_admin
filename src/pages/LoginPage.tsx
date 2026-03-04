@@ -20,12 +20,13 @@ export const LoginPage: React.FC = () => {
     initialValues: {
       email: "",
       password: "",
+      remember: true,
     },
     validationSchema: loginSchema,
     onSubmit: async (values) => {
       try {
         setError("");
-        await login(values.email, values.password);
+        await login(values.email, values.password, values.remember);
         navigate("/dashboard");
       } catch (err: unknown) {
         let errorMsg = "Login failed. Please check your credentials.";
@@ -134,6 +135,21 @@ export const LoginPage: React.FC = () => {
                 >
                   Forgot Password?
                 </Link>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={formik.values.remember}
+                  onChange={formik.handleChange}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="remember"
+                  className="text-[11px] font-medium text-slate-400"
+                >
+                  Keep me signed in on this device
+                </label>
               </div>
             </div>
 
