@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { AxiosError } from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { getErrorMessage } from "../utils/error";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../context/AuthContext";
@@ -29,11 +29,7 @@ export const LoginPage: React.FC = () => {
         await login(values.email, values.password, values.remember);
         navigate("/dashboard");
       } catch (err: unknown) {
-        let errorMsg = "Login failed. Please check your credentials.";
-        if (err instanceof AxiosError && err.response?.data?.detail) {
-          errorMsg = err.response.data.detail;
-        }
-        setError(errorMsg);
+        setError(getErrorMessage(err, "Login failed. Please check your credentials."));
       }
     },
   });
