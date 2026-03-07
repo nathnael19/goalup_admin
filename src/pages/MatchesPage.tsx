@@ -23,6 +23,7 @@ import {
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
+import { getErrorMessage } from "../utils/error";
 
 export const MatchesPage: React.FC = () => {
   const { user } = useAuth();
@@ -168,9 +169,8 @@ export const MatchesPage: React.FC = () => {
       });
     },
     onError: (err) => {
-      console.error("Failed to save match", err);
       setToast({
-        message: "Failed to save match. Please try again.",
+        message: getErrorMessage(err, "Failed to save match. Please try again."),
         type: "error",
       });
     },
@@ -198,15 +198,11 @@ export const MatchesPage: React.FC = () => {
         type: "success",
       });
     },
-    onError: (err: {
-      response?: { data?: { detail?: string } };
-      message: string;
-    }) => {
-      console.error("Failed to generate schedule", err);
-      const errorMessage =
-        err?.response?.data?.detail ||
-        "Failed to generate fixtures. Please try again.";
-      setToast({ message: errorMessage, type: "error" });
+    onError: (err) => {
+      setToast({
+        message: getErrorMessage(err, "Failed to generate fixtures. Please try again."),
+        type: "error",
+      });
     },
   });
 
