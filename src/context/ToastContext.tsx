@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useState,
+  useEffect,
   type ReactNode,
 } from "react";
 import { Toast } from "../components/Toast";
@@ -13,6 +14,17 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+
+// --- Global Event Emitter for outside React components ---
+class ToastEventEmitter extends EventTarget {
+  emit(message: string, type: ToastType = "success", durationMs = 4000) {
+    this.dispatchEvent(new CustomEvent("show-toast", { 
+      detail: { message, type, durationMs } 
+    }));
+  }
+}
+export const globalToast = new ToastEventEmitter();
+// ---------------------------------------------------------
 
 export const useToast = (): ToastContextValue => {
   const ctx = useContext(ToastContext);
@@ -41,6 +53,18 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     setToast({ message, type, duration: durationMs });
   };
 
+  useEffect(() => {
+    const handleGlobalToast = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      showToast(detail.message, detail.type, detail.durationMs);
+    };
+
+    globalToast.addEventListener("show-toast", handleGlobalToast);
+    return () => {
+      globalToast.removeEventListener("show-toast", handleGlobalToast);
+    };
+  }, []);
+
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
@@ -55,4 +79,3 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     </ToastContext.Provider>
   );
 };
-
