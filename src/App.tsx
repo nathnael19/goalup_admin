@@ -1,12 +1,14 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { AuthProvider } from "./context/AuthContext";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { RealtimeProvider } from "./components/RealtimeProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MainLayout } from "./layouts/MainLayout";
 import { UserRoles } from "./types";
+import { globalToast } from "./context/ToastContext";
 
 // Lazy load pages
 const LoginPage = lazy(() =>
@@ -76,7 +78,19 @@ const PageLoader = () => (
   </div>
 );
 
+const handleError = (error: unknown, _query: unknown) => {
+  let message = "An unexpected error occurred.";
+  if (error instanceof AxiosError) {
+    message = error.response?.data?.detail || error.message;
+  } else if (error instanceof Error) {
+    message = error.message;
+  }
+  globalToast.emit(message, "error");
+};
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: handleError }),
+  mutationCache: new MutationCache({ onError: handleError }),
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
