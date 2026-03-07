@@ -6,6 +6,8 @@ import { cardService } from "../services/cardService";
 import { substitutionService } from "../services/substitutionService";
 import { teamService } from "../services/teamService";
 import { lineupService } from "../services/lineupService";
+import { useToast } from "../context/ToastContext";
+import { getErrorMessage } from "../utils/error";
 import type {
   TeamDetail,
   UpdateMatchScoreDto,
@@ -16,6 +18,7 @@ import type {
 
 export const useMatchDetailState = (matchId: string | undefined) => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [tick, setTick] = useState(0);
 
   // Queries
@@ -96,6 +99,12 @@ export const useMatchDetailState = (matchId: string | undefined) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["matches"] });
+    },
+    onError: (err) => {
+      showToast(
+        getErrorMessage(err, "Failed to update match. Please try again."),
+        "error",
+      );
     },
   });
 
