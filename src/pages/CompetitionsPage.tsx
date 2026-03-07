@@ -4,6 +4,7 @@ import { competitionService } from "../services/competitionService";
 import type { Competition, CreateCompetitionDto } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { useToast } from "../context/ToastContext";
+import { getErrorMessage } from "../utils/error";
 
 export const CompetitionsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -24,8 +25,7 @@ export const CompetitionsPage: React.FC = () => {
       const data = await competitionService.getAll();
       setCompetitions(data);
     } catch (e) {
-      console.error(e);
-      showToast("Failed to load competitions", "error");
+      showToast(getErrorMessage(e, "Failed to load competitions"), "error");
     } finally {
       setLoading(false);
     }
@@ -66,8 +66,7 @@ export const CompetitionsPage: React.FC = () => {
       setShowModal(false);
       load();
     } catch (err) {
-      console.error(err);
-      showToast("Failed to save competition", "error");
+      showToast(getErrorMessage(err, "Failed to save competition"), "error");
     }
   };
 
@@ -78,8 +77,7 @@ export const CompetitionsPage: React.FC = () => {
       showToast("Competition deleted", "success");
       load();
     } catch (err) {
-      console.error(err);
-      showToast("Failed to delete competition", "error");
+      showToast(getErrorMessage(err, "Failed to delete competition"), "error");
     }
   };
 
