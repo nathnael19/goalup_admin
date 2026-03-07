@@ -7,6 +7,7 @@ import {
   FiArrowLeft,
 } from "react-icons/fi";
 import { authService } from "../services/authService";
+import { getErrorMessage } from "../utils/error";
 
 
 export const ForgotPasswordPage: React.FC = () => {
@@ -23,10 +24,8 @@ export const ForgotPasswordPage: React.FC = () => {
     try {
       await authService.forgotPassword(email);
       setSuccess(true);
-    } catch (err: any) {
-      setError(
-        err.message ?? "Could not process request. Please try again.",
-      );
+    } catch (err) {
+      setError(getErrorMessage(err, "Could not process request. Please try again."));
     } finally {
       setLoading(false);
     }
