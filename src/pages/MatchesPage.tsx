@@ -1006,17 +1006,17 @@ export const MatchesPage: React.FC = () => {
                 <div className="relative group">
                   <select
                     className="input h-12 appearance-none pr-10"
-                    value={currentMatch.referee_id || ""}
+                    value={currentMatch.referee_id?.toString() ?? ""}
                     onChange={(e) =>
                       setCurrentMatch({
                         ...currentMatch,
-                        referee_id: e.target.value || undefined,
+                        referee_id: e.target.value ? Number(e.target.value) : undefined,
                       })
                     }
                   >
                     <option value="">No Referee Assigned</option>
                     {referees.map((ref) => (
-                      <option key={ref.id} value={ref.id}>
+                      <option key={ref.id} value={String(ref.id)}>
                         {ref.full_name} ({ref.email})
                       </option>
                     ))}
