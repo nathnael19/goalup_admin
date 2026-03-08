@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
+import { RealtimeProvider } from "./components/RealtimeProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MainLayout } from "./layouts/MainLayout";
 import { UserRoles } from "./types";
@@ -84,129 +85,131 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/setup-password" element={<SetupPasswordPage />} />
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <MainLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<DashboardPage />} />
+        <RealtimeProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/setup-password" element={<SetupPasswordPage />} />
                 <Route
-                  path="tournaments"
                   element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                      ]}
-                    >
-                      <TournamentsPage />
+                    <ProtectedRoute>
+                      <MainLayout />
                     </ProtectedRoute>
                   }
-                />
-                <Route
-                  path="teams"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                      ]}
-                    >
-                      <TeamsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="teams/:id"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                        UserRoles.COACH,
-                      ]}
-                    >
-                      <TeamDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="players"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[UserRoles.SUPER_ADMIN, UserRoles.COACH]}
-                    >
-                      <PlayersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="matches"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                        UserRoles.COACH,
-                        UserRoles.REFEREE,
-                      ]}
-                    >
-                      <MatchesPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="matches/:id"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.TOURNAMENT_ADMIN,
-                        UserRoles.COACH,
-                        UserRoles.REFEREE,
-                      ]}
-                    >
-                      <MatchDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="news"
-                  element={
-                    <ProtectedRoute
-                      allowedRoles={[
-                        UserRoles.SUPER_ADMIN,
-                        UserRoles.NEWS_REPORTER,
-                      ]}
-                    >
-                      <NewsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="users"
-                  element={
-                    <ProtectedRoute allowedRoles={[UserRoles.SUPER_ADMIN]}>
-                      <UsersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="profile" element={<ProfilePage />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+                >
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route
+                    path="tournaments"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                        ]}
+                      >
+                        <TournamentsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="teams"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                        ]}
+                      >
+                        <TeamsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="teams/:id"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                          UserRoles.COACH,
+                        ]}
+                      >
+                        <TeamDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="players"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[UserRoles.SUPER_ADMIN, UserRoles.COACH]}
+                      >
+                        <PlayersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="matches"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                          UserRoles.COACH,
+                          UserRoles.REFEREE,
+                        ]}
+                      >
+                        <MatchesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="matches/:id"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                          UserRoles.COACH,
+                          UserRoles.REFEREE,
+                        ]}
+                      >
+                        <MatchDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="news"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.NEWS_REPORTER,
+                        ]}
+                      >
+                        <NewsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="users"
+                    element={
+                      <ProtectedRoute allowedRoles={[UserRoles.SUPER_ADMIN]}>
+                        <UsersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="profile" element={<ProfilePage />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </RealtimeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
