@@ -19,15 +19,9 @@ export const ResetPasswordPage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Extract token from URL hash or query params
-    // Supabase usually puts it in the hash like #access_token=...&type=recovery
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const accessToken = params.get("access_token") || params.get("code");
-    
-    if (accessToken) {
-      setToken(accessToken);
-    }
+    const queryParams = new URLSearchParams(window.location.search || "");
+    const t = queryParams.get("token");
+    if (t) setToken(t);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +43,8 @@ export const ResetPasswordPage: React.FC = () => {
     setError(null);
     try {
       await apiClient.post("/auth/reset-password", {
-        token: token,
-        new_password: password
+        token,
+        new_password: password,
       });
       setSuccess(true);
       localStorage.removeItem("access_token");
