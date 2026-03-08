@@ -19,14 +19,9 @@ export const SetupPasswordPage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Extract token from URL hash or query params
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const inviteToken = params.get("access_token") || params.get("code");
-    
-    if (inviteToken) {
-      setToken(inviteToken);
-    }
+    const queryParams = new URLSearchParams(window.location.search || "");
+    const t = queryParams.get("token");
+    if (t) setToken(t);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,8 +43,8 @@ export const SetupPasswordPage: React.FC = () => {
     setError(null);
     try {
       await apiClient.post("/auth/setup-password", {
-        token: token,
-        password: password
+        token,
+        password,
       });
       setSuccess(true);
       localStorage.removeItem("access_token");
