@@ -51,8 +51,12 @@ apiClient.interceptors.response.use(
       const requestUrl = originalRequest?.url ?? "";
       const isLoginRequest = requestUrl.includes("/auth/login");
       const isRefreshRequest = requestUrl.includes("/auth/refresh");
+      const isUnauthenticatedAuthRequest =
+        requestUrl.includes("/auth/forgot-password") ||
+        requestUrl.includes("/auth/reset-password") ||
+        requestUrl.includes("/auth/setup-password");
 
-      if (isLoginRequest) {
+      if (isLoginRequest || isUnauthenticatedAuthRequest) {
         return Promise.reject(error);
       }
 
