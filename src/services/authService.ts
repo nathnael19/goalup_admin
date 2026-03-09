@@ -1,46 +1,61 @@
 import { apiClient } from "./api";
-import type { LoginCredentials, AuthTokens, User } from "../types";
+import type { User } from "../types";
 
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<AuthTokens> {
+  /**
+   * Sign in with email/password via our backend proxy.
+   */
+  async login(email: string, password: string): Promise<User> {
     const formData = new FormData();
-    formData.append("username", credentials.email);
-    formData.append("password", credentials.password);
+    formData.append("username", email);
+    formData.append("password", password);
 
-    const response = await apiClient.post<AuthTokens>("/auth/login", formData, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
-    return response.data;
+    const response = await apiClient.post<{ access_token: string; user: User }>(
+      "/auth/login",
+      formData,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    // Store the token for the axios interceptor
+    localStorage.setItem("access_token", response.data.access_token);
+    return response.data.user;
   },
 
+  /**
+   * Get the current user's profile from the backend.
+   */
   async getCurrentUser(): Promise<User> {
     const response = await apiClient.get<User>("/auth/me");
     return response.data;
   },
 
-  async updateProfile(
-    userData: Partial<User> & { password?: string },
-  ): Promise<User> {
+  /**
+   * Update the current user's profile.
+   */
+  async updateProfile(userData: Partial<User> & { password?: string }): Promise<User> {
     const response = await apiClient.patch<User>("/auth/me", userData);
     return response.data;
   },
 
-  logout() {
-    localStorage.removeItem("access_token");
+  /**
+   * Sign out via our backend proxy.
+   */
+  async logout(): Promise<void> {
+    try {
+      await apiClient.post("/auth/logout");
+    } finally {
+      localStorage.removeItem("access_token");
+    }
   },
 
-  async forgotPassword(email: string): Promise<{ message: string }> {
-    const response = await apiClient.post("/auth/forgot-password", { email });
-    return response.data;
-  },
-
-  async resetPassword(data: {
-    token: string;
-    new_password: string;
-  }): Promise<{ message: string }> {
-    const response = await apiClient.post("/auth/reset-password", data);
-    return response.data;
+  /**
+   * Send a password reset email via our backend proxy.
+   */
+  async forgotPassword(email: string): Promise<void> {
+    await apiClient.post("/auth/forgot-password", { email });
   },
 };
