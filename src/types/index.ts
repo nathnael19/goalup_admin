@@ -35,7 +35,7 @@ export const UserRoles = {
 };
 
 export interface User {
-  id: number; // Backend uses int for ID
+  id: string; // Backend uses UUID (string)
   email: string;
   username: string;
   full_name: string;
@@ -226,7 +226,7 @@ export interface Match {
   lineups?: Lineup[];
   formation_a: string;
   formation_b: string;
-  referee_id?: number;
+  referee_id?: string;
   referee?: User;
 }
 
@@ -277,7 +277,7 @@ export interface CreateMatchDto {
   team_b_id: string;
   start_time: string;
   total_time?: number;
-  referee_id?: number;
+  referee_id?: string;
 }
 
 export interface UpdateMatchScoreDto {
@@ -302,7 +302,7 @@ export interface UpdateMatchScoreDto {
   is_extra_time?: boolean;
   formation_a?: string;
   formation_b?: string;
-  referee_id?: number;
+  referee_id?: string;
 }
 
 // Standings Types
