@@ -14,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
@@ -37,32 +37,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize from existing session on the backend
     const initAuth = async () => {
       const token = localStorage.getItem("access_token");
-      if (token) {
-        try {
-          const currentUser = await authService.getCurrentUser();
-          setUser(currentUser);
-        } catch (error) {
-          console.error(error);
-          localStorage.removeItem("access_token");
-        }
+      if (!token) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Auth init error:", error);
+        localStorage.removeItem("access_token");
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const tokens = await authService.login({ email, password });
-    localStorage.setItem("access_token", tokens.access_token);
-    const currentUser = await authService.getCurrentUser();
-    setUser(currentUser);
+    const userProfile = await authService.login(email, password);
+    setUser(userProfile);
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
   };
 
