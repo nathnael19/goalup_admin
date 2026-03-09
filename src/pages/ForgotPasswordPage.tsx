@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import { authService } from "../services/authService";
 
+
 export const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -24,8 +25,7 @@ export const ForgotPasswordPage: React.FC = () => {
       setSuccess(true);
     } catch (err: any) {
       setError(
-        err.response?.data?.detail ||
-          "Could not process request. Please try again.",
+        err.message ?? "Could not process request. Please try again.",
       );
     } finally {
       setLoading(false);
