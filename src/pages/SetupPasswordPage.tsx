@@ -1,27 +1,40 @@
-import React, { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiLock,
   FiCheckCircle,
   FiAlertCircle,
   FiArrowRight,
 } from "react-icons/fi";
-import axios from "axios";
-import { API_BASE_URL } from "../services/api";
+import { apiClient } from "../services/api";
 
 export const SetupPasswordPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Extract token from URL hash or query params
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(1));
+    const inviteToken = params.get("access_token") || params.get("code");
+    
+    if (inviteToken) {
+      setToken(inviteToken);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      setError("Missing invitation token");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -34,29 +47,29 @@ export const SetupPasswordPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await axios.post(`${API_BASE_URL}/auth/setup-password`, {
-        token,
-        password,
+      await apiClient.post("/auth/setup-password", {
+        token: token,
+        password: password
       });
       setSuccess(true);
+      localStorage.removeItem("access_token");
     } catch (err: any) {
       setError(
-        err.response?.data?.detail ||
-          "Failed to set password. The link may be expired.",
+        err.response?.data?.detail ?? "Failed to set password. The link may be expired.",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  if (!token) {
+  if (!token && !success) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="card max-w-md w-full p-8 text-center">
+        <div className="glass-panel max-w-md w-full p-8 text-center border border-white/10">
           <FiAlertCircle className="mx-auto text-red-500 mb-4" size={48} />
           <h2 className="text-2xl font-black text-white mb-2">Invalid Link</h2>
           <p className="text-slate-400">
-            This password setup link is invalid or missing a token.
+            This password setup link is invalid or has expired. Please contact your administrator.
           </p>
         </div>
       </div>
@@ -66,7 +79,7 @@ export const SetupPasswordPage: React.FC = () => {
   if (success) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="card max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-500">
+        <div className="glass-panel max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-500 border border-white/10">
           <FiCheckCircle className="mx-auto text-green-500 mb-4" size={48} />
           <h2 className="text-2xl font-black text-white mb-2">Success!</h2>
           <p className="text-slate-400 mb-6">
@@ -91,7 +104,7 @@ export const SetupPasswordPage: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
       </div>
 
-      <div className="card max-w-md w-full p-8 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="glass-panel max-w-md w-full p-8 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700 border border-white/10">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 mx-auto mb-4 border border-blue-500/20">
             <FiLock size={32} />
