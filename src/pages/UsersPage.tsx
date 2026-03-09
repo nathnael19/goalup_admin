@@ -27,7 +27,9 @@ import type {
 } from "../types";
 import { CardSkeleton } from "../components/LoadingSkeleton";
 import { ConfirmationModal } from "../components/common/ConfirmationModal";
+import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
+import type { AxiosError } from "axios";
 
 export const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -62,7 +64,7 @@ export const UsersPage: React.FC = () => {
 
   // Delete Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -148,7 +150,7 @@ export const UsersPage: React.FC = () => {
     if (!userToDelete) return;
     try {
       setIsDeleting(true);
-      await userService.delete(userToDelete);
+      await userService.delete(userToDelete.id);
       fetchData();
       setShowDeleteModal(false);
       setUserToDelete(null);
@@ -403,7 +405,7 @@ export const UsersPage: React.FC = () => {
                   {!user.is_superuser && (
                     <button
                       onClick={() => {
-                        setUserToDelete(user.id);
+                        setUserToDelete(user);
                         setShowDeleteModal(true);
                       }}
                       className="p-2.5 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
