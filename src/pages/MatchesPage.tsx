@@ -1010,16 +1010,14 @@ export const MatchesPage: React.FC = () => {
                     onChange={(e) =>
                       setCurrentMatch({
                         ...currentMatch,
-                        referee_id: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
+                        referee_id: e.target.value || undefined,
                       })
                     }
                   >
                     <option value="">No Referee Assigned</option>
                     {referees.map((ref) => (
                       <option key={ref.id} value={ref.id}>
-                        {ref.full_name} ({ref.username})
+                        {ref.full_name} ({ref.email})
                       </option>
                     ))}
                   </select>
