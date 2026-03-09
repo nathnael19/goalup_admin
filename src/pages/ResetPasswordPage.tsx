@@ -1,26 +1,41 @@
-import React, { useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import {
   FiLock,
   FiAlertCircle,
   FiCheckCircle,
   FiArrowRight,
 } from "react-icons/fi";
-import { authService } from "../services/authService";
+import { apiClient } from "../services/api";
 
 export const ResetPasswordPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Extract token from URL hash or query params
+    // Supabase usually puts it in the hash like #access_token=...&type=recovery
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get("access_token") || params.get("code");
+    
+    if (accessToken) {
+      setToken(accessToken);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      setError("Missing reset token");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -33,22 +48,20 @@ export const ResetPasswordPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await authService.resetPassword({
-        token: token || "",
-        new_password: password,
+      await apiClient.post("/auth/reset-password", {
+        token: token,
+        new_password: password
       });
       setSuccess(true);
+      localStorage.removeItem("access_token");
     } catch (err: any) {
-      setError(
-        err.response?.data?.detail ||
-          "Failed to reset password. The link may be expired.",
-      );
+      setError(err.response?.data?.detail ?? "Failed to reset password. The link may be expired.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!token) {
+  if (!token && !success) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
         <div className="glass-panel max-w-md w-full p-10 text-center border border-white/10">
