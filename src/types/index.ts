@@ -24,7 +24,8 @@ export type UserRole =
   | "TOURNAMENT_ADMIN"
   | "NEWS_REPORTER"
   | "COACH"
-  | "REFEREE";
+  | "REFEREE"
+  | "VIEWER";
 
 export const UserRoles = {
   SUPER_ADMIN: "SUPER_ADMIN" as UserRole,
@@ -32,12 +33,13 @@ export const UserRoles = {
   NEWS_REPORTER: "NEWS_REPORTER" as UserRole,
   COACH: "COACH" as UserRole,
   REFEREE: "REFEREE" as UserRole,
+  VIEWER: "VIEWER" as UserRole,
 };
 
 export interface User {
   id: string; // Backend uses UUID (string)
   email: string;
-  username: string;
+  username?: string; // Optional - backend does not return; use full_name or email as fallback
   full_name: string;
   is_active: boolean;
   is_superuser: boolean;
