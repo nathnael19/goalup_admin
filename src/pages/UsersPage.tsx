@@ -67,6 +67,12 @@ export const UsersPage: React.FC = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Toast for error/success feedback
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -117,13 +123,26 @@ export const UsersPage: React.FC = () => {
     return teams.filter((t) => t.tournament_id === filters.tournament_id);
   }, [filters.tournament_id, teams]);
 
+  const getErrorMessage = (err: unknown): string => {
+    const axiosErr = err as AxiosError<{ detail?: string | Array<{ msg: string }> }>;
+    const detail = axiosErr.response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      return detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
+    }
+    return axiosErr.message || "Failed to save user";
+  };
+
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const data = { ...formData };
-      if (data.team_id === "") delete data.team_id;
-      if (data.tournament_id === "") delete data.tournament_id;
-      if (data.competition_id === "") delete data.competition_id;
+      // Remove empty optional UUIDs - backend expects UUID or omit
+      if (!data.team_id || data.team_id === "") delete data.team_id;
+      if (!data.tournament_id || data.tournament_id === "") delete data.tournament_id;
+      if (!data.competition_id || data.competition_id === "") delete data.competition_id;
+      delete data.profile_image_url;
+      delete data.id;
 
       if (isEditing && selectedUser) {
         const updateData: UserUpdateDto = {
@@ -136,13 +155,16 @@ export const UsersPage: React.FC = () => {
         };
         if (data.password) updateData.password = data.password;
         await userService.update(selectedUser.id, updateData);
+        setToast({ message: "User updated successfully", type: "success" });
       } else {
         await userService.create(data as UserCreateDto);
+        setToast({ message: "User created successfully", type: "success" });
       }
       setShowUserModal(false);
       fetchData();
     } catch (err) {
       console.error("Failed to save user", err);
+      setToast({ message: getErrorMessage(err), type: "error" });
     }
   };
 
@@ -718,6 +740,14 @@ export const UsersPage: React.FC = () => {
         message="Are you sure you want to delete this user? This action cannot be undone."
         isLoading={isDeleting}
       />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
