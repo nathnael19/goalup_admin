@@ -16,7 +16,7 @@ export const userService = {
     return response.data;
   },
 
-  async getById(id: number): Promise<User> {
+  async getById(id: string): Promise<User> {
     const response = await apiClient.get<User>(`/users/${id}`);
     return response.data;
   },
@@ -26,12 +26,12 @@ export const userService = {
     return response.data;
   },
 
-  async update(id: number, user: UserUpdateDto): Promise<User> {
+  async update(id: string, user: UserUpdateDto): Promise<User> {
     const response = await apiClient.put<User>(`/users/${id}`, user);
     return response.data;
   },
 
-  async delete(id: number): Promise<{ ok: boolean }> {
+  async delete(id: string): Promise<{ ok: boolean }> {
     const response = await apiClient.delete<{ ok: boolean }>(`/users/${id}`);
     return response.data;
   },
