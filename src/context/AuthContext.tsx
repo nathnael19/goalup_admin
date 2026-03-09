@@ -6,6 +6,7 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
+import { AxiosError } from "axios";
 import type { User } from "../types";
 import { authService } from "../services/authService";
 
@@ -35,12 +36,19 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Optimistic auth state: true if a token exists in storage.
+  // This prevents ProtectedRoute from redirecting to /login while
+  // the /auth/me call is in-flight or if it fails transiently.
+  const [hasToken, setHasToken] = useState(
+    () => !!localStorage.getItem("access_token"),
+  );
 
   useEffect(() => {
     // Initialize from existing session on the backend
     const initAuth = async () => {
       const token = localStorage.getItem("access_token");
       if (!token) {
+        setHasToken(false);
         setIsLoading(false);
         return;
       }
@@ -48,10 +56,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
+        setHasToken(true);
       } catch (error) {
         console.error("Auth init error:", error);
-        localStorage.removeItem("access_token");
-        setUser(null);
+        // Only clear the session on a definitive 401 Unauthorized response.
+        // Transient errors (network issues, 5xx server errors) should NOT log
+        // the user out — they may just be a momentary backend hiccup.
+        const isUnauthorized =
+          error instanceof AxiosError && error.response?.status === 401;
+        if (isUnauthorized) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          setUser(null);
+          setHasToken(false);
+        }
+        // For other errors, keep hasToken = true so the user stays on the
+        // protected page. The axios interceptor handles refresh on next request.
       } finally {
         setIsLoading(false);
       }
@@ -63,18 +83,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     const userProfile = await authService.login(email, password);
     setUser(userProfile);
+    setHasToken(true);
   };
 
   const logout = async () => {
     await authService.logout();
     setUser(null);
+    setHasToken(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        // Authenticated if we have user data OR a token that hasn't been
+        // definitively invalidated (i.e. a 401) yet.
+        isAuthenticated: !!user || hasToken,
         isLoading,
         login,
         logout,
