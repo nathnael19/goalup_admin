@@ -51,8 +51,9 @@ export const DashboardPage: React.FC = () => {
     isLoading: loadingLogs,
     refetch: refetchLogs,
   } = useQuery({
-    queryKey: ["auditLogs"],
+    queryKey: ["auditLogs", user?.is_superuser],
     queryFn: () => auditLogService.getLogs(6),
+    enabled: !!user?.is_superuser,
   });
 
   const loading =
@@ -520,11 +521,13 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          <AuditLogFeed
-            logs={auditLogs}
-            loading={loadingLogs}
-            onRefresh={refetchLogs}
-          />
+          {user?.is_superuser && (
+            <AuditLogFeed
+              logs={auditLogs}
+              loading={loadingLogs}
+              onRefresh={refetchLogs}
+            />
+          )}
         </div>
       </div>
     </div>
