@@ -220,13 +220,16 @@ export const UsersPage: React.FC = () => {
       !filters.tournament_id || u.tournament_id === filters.tournament_id;
     const matchesTeam = !filters.team_id || u.team_id === filters.team_id;
 
-    // Hide Super Admins from the list
-    const notSuperAdmin = u.role !== "SUPER_ADMIN";
+    // Hide Super Admins and the current user from the list
+    const isNotSuperAdmin = u.role !== "SUPER_ADMIN";
+    const isNotCurrentUser = u.id !== currentUser?.id;
 
     // Tournament Admins only see users in their own tournament (frontend guard)
+    // and specifically only users they created (matching backend logic)
     const inScope =
       !isTournamentAdmin ||
-      u.tournament_id === currentUser?.tournament_id;
+      (u.tournament_id === currentUser?.tournament_id &&
+        u.created_by_id === currentUser?.id);
 
     return (
       matchesSearch &&
@@ -234,7 +237,8 @@ export const UsersPage: React.FC = () => {
       matchesCompetition &&
       matchesTournament &&
       matchesTeam &&
-      notSuperAdmin &&
+      isNotSuperAdmin &&
+      isNotCurrentUser &&
       inScope
     );
   });
