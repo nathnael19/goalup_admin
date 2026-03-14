@@ -50,6 +50,7 @@ export interface User {
   profile_image_url?: string;
   created_at?: string;
   updated_at?: string;
+  created_by_id?: number;
 }
 
 export interface UserCreateDto {
