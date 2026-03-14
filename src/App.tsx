@@ -217,7 +217,12 @@ function App() {
                   <Route
                     path="users"
                     element={
-                      <ProtectedRoute allowedRoles={[UserRoles.SUPER_ADMIN]}>
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                        ]}
+                      >
                         <UsersPage />
                       </ProtectedRoute>
                     }
