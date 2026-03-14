@@ -51,6 +51,7 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   created_by_id?: number;
+  has_password?: boolean;
 }
 
 export interface UserCreateDto {
