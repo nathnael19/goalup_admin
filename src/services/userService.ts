@@ -35,4 +35,12 @@ export const userService = {
     const response = await apiClient.delete<{ ok: boolean }>(`/users/${id}`);
     return response.data;
   },
+  async resendSetupEmail(
+    id: number,
+  ): Promise<{ ok: boolean; message: string }> {
+    const response = await apiClient.post<{ ok: boolean; message: string }>(
+      `/users/${id}/resend-setup-email`,
+    );
+    return response.data;
+  },
 };
