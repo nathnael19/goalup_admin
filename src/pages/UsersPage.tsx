@@ -30,8 +30,14 @@ import { ConfirmationModal } from "../components/common/ConfirmationModal";
 import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
 import type { AxiosError } from "axios";
+import { useAuth } from "../context/AuthContext";
+
+// Roles that a Tournament Admin is allowed to create
+const TOURNAMENT_ADMIN_ALLOWED_ROLES: UserRole[] = [UserRoles.COACH, UserRoles.REFEREE];
 
 export const UsersPage: React.FC = () => {
+  const { user: currentUser } = useAuth();
+  const isTournamentAdmin = currentUser?.role === UserRoles.TOURNAMENT_ADMIN;
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -217,13 +223,19 @@ export const UsersPage: React.FC = () => {
     // Hide Super Admins from the list
     const notSuperAdmin = u.role !== "SUPER_ADMIN";
 
+    // Tournament Admins only see users in their own tournament (frontend guard)
+    const inScope =
+      !isTournamentAdmin ||
+      u.tournament_id === currentUser?.tournament_id;
+
     return (
       matchesSearch &&
       matchesRole &&
       matchesCompetition &&
       matchesTournament &&
       matchesTeam &&
-      notSuperAdmin
+      notSuperAdmin &&
+      inScope
     );
   });
 
@@ -257,23 +269,31 @@ export const UsersPage: React.FC = () => {
             Create and manage administrative accounts and roles.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            setFormData({
-              email: "",
-              full_name: "",
-              role: UserRoles.REFEREE,
-              team_id: "",
-              tournament_id: "",
-              competition_id: "",
-            });
-            setShowUserModal(true);
-          }}
-          className="btn btn-primary h-12"
-        >
-          <FiPlus /> New User
-        </button>
+        {(currentUser?.role === UserRoles.SUPER_ADMIN ||
+          currentUser?.role === UserRoles.TOURNAMENT_ADMIN) && (
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setFormData({
+                email: "",
+                full_name: "",
+                role: isTournamentAdmin ? UserRoles.COACH : UserRoles.REFEREE,
+                team_id: "",
+                // Auto-scope for Tournament Admins
+                tournament_id: isTournamentAdmin
+                  ? currentUser?.tournament_id || ""
+                  : "",
+                competition_id: isTournamentAdmin
+                  ? currentUser?.competition_id || ""
+                  : "",
+              });
+              setShowUserModal(true);
+            }}
+            className="btn btn-primary h-12"
+          >
+            <FiPlus /> New User
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -613,84 +633,131 @@ export const UsersPage: React.FC = () => {
                           ...formData,
                           role: e.target.value as UserRole,
                           team_id: "",
-                          tournament_id: "",
-                          competition_id: "",
+                          // Tournament Admins keep their scoped ids
+                          tournament_id: isTournamentAdmin
+                            ? currentUser?.tournament_id || ""
+                            : "",
+                          competition_id: isTournamentAdmin
+                            ? currentUser?.competition_id || ""
+                            : "",
                         })
                       }
                     >
-                      <option value="TOURNAMENT_ADMIN">Tournament Admin</option>
-                      <option value="COACH">Coach</option>
-                      <option value="REFEREE">Referee</option>
-                      <option value="NEWS_REPORTER">News Reporter</option>
+                      {isTournamentAdmin ? (
+                        // Tournament Admins can only create these two roles
+                        TOURNAMENT_ADMIN_ALLOWED_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {role.replace("_", " ")}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="TOURNAMENT_ADMIN">Tournament Admin</option>
+                          <option value="COACH">Coach</option>
+                          <option value="REFEREE">Referee</option>
+                          <option value="NEWS_REPORTER">News Reporter</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
 
-                {(formData.role === "TOURNAMENT_ADMIN" ||
-                  formData.role === "REFEREE" ||
-                  formData.role === "COACH") && (
-                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="label">Assigned Competition</label>
-                    <div className="relative">
-                      <FiHash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <select
-                        required
-                        className="input pl-12 h-12 appearance-none"
-                        value={formData.competition_id}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            competition_id: e.target.value,
-                            tournament_id: "",
-                            team_id: "",
-                          })
-                        }
-                      >
-                        <option value="">Select a competition...</option>
-                        {competitions.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                {/* ---- Competition / Tournament / Team selectors ----
+                    Hidden for Tournament Admins (auto-scoped to their tournament). */}
+                {!isTournamentAdmin && (
+                  <>
+                    {(formData.role === "TOURNAMENT_ADMIN" ||
+                      formData.role === "REFEREE" ||
+                      formData.role === "COACH") && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="label">Assigned Competition</label>
+                        <div className="relative">
+                          <FiHash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                          <select
+                            required
+                            className="input pl-12 h-12 appearance-none"
+                            value={formData.competition_id}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                competition_id: e.target.value,
+                                tournament_id: "",
+                                team_id: "",
+                              })
+                            }
+                          >
+                            <option value="">Select a competition...</option>
+                            {competitions.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {(formData.role === "TOURNAMENT_ADMIN" ||
+                      formData.role === "REFEREE" ||
+                      formData.role === "COACH") &&
+                      formData.competition_id && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                          <label className="label">
+                            Assigned Season (Tournament)
+                          </label>
+                          <div className="relative">
+                            <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <select
+                              required
+                              className="input pl-12 h-12 appearance-none"
+                              value={formData.tournament_id}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  tournament_id: e.target.value,
+                                  team_id: "",
+                                })
+                              }
+                            >
+                              <option value="">Select a season...</option>
+                              {filteredTournaments.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name} ({t.year})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                    {formData.role === "COACH" && formData.tournament_id && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="label">Assigned Team</label>
+                        <div className="relative">
+                          <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                          <select
+                            required
+                            className="input pl-12 h-12 appearance-none"
+                            value={formData.team_id}
+                            onChange={(e) =>
+                              setFormData({ ...formData, team_id: e.target.value })
+                            }
+                          >
+                            <option value="">Select a team...</option>
+                            {filteredTeams.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {(formData.role === "TOURNAMENT_ADMIN" ||
-                  formData.role === "REFEREE" ||
-                  formData.role === "COACH") &&
-                  formData.competition_id && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="label">
-                        Assigned Season (Tournament)
-                      </label>
-                      <div className="relative">
-                        <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                        <select
-                          required
-                          className="input pl-12 h-12 appearance-none"
-                          value={formData.tournament_id}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              tournament_id: e.target.value,
-                              team_id: "",
-                            })
-                          }
-                        >
-                          <option value="">Select a season...</option>
-                          {filteredTournaments.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name} ({t.year})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                {formData.role === "COACH" && formData.tournament_id && (
+                {/* For Tournament Admins: show Coach team picker (from their tournament's teams) */}
+                {isTournamentAdmin && formData.role === "COACH" && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="label">Assigned Team</label>
                     <div className="relative">
@@ -704,13 +771,31 @@ export const UsersPage: React.FC = () => {
                         }
                       >
                         <option value="">Select a team...</option>
-                        {filteredTeams.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
+                        {teams
+                          .filter(
+                            (t) =>
+                              t.tournament_id === currentUser?.tournament_id
+                          )
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
                       </select>
                     </div>
+                  </div>
+                )}
+
+                {/* Scope badge for Tournament Admins so they know it's auto-set */}
+                {isTournamentAdmin && (
+                  <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <FiShield
+                      className="text-blue-400 mt-0.5 shrink-0"
+                      size={16}
+                    />
+                    <p className="text-xs text-blue-300 leading-relaxed">
+                      This user will be automatically assigned to your tournament.
+                    </p>
                   </div>
                 )}
 
