@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
+import { ConnectionStatus } from "./components/ConnectionStatus";
 import { RealtimeProvider } from "./components/RealtimeProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MainLayout } from "./layouts/MainLayout";
@@ -17,6 +18,11 @@ const DashboardPage = lazy(() =>
 const TournamentsPage = lazy(() =>
   import("./pages/TournamentsPage").then((m) => ({
     default: m.TournamentsPage,
+  })),
+);
+const CompetitionsPage = lazy(() =>
+  import("./pages/CompetitionsPage").then((m) => ({
+    default: m.CompetitionsPage,
   })),
 );
 const TeamsPage = lazy(() =>
@@ -116,6 +122,19 @@ function App() {
                     }
                   />
                   <Route
+                    path="competitions"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          UserRoles.SUPER_ADMIN,
+                          UserRoles.TOURNAMENT_ADMIN,
+                        ]}
+                      >
+                        <CompetitionsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="teams"
                     element={
                       <ProtectedRoute
@@ -205,10 +224,28 @@ function App() {
                   />
                   <Route path="profile" element={<ProfilePage />} />
                 </Route>
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route
+                  path="*"
+                  element={
+                    <main className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+                      <p className="text-sm font-bold tracking-[0.3em] text-blue-500 uppercase mb-4">
+                        404 · Page Not Found
+                      </p>
+                      <h1 className="text-3xl md:text-4xl font-black text-white mb-3">
+                        This page has been substituted.
+                      </h1>
+                      <p className="text-slate-400 max-w-md text-center mb-6">
+                        The route you requested doesn&apos;t exist. Use the navigation
+                        menu or return to your dashboard.
+                      </p>
+                      <Navigate to="/dashboard" replace />
+                    </main>
+                  }
+                />
               </Routes>
             </Suspense>
           </BrowserRouter>
+          <ConnectionStatus />
         </RealtimeProvider>
       </AuthProvider>
     </QueryClientProvider>
