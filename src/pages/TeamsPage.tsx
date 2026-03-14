@@ -765,8 +765,19 @@ export const TeamsPage: React.FC = () => {
                 >
                   Discard
                 </button>
-                <button type="submit" className="btn btn-primary flex-1 h-12">
-                  {isEditing ? "Update" : "Register"}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={saveTeamMutation.isPending}
+                >
+                  {saveTeamMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>{isEditing ? "Updating..." : "Registering..."}</span>
+                    </div>
+                  ) : (
+                    isEditing ? "Update" : "Register"
+                  )}
                 </button>
               </div>
             </form>
