@@ -208,6 +208,17 @@ export const UsersPage: React.FC = () => {
     setShowUserModal(true);
   };
 
+  const handleResendSetupEmail = async (user: User) => {
+    try {
+      setToast({ message: "Sending invitation email...", type: "success" });
+      const result = await userService.resendSetupEmail(user.id);
+      setToast({ message: result.message, type: "success" });
+    } catch (err) {
+      console.error("Failed to resend email", err);
+      setToast({ message: getErrorMessage(err), type: "error" });
+    }
+  };
+
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -446,6 +457,15 @@ export const UsersPage: React.FC = () => {
             >
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <div className="flex gap-1.5">
+                  {!user.has_password && (
+                    <button
+                      onClick={() => handleResendSetupEmail(user)}
+                      title="Resend Setup Email"
+                      className="p-2.5 bg-slate-800/80 hover:bg-amber-600 text-amber-500 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
+                    >
+                      <FiMail size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => openEditModal(user)}
                     className="p-2.5 bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/50 transition-all"
