@@ -66,6 +66,7 @@ export const UsersPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Toast for error/success feedback
   const [toast, setToast] = useState<{
@@ -136,6 +137,7 @@ export const UsersPage: React.FC = () => {
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsSaving(true);
       const data = { ...formData };
       // Remove empty optional UUIDs - backend expects UUID or omit
       if (!data.team_id || data.team_id === "") delete data.team_id;
@@ -165,6 +167,8 @@ export const UsersPage: React.FC = () => {
     } catch (err) {
       console.error("Failed to save user", err);
       setToast({ message: getErrorMessage(err), type: "error" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -718,8 +722,19 @@ export const UsersPage: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-12">
-                    {isEditing ? "Update" : "Create"}
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>{isEditing ? "Updating..." : "Creating..."}</span>
+                      </div>
+                    ) : (
+                      isEditing ? "Update" : "Create"
+                    )}
                   </button>
                 </div>
               </form>
