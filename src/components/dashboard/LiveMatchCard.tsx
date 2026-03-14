@@ -13,8 +13,16 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({
 }) => {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="card p-5 bg-linear-to-br from-red-600/10 to-transparent border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all font-body"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="card p-5 bg-linear-to-br from-red-600/10 to-transparent border-red-500/20 group cursor-pointer hover:border-red-500/40 transition-all duration-200 font-body focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-none"
     >
       <div className="flex items-center justify-between mb-4">
         <span className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1.5">
