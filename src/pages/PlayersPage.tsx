@@ -1090,8 +1090,19 @@ export const PlayersPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary flex-1 h-12">
-                  {isEditing ? "Sync Data" : "Register"}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={savePlayerMutation.isPending}
+                >
+                  {savePlayerMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>{isEditing ? "Syncing..." : "Registering..."}</span>
+                    </div>
+                  ) : (
+                    isEditing ? "Sync Data" : "Register"
+                  )}
                 </button>
               </div>
             </form>
