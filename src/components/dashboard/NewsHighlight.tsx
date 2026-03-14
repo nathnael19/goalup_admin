@@ -16,8 +16,16 @@ export const NewsHighlight: React.FC<NewsHighlightProps> = ({
 }) => {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`group relative card overflow-hidden bg-slate-900 border-white/5 card-hover cursor-pointer animate-in fade-in zoom-in-95 duration-700 animate-stagger-${index + 1}`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`group relative card overflow-hidden bg-slate-900 border-white/5 card-hover cursor-pointer animate-in fade-in zoom-in-95 duration-700 animate-stagger-${index + 1} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-none`}
     >
       <div className="aspect-video w-full overflow-hidden relative">
         {article.image_url ? (
