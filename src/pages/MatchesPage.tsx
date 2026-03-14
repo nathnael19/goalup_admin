@@ -893,8 +893,19 @@ export const MatchesPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary flex-1 h-12">
-                  Generate
+                <button 
+                  type="submit" 
+                  className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={autoScheduleMutation.isPending}
+                >
+                  {autoScheduleMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>Generating...</span>
+                    </div>
+                  ) : (
+                    "Generate"
+                  )}
                 </button>
               </div>
             </form>
@@ -1035,8 +1046,19 @@ export const MatchesPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary flex-1 h-12">
-                  {mode === "create" ? "Schedule" : "Update"}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={saveMatchMutation.isPending}
+                >
+                  {saveMatchMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>{mode === "create" ? "Scheduling..." : "Updating..."}</span>
+                    </div>
+                  ) : (
+                    mode === "create" ? "Schedule" : "Update"
+                  )}
                 </button>
               </div>
             </form>
