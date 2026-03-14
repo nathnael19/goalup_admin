@@ -75,7 +75,7 @@ export const MainLayout: React.FC = () => {
       icon: FiSettings,
       label: "Users",
       path: "/users",
-      roles: [UserRoles.SUPER_ADMIN],
+      roles: [UserRoles.SUPER_ADMIN, UserRoles.TOURNAMENT_ADMIN],
     },
   ];
 
