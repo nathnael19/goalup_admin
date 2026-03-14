@@ -475,11 +475,19 @@ export const TournamentsPage: React.FC = () => {
                     >
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      className="btn btn-primary flex-1 h-12"
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                      disabled={createTournamentMutation.isPending || updateTournamentMutation.isPending}
                     >
-                      {isEditing ? "Update" : "Create"}
+                      {createTournamentMutation.isPending || updateTournamentMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          <span>{isEditing ? "Updating..." : "Creating..."}</span>
+                        </div>
+                      ) : (
+                        isEditing ? "Update" : "Create"
+                      )}
                     </button>
                   </div>
                 </form>
@@ -903,8 +911,19 @@ export const TournamentsPage: React.FC = () => {
                   >
                     Discard
                   </button>
-                  <button type="submit" className="btn btn-primary flex-1 h-12">
-                    {isEditing ? "Update" : "Launch Season"}
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary flex-1 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={createSeasonMutation.isPending || updateSeasonMutation.isPending}
+                  >
+                    {createSeasonMutation.isPending || updateSeasonMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>{isEditing ? "Updating..." : "Launching..."}</span>
+                      </div>
+                    ) : (
+                      isEditing ? "Update" : "Launch Season"
+                    )}
                   </button>
                 </div>
               </form>
