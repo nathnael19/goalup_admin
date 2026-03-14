@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
               <div className="flex justify-end mt-2">
                 <Link
                   to="/forgot-password"
-                  className="text-[10px] font-black uppercase text-slate-500 hover:text-blue-500 transition-colors tracking-widest px-1"
+                  className="text-[10px] font-black uppercase text-slate-500 hover:text-blue-500 transition-colors duration-200 tracking-widest px-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
                 >
                   Forgot Password?
                 </Link>
@@ -158,7 +158,8 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={formik.isSubmitting}
-                className="btn btn-primary w-full h-14 text-sm font-black uppercase tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]"
+                className="btn btn-primary w-full h-14 text-sm font-black uppercase tracking-widest shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] cursor-pointer"
+                aria-label={formik.isSubmitting ? "Signing in..." : "Sign in"}
               >
                 {formik.isSubmitting
                   ? "Authenticating..."
