@@ -117,18 +117,22 @@ export const MainLayout: React.FC = () => {
           </h1>
         </div>
         <button
+          type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
         >
-          <FiMenu size={24} />
+          <FiMenu size={24} aria-hidden />
         </button>
       </div>
 
       {/* Sidebar Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden cursor-pointer"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden
         />
       )}
 
@@ -158,10 +162,13 @@ export const MainLayout: React.FC = () => {
             </div>
           )}
           <button
+            type="button"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            aria-expanded={sidebarOpen}
           >
-            <FiMenu size={20} />
+            <FiMenu size={20} aria-hidden />
           </button>
         </div>
 
@@ -173,7 +180,7 @@ export const MainLayout: React.FC = () => {
               to={item.path}
               end
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-500 group relative overflow-hidden ${
+                `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                   isActive
                     ? "bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]"
                     : "text-slate-400 hover:bg-white/5 hover:text-white"
@@ -201,7 +208,7 @@ export const MainLayout: React.FC = () => {
           <NavLink
             to="/profile"
             className={({ isActive }) =>
-              `flex items-center gap-3 mb-4 p-2 rounded-xl transition-all duration-300 ${
+              `flex items-center gap-3 mb-4 p-2 rounded-xl transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
                 isActive
                   ? "bg-blue-600/20 ring-1 ring-blue-500/50"
                   : "bg-slate-800/30 hover:bg-slate-800/50"
@@ -229,17 +236,19 @@ export const MainLayout: React.FC = () => {
             </div>
           </NavLink>
           <button
+            type="button"
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-500 font-bold text-sm border border-red-500/20"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-200 font-bold text-sm border border-red-500/20 cursor-pointer focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            aria-label="Sign out"
           >
-            <FiLogOut size={18} />
+            <FiLogOut size={18} aria-hidden />
             <span className={!sidebarOpen ? "lg:hidden" : ""}>Sign Out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#020617] relative pt-16 lg:pt-0">
+      <main id="main-content" className="flex-1 overflow-y-auto overflow-x-hidden bg-[#020617] relative pt-16 lg:pt-0" tabIndex={-1}>
         {/* Background Gradients */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[150px] animate-pulse" />
