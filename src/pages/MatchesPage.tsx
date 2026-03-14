@@ -464,6 +464,8 @@ export const MatchesPage: React.FC = () => {
     const matchesTeam =
       user?.role === UserRoles.COACH
         ? m.team_a_id === user.team_id || m.team_b_id === user.team_id
+        : user?.role === UserRoles.REFEREE
+        ? m.referee_id === user.id
         : true;
 
     return isThisSeason && statusMatch && roundMatch && matchesTeam;
