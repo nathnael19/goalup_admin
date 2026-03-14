@@ -295,10 +295,12 @@ export const DashboardPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => refetchLogs()}
-            className="w-12 h-12 rounded-2xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all group"
+            className="w-12 h-12 rounded-2xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 group cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[44px] min-w-[44px]"
+            aria-label="Refresh audit log"
           >
-            <FiZap className="group-hover:scale-110 transition-transform" />
+            <FiZap className="group-hover:scale-110 transition-transform duration-200" aria-hidden />
           </button>
         </div>
       </div>
@@ -320,10 +322,10 @@ export const DashboardPage: React.FC = () => {
             </h2>
             <Link
               to="/news"
-              className="text-xs font-black text-blue-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 group"
+              className="text-xs font-black text-blue-500 uppercase tracking-widest hover:text-white transition-colors duration-200 flex items-center gap-1 group cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
             >
               View All{" "}
-              <FiChevronRight className="group-hover:translate-x-1 transition-transform" />
+              <FiChevronRight className="group-hover:translate-x-1 transition-transform duration-200" aria-hidden />
             </Link>
           </div>
 
@@ -378,8 +380,16 @@ export const DashboardPage: React.FC = () => {
                     : nextMatch.team_a;
                 return (
                   <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/matches/${nextMatch.id}`)}
-                    className="card p-6 bg-linear-to-br from-blue-600/20 to-indigo-600/10 border-blue-500/30 cursor-pointer group hover:scale-[1.02] transition-transform"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/matches/${nextMatch.id}`);
+                      }
+                    }}
+                    className="card p-6 bg-linear-to-br from-blue-600/20 to-indigo-600/10 border-blue-500/30 cursor-pointer group hover:border-blue-500/50 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-none"
                   >
                     <div className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">
                       {new Date(nextMatch.start_time).toLocaleDateString(
@@ -446,8 +456,16 @@ export const DashboardPage: React.FC = () => {
                     return (
                       <div
                         key={tour.id}
-                        className="space-y-3 group cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        className="space-y-3 group cursor-pointer focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-xl outline-none"
                         onClick={() => navigate("/tournaments")}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate("/tournaments");
+                          }
+                        }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
