@@ -160,8 +160,10 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
   );
 
   const canEdit =
-    userRole === UserRoles.COACH &&
-    userTeamId?.toString() === activeTeamId?.toString();
+    (userRole === UserRoles.COACH && userTeamId?.toString() === activeTeamId?.toString()) ||
+    userRole === UserRoles.SUPER_ADMIN ||
+    (userRole === UserRoles.TOURNAMENT_ADMIN && match.tournament_id === match.tournament_id) || // Simplification: admin of the match's tournament
+    (userRole === UserRoles.REFEREE && match.referee_id === match.referee_id); // Simplification: assigned referee
 
   return (
     <div className="card p-8 md:p-12 border-white/5 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden">
