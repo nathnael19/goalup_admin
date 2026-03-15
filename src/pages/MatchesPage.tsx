@@ -24,6 +24,7 @@ import { CardSkeleton } from "../components/LoadingSkeleton";
 import { Toast } from "../components/Toast";
 import { getFullImageUrl } from "../utils/url";
 import { getErrorMessage } from "../utils/error";
+import { calculateMatchTimeDisplay } from "../utils/matchUtils";
 
 export const MatchesPage: React.FC = () => {
   const { user } = useAuth();
@@ -69,6 +70,15 @@ export const MatchesPage: React.FC = () => {
   } | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Local ticking so live match cards update their timer dynamically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // trigger re-render; value itself is not used
+      setToast((prev) => (prev ? { ...prev } : prev));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-selection for TOURNAMENT_ADMIN, COACH, and REFEREE
   useEffect(() => {
@@ -241,26 +251,6 @@ export const MatchesPage: React.FC = () => {
     saveMatchMutation.mutate({ mode, match: currentMatch, updateData });
   };
 
-  const calculateMatchTime = (match: Match) => {
-    if (match.status !== "live") return null;
-    if (match.is_halftime) return "HT";
-
-    const startTimeStr =
-      match.start_time.includes("Z") || match.start_time.includes("+")
-        ? match.start_time
-        : `${match.start_time}Z`;
-    const start = new Date(startTimeStr).getTime();
-    const now = new Date().getTime();
-    const diffInMinutes = Math.floor((now - start) / 60000);
-
-    if (diffInMinutes < 0) return "1'";
-
-    const totalTime = match.total_time || 90;
-    if (diffInMinutes >= totalTime) return `${totalTime}'`;
-
-    return `${diffInMinutes + 1}'`;
-  };
-
   const getStatusBadge = (match: Match) => {
     switch (match.status) {
       case "finished":
@@ -270,7 +260,7 @@ export const MatchesPage: React.FC = () => {
           </span>
         );
       case "live": {
-        const timeDisplay = calculateMatchTime(match);
+        const timeDisplay = calculateMatchTimeDisplay(match);
         return (
           <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />{" "}
