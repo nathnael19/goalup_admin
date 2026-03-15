@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import type { IconType } from "react-icons";
 
 interface StatCardProps {
@@ -11,7 +11,7 @@ interface StatCardProps {
   delay?: number;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({
+const StatCardComponent: React.FC<StatCardProps> = ({
   label,
   value,
   icon: Icon,
@@ -48,3 +48,5 @@ export const StatCard: React.FC<StatCardProps> = ({
     </div>
   );
 };
+
+export const StatCard = memo(StatCardComponent);
