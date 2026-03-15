@@ -743,7 +743,7 @@ export const MatchesPage: React.FC = () => {
                               </span>
                             </div>
                             <div className="lg:hidden">
-                              {calculateMatchTime(match)}
+                              {calculateMatchTimeDisplay(match)}
                             </div>
                           </div>
 
