@@ -70,12 +70,12 @@ export const MatchesPage: React.FC = () => {
   } | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [_, setTimerTick] = useState(0);
 
-  // Local ticking so live match cards update their timer dynamically
+  // Lightweight ticking so live match timers update without abusing toast state
   useEffect(() => {
     const interval = setInterval(() => {
-      // trigger re-render; value itself is not used
-      setToast((prev) => (prev ? { ...prev } : prev));
+      setTimerTick((t) => t + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
