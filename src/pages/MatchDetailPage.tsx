@@ -237,7 +237,9 @@ export const MatchDetailPage: React.FC = () => {
               </button>
             </>
           ) : (
-            user?.role === UserRoles.TOURNAMENT_ADMIN && (
+            (user?.role === UserRoles.TOURNAMENT_ADMIN || 
+             user?.role === UserRoles.SUPER_ADMIN || 
+             (user?.role === UserRoles.REFEREE && match.referee_id === user.id)) && (
               <>
                 <button
                   onClick={() => setIsEditing(true)}
@@ -246,13 +248,15 @@ export const MatchDetailPage: React.FC = () => {
                 >
                   <FiEdit2 className="mr-2" /> Edit
                 </button>
-                <button
-                  onClick={handleDeleteMatch}
-                  className="btn btn-secondary text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
-                  disabled={isMatchLocked(match)}
-                >
-                  <FiTrash2 className="mr-2" /> Delete
-                </button>
+                {user?.role !== UserRoles.REFEREE && (
+                  <button
+                    onClick={handleDeleteMatch}
+                    className="btn btn-secondary text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                    disabled={isMatchLocked(match)}
+                  >
+                    <FiTrash2 className="mr-2" /> Delete
+                  </button>
+                )}
               </>
             )
           )}
