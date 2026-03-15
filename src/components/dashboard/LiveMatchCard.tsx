@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import type { Match } from "../../types";
 import { getFullImageUrl } from "../../utils/url";
 
@@ -7,7 +7,7 @@ interface LiveMatchCardProps {
   onClick: () => void;
 }
 
-export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({
+const LiveMatchCardComponent: React.FC<LiveMatchCardProps> = ({
   match,
   onClick,
 }) => {
@@ -75,3 +75,5 @@ export const LiveMatchCard: React.FC<LiveMatchCardProps> = ({
     </div>
   );
 };
+
+export const LiveMatchCard = memo(LiveMatchCardComponent);
