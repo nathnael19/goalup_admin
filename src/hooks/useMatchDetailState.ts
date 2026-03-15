@@ -8,6 +8,7 @@ import { teamService } from "../services/teamService";
 import { lineupService } from "../services/lineupService";
 import { useToast } from "../context/ToastContext";
 import { getErrorMessage } from "../utils/error";
+import { calculateMatchTimeDisplay as calcMatchTime } from "../utils/matchUtils";
 import type {
   TeamDetail,
   UpdateMatchScoreDto,
@@ -81,13 +82,12 @@ export const useMatchDetailState = (matchId: string | undefined) => {
     enabled: !!match?.stage && match?.tournament?.knockout_legs === 2,
   });
 
-  // Ticking for live match time
+  // Ticking for live match time: every 1s when live so the timer updates dynamically
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTick((t) => t + 1);
-    }, 10000);
+    if (!match || match.status !== "live") return undefined;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [match?.id, match?.status]);
 
   // Mutations
   const updateMatchMutation = useMutation({
@@ -256,39 +256,7 @@ export const useMatchDetailState = (matchId: string | undefined) => {
   });
 
   const calculateMatchTimeDisplay = useCallback(() => {
-    if (!match || match.status !== "live") return null;
-    if (match.is_halftime) return "HT";
-
-    let start: Date;
-    let offset = 0;
-
-    if (match.second_half_start) {
-      start = new Date(match.second_half_start);
-      offset = 45;
-    } else if (match.first_half_start) {
-      start = new Date(match.first_half_start);
-    } else {
-      return "0'";
-    }
-
-    const now = new Date();
-    const diffMs = now.getTime() - start.getTime();
-    let diffMins = Math.floor(diffMs / 60000) + offset;
-
-    if (
-      !match.second_half_start &&
-      diffMins > 45 + (match.additional_time_first_half || 0)
-    ) {
-      return "45+";
-    }
-    if (
-      match.second_half_start &&
-      diffMins > 90 + (match.additional_time_second_half || 0)
-    ) {
-      return "90+";
-    }
-
-    return `${diffMins}'`;
+    return match ? calcMatchTime(match) : null;
   }, [match, tick]);
 
   const isLoading =
