@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { FiFileText, FiClock } from "react-icons/fi";
 import type { News } from "../../types";
 import { getFullImageUrl } from "../../utils/url";
@@ -9,7 +9,7 @@ interface NewsHighlightProps {
   index: number;
 }
 
-export const NewsHighlight: React.FC<NewsHighlightProps> = ({
+const NewsHighlightComponent: React.FC<NewsHighlightProps> = ({
   article,
   onClick,
   index,
@@ -59,3 +59,5 @@ export const NewsHighlight: React.FC<NewsHighlightProps> = ({
     </div>
   );
 };
+
+export const NewsHighlight = memo(NewsHighlightComponent);
