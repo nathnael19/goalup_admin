@@ -32,6 +32,8 @@ interface MatchTacticalBoardProps {
     replaceId?: string;
     slot_index: number;
   }) => void;
+  isLineupDirty?: boolean;
+  hasSavedLineup?: boolean;
 }
 
 export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
@@ -56,6 +58,8 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
   isSaving,
   isLocked,
   onOpenSlotModal,
+  isLineupDirty = true,
+  hasSavedLineup = false,
 }) => {
   const isTeamA = viewTeam === "A";
   const currentFormation = isTeamA ? formationA : formationB;
@@ -192,7 +196,7 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
             </button>
           </div>
 
-          {canEdit && (
+          {canEdit && (!hasSavedLineup || isLineupDirty) && (
             <button
               onClick={onSaveLineups}
               disabled={isSaving || isLocked}
@@ -203,7 +207,11 @@ export const MatchTacticalBoard: React.FC<MatchTacticalBoardProps> = ({
               ) : (
                 <FiSave size={16} />
               )}
-              {isSaving ? "Saving..." : "Save Decisions"}
+              {isSaving
+                ? "Saving..."
+                : hasSavedLineup
+                  ? "Update Decision"
+                  : "Save Decisions"}
             </button>
           )}
         </div>
