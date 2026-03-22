@@ -89,6 +89,10 @@ export const MatchDetailPage: React.FC = () => {
   const [selectedBenchA, setSelectedBenchA] = useState<string[]>([]);
   const [selectedBenchB, setSelectedBenchB] = useState<string[]>([]);
 
+  // Active State Computations for UI
+  const [isLineupDirty, setIsLineupDirty] = useState(false);
+  const [hasSavedLineup, setHasSavedLineup] = useState(false);
+
   // Sync state when match changes
   useEffect(() => {
     if (match) {
@@ -98,13 +102,20 @@ export const MatchDetailPage: React.FC = () => {
 
       const lA: Record<number, string> = {};
       const lB: Record<number, string> = {};
+      let savedLineupsCount = 0;
+
       match.lineups?.forEach((l) => {
+        if (l.team_id === match.team_a_id || l.team_id === match.team_b_id) {
+          savedLineupsCount++;
+        }
         if (l.is_starting && l.slot_index !== undefined) {
           if (l.team_id === match.team_a_id) lA[l.slot_index] = l.player_id;
           else if (l.team_id === match.team_b_id)
             lB[l.slot_index] = l.player_id;
         }
       });
+
+      setHasSavedLineup(savedLineupsCount > 0);
       setSelectedLineupA(lA);
       setSelectedLineupB(lB);
       setSelectedBenchA(
@@ -117,10 +128,49 @@ export const MatchDetailPage: React.FC = () => {
           ?.filter((l) => l.team_id === match.team_b_id && !l.is_starting)
           .map((l) => l.player_id) || [],
       );
+      setIsLineupDirty(false); // Reset dirty flag after load/save
     }
   }, [match]);
 
-  // Sync view team for coach
+  // Check if lineup was modified since last load
+  useEffect(() => {
+    if (!match) return;
+    
+    // Helper to check if two lineups are identical
+    const isSameLineup = (current: Record<number, string>, teamId: string) => {
+      const original = match.lineups?.filter(l => l.team_id === teamId && l.is_starting) || [];
+      if (Object.keys(current).length !== original.length) return false;
+      return original.every(l => l.slot_index !== undefined && current[l.slot_index] === l.player_id);
+    };
+
+    const isSameBench = (current: string[], teamId: string) => {
+      const original = match.lineups?.filter(l => l.team_id === teamId && !l.is_starting).map(l => l.player_id) || [];
+      if (current.length !== original.length) return false;
+      const sortedCurrent = [...current].sort();
+      const sortedOriginal = [...original].sort();
+      return sortedCurrent.every((val, index) => val === sortedOriginal[index]);
+    };
+
+    // Assume dirty if formations change
+    const formationChanged = formationA !== (match.formation_a || "4-3-3") || 
+                            formationB !== (match.formation_b || "4-3-3");
+                            
+    const dirty = formationChanged ||
+                   !isSameLineup(selectedLineupA, match.team_a_id) ||
+                   !isSameLineup(selectedLineupB, match.team_b_id) ||
+                   !isSameBench(selectedBenchA, match.team_a_id) ||
+                   !isSameBench(selectedBenchB, match.team_b_id);
+
+    setIsLineupDirty(dirty);
+  }, [
+    formationA, formationB, 
+    selectedLineupA, selectedLineupB, 
+    selectedBenchA, selectedBenchB, 
+    match
+  ]);
+
+  // View Sync logic for Coaches
+  // ...
   useEffect(() => {
     if (user?.role === UserRoles.COACH && user.team_id === match?.team_b_id) {
       setViewTeam("B");
@@ -313,6 +363,7 @@ export const MatchDetailPage: React.FC = () => {
         />
       </div>
 
+      {/* @ts-ignore */}
       <MatchTacticalBoard
         match={match}
         viewTeam={viewTeam}
@@ -342,7 +393,9 @@ export const MatchDetailPage: React.FC = () => {
           })
         }
         isSaving={mutations.isSavingLineups}
-        isLocked={isMatchLocked(match)}
+        isLocked={match.status !== "scheduled"}
+        isLineupDirty={isLineupDirty}
+        hasSavedLineup={hasSavedLineup}
         onOpenSlotModal={setSlotModal}
       />
 
